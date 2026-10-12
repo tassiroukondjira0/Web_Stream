@@ -35,132 +35,173 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Déploiement sur Netlify
+## Déploiement sur Vercel
 
-La configuration vit dans [`netlify.toml`](./netlify.toml) : commande de build
-`prisma generate && next build`, Node 22, `publish = ".next"`. Netlify détecte
-automatiquement Next.js et utilise son adaptateur OpenNext (Server Components,
-ISR, Route Handlers et Server Actions sont pris en charge).
+Next.js est développé par Vercel : le support est natif et complet (Server
+Components, ISR, Partial Prerender, Server Actions, Middleware). Aucun
+adaptateur tiers, aucun fichier de configuration obligatoire.
+
+Deux fichiers existent pour fiabiliser le déploiement :
+
+| Fichier | Rôle |
+| --- | --- |
+| `vercel.json` | Épingle `prisma generate && next build` comme commande de build |
+| `scripts/vercel-env.ps1` | Envoie les variables de `.env` vers Vercel (liste blanche) |
 
 ### 1. Pousser le code sur GitHub
 
 ```bash
 git add .
-git commit -m "chore: configuration Netlify + fonctionnalités Bunny/TMDB"
+git commit -m "feat: configuration Vercel, helper d'URL, durcissement des secrets"
 git push origin main
 ```
 
-### 2. Connecter le dépôt à Netlify
+### 2. Importer le projet
 
-1. [app.netlify.com](https://app.netlify.com) → **Add new site** → **Import an existing project**
-2. Autoriser GitHub et sélectionner le dépôt `Weeb_Stream`
-3. Les valeurs de `netlify.toml` sont détectées automatiquement :
-   - **Build command** : `prisma generate && next build`
-   - **Publish directory** : `.next`
+1. [vercel.com/new](https://vercel.com/new) → **Import Git Repository**
+2. Sélectionner le dépôt `Weeb_Stream`
+3. Vercel détecte Next.js automatiquement. Vérifier dans *Build & Output* :
+   - **Build Command** : `prisma generate && next build`
+   - **Install Command** : `npm ci`
 4. Cliquer sur **Deploy**
 
-### 3. Renseigner les variables d'environnement
+> Le premier déploiement peut échouer sur les routes API faute de variables
+> d'environnement. C'est attendu : poursuivez avec l'étape 3.
 
-**Site configuration → Environment variables**. Le **scope** est aussi important
-que la valeur : voir l'encadré 🔐 en tête de [`netlify.toml`](./netlify.toml).
+### 3. Configurer les variables d'environnement
 
-| Variable | Scope | Remarque |
+**Site → Settings → Environment Variables**. Cocher les 3 environnements
+(*Production*, *Preview*, *Development*).
+
+| Variable | Valeur | Remarque |
 | --- | --- | --- |
-| `DATABASE_URL` | **Functions** | URL Neon **poolée** |
-| `DATABASE_READY` = `true` | **Functions** | Active PostgreSQL. Laisser hors du scope *Builds* : au build la valeur est `undefined`, donc `getAllMedias()` renvoie `FALLBACK_CATALOG` et n'interroge pas la base |
-| `NEXTAUTH_SECRET` | **Functions** | Secret JWT fort et unique (`openssl rand -base64 32`) |
-| `BUNNY_STREAM_LIBRARY_ID` | **Functions** | Video Library Bunny.net |
-| `BUNNY_STREAM_API_KEY` | **Functions** | Clé API de la Video Library |
-| `BUNNY_STREAM_TOKEN_AUTHENTICATION_KEY` | **Functions** | Token Authentication |
-| `BUNNY_STREAM_CDN_HOSTNAME` | **Functions** | Pull Zone, ex. `vz-xxxx.b-cdn.net` — utilisé seulement à la requête |
-| `TMDB_API_TOKEN` (ou `TMDB_API_KEY`) | **Functions** | Import de métadonnées |
-| `NEXT_PUBLIC_APP_URL` | **Builds** | URL publique (lu au prerender : `layout.tsx`, `sitemap.ts`) |
-| `NEXT_PUBLIC_APP_NAME` | **Builds** | Nom affiché |
+| `DATABASE_URL` | URL Neon **poolée** | Obligatoire. Prisma en a besoin au build |
+| `DATABASE_READY` | `true` | Active PostgreSQL. Sinon `FALLBACK_CATALOG` |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32` | Signature des sessions. **Aucun repli** |
+| `NEXT_PUBLIC_APP_NAME` | `CinéMax` | Nom affiché |
+| `NEXT_PUBLIC_APP_URL` | *(optionnel)* | Voir encadré ci-dessous |
+| `BUNNY_STREAM_LIBRARY_ID` | ID Video Library | Vidéos |
+| `BUNNY_STREAM_API_KEY` | Clé API Library | Vidéos |
+| `BUNNY_STREAM_CDN_HOSTNAME` | Pull Zone hostname | URLs signées |
+| `BUNNY_STREAM_TOKEN_AUTHENTICATION_KEY` | Token Authentication | URLs signées |
+| `TMDB_API_TOKEN` | Token v4 | Import de métadonnées |
 
-#### ⚠️ Pourquoi « Functions » et pas « Builds » pour les secrets
+#### Automatiser l'envoi (recommandé)
 
-Turbopack **inline** les `process.env.*` dans les chunks serveur au moment du
-build. Une clé déclarée en scope *Builds* se retrouve écrite en dur dans
-`.netlify/.next/**` (chunks, `.map`, cache `.sst`) et fait échouer le scanner de
-secrets Netlify :
+Plutôt qu'un copier-coller manuel, le script applique une **liste blanche** —
+seules les variables réellement lues par le code sont transmises :
 
-```
-found value at line 868 in .netlify/.next/build/chunks/[turbopack]_runtime.js
-found value at line 1 in .netlify/.next/next-minimal-server.js.nft.json
+```powershell
+npm run vercel:env          # demande confirmation, puis envoie
 ```
 
-Tous vos secrets ne sont lus qu'à l'exécution (dans les route handlers), donc le
-scope *Functions* seul suffit — et supprime la fuite à la racine.
+Options utiles :
 
-> Ne commitez **jamais** le fichier `.env` : il est ignoré par Git (`.env*` dans
-> `.gitignore`). Seul `.env.example` est versionné.
-
-#### Filet de sécurité (optionnel)
-
-Si le hostname CDN reste signalé à tort (c'est un identifiant public, pas un
-secret), excluez les artefacts de build du scan dans l'UI Netlify :
-
-```
-SECRETS_SCAN_OMIT_PATHS          = .next/cache/**,**/*.map,**/*.sst,**/*.nft.json
-SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = vz-xxxxxxxx.b-cdn.net
+```powershell
+npm run vercel:env -- -Force                    # écrase sans confirmer
+npm run vercel:env -- -Environments production  # une seule cible
 ```
 
-N'utilisez `SECRETS_SCAN_ENABLED=false` qu'en dernier recours : vous perdez toute
-détection de fuite, y compris sur de vraies clés.
+La valeur est passée sur `stdin` à `vercel env add` : elle n'apparaît ni à
+l'écran ni dans l'historique du shell.
 
+Sont **volontairement exclus** : `NEON_API_KEY`, `NEON_BRANCH`,
+`DATABASE_URL_UNPOOLED` et `NEXTAUTH_URL` — le projet n'utilise plus l'API
+Neon (voir la section « Aucune API propriétaire de fournisseur » du README).
 
-### 4. Appliquer le schéma Prisma sur la base de production
+#### `NEXT_PUBLIC_APP_URL` peut rester vide
 
-Le déploiement Netlify ne migre **pas** la base. Il n'existe aucun dossier
-`prisma/migrations` dans ce dépôt : il faut donc soit en créer un, soit pousser
-le schéma directement.
+`src/lib/env.ts` résout l'URL publique dans cet ordre :
 
-**Option A — pousser le schéma (le plus simple ici)**, en local avec la
-`DATABASE_URL` de production :
+1. `NEXT_PUBLIC_APP_URL` — contrôle explicite (domaine personnalisé)
+2. `VERCEL_PROJECT_PRODUCTION_URL` — injecté par Vercel, **domaine stable**
+3. `http://localhost:3000` — développement
+
+Vous n'avez donc rien à renseigner au premier déploiement. Renseignez-la
+uniquement si vous attachez un domaine personnalisé.
+
+> `VERCEL_URL` n'est volontairement **pas** utilisé : c'est l'URL du déploiement
+> courant, suffixée d'un hash unique. S'en servirait produirait des URL
+> canoniques différentes pour un même contenu (*duplicate content*).
+
+### 4. Vérifier la base de données
+
+Le déploiement ne crée **pas** les tables. Vérification rapide en local :
 
 ```bash
-npx prisma db push     # crée les tables décrites dans schema.prisma
-npm run seed           # optionnel, données de démonstration
+npm run db:studio    # ou : npm run db:push si les tables manquent
 ```
 
-**Option B — versionner une migration**, une fois pour toutes :
+Ce projet utilise `prisma db push` (pas de dossier `prisma/migrations`).
+Pour passer à des migrations versionnées :
 
 ```bash
-npx prisma migrate dev --name init   # génère prisma/migrations/<ts>_init/
+npx prisma migrate dev --name init
 git add prisma/migrations && git commit -m "chore: migration initiale"
+npm run db:migrate   # ensuite, à chaque déploiement
 ```
 
-Puis à chaque déploiement suivant :
+### 5. Redéployer
 
 ```bash
-npx prisma migrate deploy
+npm run deploy       # vercel --prod
 ```
 
-> `prisma migrate deploy` échoue sans dossier `prisma/migrations` : c'est
-> précisément l'option B qui le crée.
+Ou pousser sur `main` : chaque commit déclenche un déploiement automatique.
 
+## Variables d'environnement : ce qui est lu par le code
 
-### Points d'attention
+| Variable | Lue dans | Portée |
+| --- | --- | --- |
+| `DATABASE_URL` | `prisma/schema.prisma` | Build + Runtime |
+| `DATABASE_READY` | `src/lib/catalog.ts`, `api/auth/*`, `api/admin/*` | Runtime |
+| `NEXTAUTH_SECRET` | `src/lib/auth.ts` | Runtime |
+| `NEXT_PUBLIC_APP_URL` | `src/lib/env.ts` | Build (inliné) |
+| `NEXT_PUBLIC_APP_NAME` | — *(non lue actuellement)* | Build |
+| `BUNNY_STREAM_*` | `src/lib/bunny-stream.ts` | Runtime |
+| `TMDB_API_TOKEN` / `TMDB_API_KEY` | `src/lib/tmdb.ts` | Runtime |
 
-- **Fuseau horaire** : Netlify build en UTC, ce qui peut décaler les dates
-  affichées. Ajoutez `TZ = "Europe/Paris"` dans `[build.environment]` si besoin.
-- **Fonctions** : timeout de 10 s (26 s à partir du plan Pro) et limite de
-  payload de 6 Mo. Les uploads vidéo passent par Bunny TUS en direct depuis le
-  client, ce qui évite ces limites.
-- **Webhook de paiement** : mettre à jour l'URL de callback chez le prestataire
-  vers `https://<votre-domaine>/api/payment/webhook`.
-- **Domaine personnalisé** : pensez à mettre `NEXTAUTH_URL` et
-  `NEXT_PUBLIC_APP_URL` à jour, puis redéployer.
-- **Anti-fuite de déploiement** (*skew protection*) : ajoutez la variable
-  `NETLIFY_NEXT_SKEW_PROTECTION = true`.
+**Non utilisées** (ne les renseignez pas) : `NEXTAUTH_URL`, `CLOUDFLARE_*`.
 
-### Déploiement en ligne de commande (optionnel)
+### Aucune API propriétaire de fournisseur
+
+Le CLI Neon (`@neon/config`, `@neon/env`) et son fichier `neon.ts` ont été
+retirés. `prisma/schema.prisma` se contente du provider `postgresql` standard :
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+```
+
+Votre base reste donc chez Neon, Supabase, Railway ou en local **sans changer
+une ligne de code** — seule `DATABASE_URL` compte. Préférez l'URL **poolée** en
+production : le serverless ouvre de nombreuses connexions courtes.
+
+> Le fichier `.env` est ignoré par Git (`.env*` dans `.gitignore`). Seul
+> `.env.example` est versionné.
+
+## Points d'attention
+
+- **Plan Hobby = usage non commercial.** Vercel impose le plan Pro (20 $/mois)
+  dès qu'il y a monétisation. Avec un système d'abonnement (`/premium`,
+  webhook de paiement), vérifiez votre éligibilité.
+- **Limites Hobby** : 100 Go de bande passante, 1 M d'invocations de fonctions,
+  4 h de CPU actif et 5 000 transformations d'images par mois. Vos vidéos
+  passant par Bunny.net, votre consommation reste faible.
+- **Timeout des fonctions** : 10 s par défaut. L'import TMDB
+  (`/api/admin/import/tmdb`) peut le dépasser sur un gros lot.
+- **Webhook de paiement** : mettez à jour l'URL de callback chez le
+  prestataire vers `https://<votre-domaine>/api/payment/webhook`.
+- **Redéployez** après tout changement de `NEXT_PUBLIC_APP_URL` : les variables
+  `NEXT_PUBLIC_*` sont inlinées au moment du build.
+
+## Récupérer les variables depuis Vercel
 
 ```bash
-npm install -g netlify-cli
-netlify login
-netlify init          # lie le dossier au site Netlify
-netlify env:set DATABASE_URL "postgresql://..."
-netlify deploy --prod # compile et publie
+npm run vercel:pull   # écrit .env.local depuis l'environnement production
 ```
+
+`.env.local` est également ignoré par Git.
 

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { getMetadataBase } from "@/lib/env";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   },
   description:
     "Découvrez un catalogue de films, séries d'animation et documentaires en streaming haute définition. Accès gratuit et contenus exclusifs réservés aux abonnés.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: getMetadataBase(),
   openGraph: {
     title: "CinéMax — Streaming Vidéo Légal & HD",
     description: "Films, séries d'animation et créations originales en accès libre et premium sur CinéMax.",

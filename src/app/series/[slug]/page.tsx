@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getMediaBySlug, getAllMedias } from "@/lib/catalog";
+import { getAppUrl } from "@/lib/env";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { ShareButton } from "@/components/ShareButton";
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "Série non trouvée | CinéMax" };
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
   return {
     title: `${serie.title} — Série Complète en Streaming HD`,
     description: serie.synopsis.slice(0, 160),

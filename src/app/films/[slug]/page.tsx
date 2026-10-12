@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getMediaBySlug, getSimilarMedias, getAllMedias } from "@/lib/catalog";
+import { getAppUrl } from "@/lib/env";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { ShareButton } from "@/components/ShareButton";
@@ -29,7 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = getAppUrl();
   const canonicalUrl = `${appUrl}/films/${film.slug}`;
 
   return {
@@ -70,6 +71,7 @@ async function FilmContent({ params }: PageProps) {
   }
 
   const similarFilms = await getSimilarMedias(film.slug, film.categories[0]?.slug);
+  const appUrl = getAppUrl();
 
   // Données structurées JSON-LD adaptées aux films (Schema.org / Google Rich Results)
   const jsonLd = {
@@ -84,7 +86,7 @@ async function FilmContent({ params }: PageProps) {
     genre: film.categories.map((c) => c.name),
     potentialAction: {
       "@type": "WatchAction",
-      target: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/films/${film.slug}`,
+      target: `${appUrl}/films/${film.slug}`,
     },
   };
 

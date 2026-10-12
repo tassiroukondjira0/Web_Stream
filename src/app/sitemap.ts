@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
 import { getAllMedias } from "@/lib/catalog";
+import { getAppUrl } from "@/lib/env";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl = getAppUrl();
   const medias = await getAllMedias();
 
   // Pages statiques principales

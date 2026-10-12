@@ -4,17 +4,19 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "tsx tests/validation.ts",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "vercel:env": "powershell -ExecutionPolicy Bypass -File ./scripts/vercel-env.ps1",
+    "vercel:pull": "vercel env pull .env.local --environment=production",
+    "deploy": "vercel --prod"
   },
   "dependencies": {
-    "@neon/config": "^1.8.6",
-    "@neon/env": "^1.5.3",
     "@prisma/client": "6.4.1",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.12",

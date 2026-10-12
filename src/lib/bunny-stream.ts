@@ -15,7 +15,8 @@ function getConfig() {
   return {
     libraryId: process.env.BUNNY_STREAM_LIBRARY_ID || "",
     apiKey: process.env.BUNNY_STREAM_API_KEY || "",
-    /** Hostname CDN de votre Pull Zone, ex : vz-xxxxxxxx.b-cdn.net */
+    /** Hostname CDN de votre Pull Zone, récupéré dans le dashboard Bunny :
+     *  Video Library → Pull Zone → Hostname. */
     cdnHostname: process.env.BUNNY_STREAM_CDN_HOSTNAME || "",
     /**
      * Clé d'authentification des tokens signés.

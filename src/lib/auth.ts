@@ -2,9 +2,28 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.NEXTAUTH_SECRET || "stream-super-secure-jwt-secret-key-32chars"
-);
+/**
+ * Clé de signature des sessions.
+ *
+ * ⚠️ NEXTAUTH_SECRET doit être défini en production. Aucun secret codé en dur
+ * n'est fourni comme repli : une valeur publique permettrait à quiconque de
+ * forger une session administrateur.
+ *
+ * Le contrôle n'est PAS fait à l'import : Next.js évalue les modules de route
+ * handlers pendant « Collecting page data » au build, ce qui ferait échouer la
+ * compilation. On échoue donc à l'appel, quand la clé est réellement nécessaire.
+ */
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.NEXTAUTH_SECRET;
+
+  if (!secret) {
+    throw new Error(
+      "NEXTAUTH_SECRET est requis. Générer une valeur forte : openssl rand -base64 32"
+    );
+  }
+
+  return new TextEncoder().encode(secret);
+}
 
 export const COOKIE_NAME = "stream_session";
 
@@ -31,12 +50,12 @@ export async function signSessionToken(user: SessionUser): Promise<string> {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(JWT_SECRET);
+    .sign(getJwtSecret());
 }
 
 export async function verifySessionToken(token: string): Promise<SessionUser | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, getJwtSecret());
     return payload as unknown as SessionUser;
   } catch {
     return null;
