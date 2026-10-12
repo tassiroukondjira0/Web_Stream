@@ -6,7 +6,7 @@ import { Search as SearchIcon, Film, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Rechercher un Film ou une Série",
-  description: "Trouvez rapidement vos films et séries favoris sur StreamWeb.",
+  description: "Trouvez rapidement vos films et séries favoris sur CinéMax.",
 };
 
 interface SearchPageProps {

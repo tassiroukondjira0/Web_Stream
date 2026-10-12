@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Politique de Confidentialité",
-  description: "Engagement sur la protection de la vie privée et des données personnelles sur StreamWeb.",
+  description: "Engagement sur la protection de la vie privée et des données personnelles sur CinéMax.",
 };
 
 export default function PrivacyPage() {
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-bold text-white mb-2">4. Vos droits (Accès, Rectification, Suppression)</h2>
           <p>
-            Vous disposez d&apos;un droit permanent de consultation, modification et suppression de vos données personnelles. Vous pouvez demander la fermeture définitive de votre compte depuis la page Mon Compte ou par e-mail à privacy@streamweb.local.
+            Vous disposez d&apos;un droit permanent de consultation, modification et suppression de vos données personnelles. Vous pouvez demander la fermeture définitive de votre compte depuis la page Mon Compte ou par e-mail à privacy@cinemax.local.
           </p>
         </section>
       </div>

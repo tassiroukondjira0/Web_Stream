@@ -16,16 +16,16 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "StreamWeb — Films & Séries en Streaming Légal",
-    template: "%s | StreamWeb",
+    default: "CinéMax — Films & Séries en Streaming Légal",
+    template: "%s | CinéMax",
   },
   description:
     "Découvrez un catalogue de films, séries d'animation et documentaires en streaming haute définition. Accès gratuit et contenus exclusifs réservés aux abonnés.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   openGraph: {
-    title: "StreamWeb — Streaming Vidéo Légal & HD",
-    description: "Films, séries d'animation et créations originales en accès libre et premium.",
-    siteName: "StreamWeb",
+    title: "CinéMax — Streaming Vidéo Légal & HD",
+    description: "Films, séries d'animation et créations originales en accès libre et premium sur CinéMax.",
+    siteName: "CinéMax",
     locale: "fr_FR",
     type: "website",
   },

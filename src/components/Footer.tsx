@@ -56,7 +56,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-white/5 pt-6 text-center text-xs text-zinc-500">
-          <p>© 2026 StreamWeb. Tous droits réservés.</p>
+          <p>© 2026 CinéMax. Tous droits réservés.</p>
         </div>
       </div>
     </footer>

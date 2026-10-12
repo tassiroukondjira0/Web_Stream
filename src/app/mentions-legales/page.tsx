@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Mentions Légales",
-  description: "Informations légales et hébergement de la plateforme StreamWeb.",
+  description: "Informations légales et hébergement de la plateforme CinéMax.",
 };
 
 export default function MentionsPage() {
@@ -15,9 +15,9 @@ export default function MentionsPage() {
         <section>
           <h2 className="text-lg font-bold text-white mb-2">1. Éditeur de la plateforme</h2>
           <p>
-            StreamWeb — Plateforme de diffusion vidéo légale.<br />
-            Responsable de la publication : Équipe Technique & Éditoriale StreamWeb.<br />
-            Contact : contact@streamweb.local
+            CinéMax — Plateforme de diffusion vidéo légale.<br />
+            Responsable de la publication : Équipe Technique & Éditoriale CinéMax.<br />
+            Contact : contact@cinemax.local
           </p>
         </section>
 

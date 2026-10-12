@@ -15,7 +15,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-bold text-white mb-2">1. Objet du Service</h2>
           <p>
-            StreamWeb propose une plateforme de diffusion vidéo à la demande en ligne légale, comprenant des œuvres en accès libre (Freemium) et des contenus exclusifs accessibles via un abonnement payant.
+            CinéMax propose une plateforme de diffusion vidéo à la demande en ligne légale, comprenant des œuvres en accès libre (Freemium) et des contenus exclusifs accessibles via un abonnement payant.
           </p>
         </section>
 
@@ -34,7 +34,7 @@ export default function TermsPage() {
             Si vous êtes titulaire de droits d&apos;auteur ou représentant légal et estimez qu&apos;un contenu porte atteinte à vos prérogatives :
           </p>
           <ol className="mt-3 list-decimal list-inside space-y-1.5 text-xs text-zinc-300">
-            <li>Adressez un avis de signalement complet à <strong>droits@streamweb.local</strong> en précisant le titre de l&apos;œuvre, l&apos;URL précise et la preuve de vos droits.</li>
+            <li>Adressez un avis de signalement complet à <strong>droits@cinemax.local</strong> en précisant le titre de l&apos;œuvre, l&apos;URL précise et la preuve de vos droits.</li>
             <li>Accusé de réception sous 24 heures ouvrées.</li>
             <li>Désactivation immédiate à titre conservatoire de la vidéo sous 48 heures maximum durant l&apos;instruction du litige.</li>
             <li>Retrait définitif et suppression des flux CDN en cas de confirmation de contestation légitime.</li>

@@ -1,11 +1,12 @@
-# Spécification Technique Détaillée — Plateforme de Streaming Vidéo
+# Spécification Technique Détaillée — Plateforme de Streaming Vidéo CinéMax
 
+**Nom de la plateforme :** CinéMax  
 **Version :** 1.0.0  
 **Statut :** Validé pour implémentation  
 **Date :** 12 Octobre 2026  
 **Modèle Économique :** Freemium (Catalogue public gratuit + Contenus exclusifs Premium)  
 **Pipeline Vidéo :** Cloudflare Stream (HLS / DASH, Signed Tokens, Transcodage automatique)  
-**Stack Principale :** Next.js 15 (App Router), TypeScript, PostgreSQL (Prisma ORM), Tailwind CSS  
+**Stack Principale :** Next.js 16 (App Router), TypeScript, PostgreSQL (Prisma ORM), Tailwind CSS  
 
 ---
 

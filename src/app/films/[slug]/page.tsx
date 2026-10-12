@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!film) {
     return {
-      title: "Film non trouvé | StreamWeb",
+      title: "Film non trouvé | CinéMax",
     };
   }
 
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: `${film.title} | StreamWeb`,
+      title: `${film.title} | CinéMax`,
       description: film.synopsis,
       url: canonicalUrl,
       type: "video.movie",

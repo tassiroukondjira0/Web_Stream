@@ -39,7 +39,7 @@ async function runValidationTests() {
   try {
     const userPayload = {
       id: "usr-test-1",
-      email: "testeur@streamweb.local",
+      email: "testeur@cinemax.local",
       name: "Testeur",
       role: "USER" as const,
     };

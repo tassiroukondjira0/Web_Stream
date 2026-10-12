@@ -9,10 +9,10 @@ export function Navbar() {
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-tight text-white">
             <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-600 font-black text-white shadow-lg shadow-red-600/30">
-              S
+              C
             </span>
             <span className="bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
-              StreamWeb
+              CinéMax
             </span>
           </Link>
 

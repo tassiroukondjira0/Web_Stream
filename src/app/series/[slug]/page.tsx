@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const serie = await getMediaBySlug(slug);
 
   if (!serie) {
-    return { title: "Série non trouvée | StreamWeb" };
+    return { title: "Série non trouvée | CinéMax" };
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";

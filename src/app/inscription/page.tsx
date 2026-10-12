@@ -45,11 +45,11 @@ export default function RegisterPage() {
       <div className="rounded-3xl border border-white/10 bg-zinc-900/70 p-8 shadow-2xl backdrop-blur-xl">
         <div className="text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-600 font-black text-white shadow-lg shadow-red-600/30">
-            S
+            C
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">Créer un compte</h1>
           <p className="mt-1 text-xs text-zinc-400">
-            Rejoignez StreamWeb pour suivre vos séries et accéder aux contenus gratuits
+            Rejoignez CinéMax pour suivre vos séries et accéder aux contenus gratuits
           </p>
         </div>
 
