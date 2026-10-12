@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  SUBSCRIBER
+  ADMIN
+}
+
+enum MediaType {
+  MOVIE
+  SERIES
+}
+
+enum AccessLevel {
+  FREE
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  INCOMPLETE
+}
+
+enum SubscriptionPlan {
+  MONTHLY
+  YEARLY
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String         @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  role          Role           @default(USER)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  subscriptions Subscription[]
+  watchHistory  WatchHistory[]
+  bookmarks     Bookmark[]
+
+  @@map("users")
+}
+
+model Subscription {
+  id               String             @id @default(cuid())
+  userId           String
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status           SubscriptionStatus @default(ACTIVE)
+  plan             SubscriptionPlan   @default(MONTHLY)
+  currentPeriodEnd DateTime
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  @@index([userId])
+  @@map("subscriptions")
+}
+
+model Category {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  slug        String          @unique
+  description String?
+  medias      MediaCategory[]
+
+  @@map("categories")
+}
+
+model Media {
+  id               String          @id @default(cuid())
+  title            String
+  slug             String          @unique
+  synopsis         String          @db.Text
+  type             MediaType       @default(MOVIE)
+  accessLevel      AccessLevel     @default(FREE)
+  releaseYear      Int
+  durationMinutes  Int?
+  posterUrl        String?
+  backdropUrl      String?
+  videoStreamId    String?         // Cloudflare Stream UID
+  isPublished      Boolean         @default(false)
+  rightsValidUntil DateTime?       // Limite légale d'exploitation des droits
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  categories       MediaCategory[]
+  seasons          Season[]
+  watchHistory     WatchHistory[]
+  bookmarks        Bookmark[]
+
+  @@index([slug])
+  @@index([type, accessLevel, isPublished])
+  @@map("medias")
+}
+
+model MediaCategory {
+  mediaId    String
+  categoryId String
+  media      Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([mediaId, categoryId])
+  @@map("media_categories")
+}
+
+model Season {
+  id           String    @id @default(cuid())
+  mediaId      String
+  media        Media     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  seasonNumber Int
+  title        String?
+  episodes     Episode[]
+
+  @@unique([mediaId, seasonNumber])
+  @@map("seasons")
+}
+
+model Episode {
+  id              String         @id @default(cuid())
+  seasonId        String
+  season          Season         @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  episodeNumber   Int
+  title           String
+  synopsis        String?        @db.Text
+  durationMinutes Int?
+  videoStreamId   String?        // Cloudflare Stream UID
+  accessLevel     AccessLevel    @default(FREE)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  watchHistory    WatchHistory[]
+
+  @@unique([seasonId, episodeNumber])
+  @@map("episodes")
+}
+
+model WatchHistory {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaId         String
+  media           Media     @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  episodeId       String?
+  episode         Episode?  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  progressSeconds Int       @default(0)
+  totalSeconds    Int       @default(0)
+  completed       Boolean   @default(false)
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId, mediaId, episodeId])
+  @@index([userId])
+  @@map("watch_histories")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, mediaId])
+  @@index([userId])
+  @@map("bookmarks")
+}
