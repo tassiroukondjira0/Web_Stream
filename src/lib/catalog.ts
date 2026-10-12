@@ -103,6 +103,27 @@ export const FALLBACK_CATALOG: MediaItem[] = [
       { name: "Science-Fiction", slug: "science-fiction" },
     ],
   },
+  {
+    id: "med-5",
+    title: "Les Chroniques Pionnières",
+    slug: "chroniques-pionnieres",
+    synopsis:
+      "Mini-série documentaire et prospective explorant les coulisses de la création numérique et des technologies de diffusion ouvertes.",
+    type: "SERIES",
+    accessLevel: "FREE",
+    releaseYear: 2024,
+    durationMinutes: null,
+    posterUrl: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=800",
+    backdropUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1600",
+    videoStreamId: "demo-series-1",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    isPublished: true,
+    rightsValidUntil: "2032-12-31",
+    categories: [
+      { name: "Documentaire", slug: "documentaire" },
+      { name: "Science-Fiction", slug: "science-fiction" },
+    ],
+  },
 ];
 
 export async function getAllMedias(): Promise<MediaItem[]> {

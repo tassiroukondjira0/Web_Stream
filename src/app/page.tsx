@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Play, Sparkles, Clock, ShieldCheck, Film, Tv } from "lucide-react";
+import { NewsletterBanner } from "@/components/NewsletterBanner";
 
 const DEMO_FEATURED = {
   title: "Big Buck Bunny",
@@ -199,6 +200,11 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Newsletter facultative avec consentement */}
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <NewsletterBanner />
       </section>
     </div>
   );

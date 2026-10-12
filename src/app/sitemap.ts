@@ -23,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${baseUrl}/series`,
       lastModified: new Date("2026-10-12"),
       changeFrequency: "daily",
-      priority: 0.8,
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/nouveautes`,
@@ -37,17 +37,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.7,
     },
+    {
+      url: `${baseUrl}/conditions`,
+      lastModified: new Date("2026-10-12"),
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/confidentialite`,
+      lastModified: new Date("2026-10-12"),
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/mentions-legales`,
+      lastModified: new Date("2026-10-12"),
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
   ];
 
-  // Pages dynamiques des films publiables
-  const filmPages: MetadataRoute.Sitemap = medias
-    .filter((m) => m.type === "MOVIE" && m.isPublished)
-    .map((film) => ({
-      url: `${baseUrl}/films/${film.slug}`,
+  // Pages dynamiques des films et séries publiables
+  const dynamicPages: MetadataRoute.Sitemap = medias
+    .filter((m) => m.isPublished)
+    .map((item) => ({
+      url: item.type === "MOVIE" ? `${baseUrl}/films/${item.slug}` : `${baseUrl}/series/${item.slug}`,
       lastModified: new Date("2026-10-12"),
       changeFrequency: "weekly" as const,
       priority: 0.85,
     }));
 
-  return [...staticPages, ...filmPages];
+  return [...staticPages, ...dynamicPages];
 }
