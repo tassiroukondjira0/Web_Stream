@@ -11,6 +11,12 @@
   # Next.js 16 requiert Node >= 20.9.0 — on épingle la 22 pour la reproductibilité.
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
+  # Identifiants Bunny NON secrets (publics : ils apparaissent dans les URLs du
+  # lecteur). Un ID numérique court (ex. 123456) se retrouve par hasard dans les
+  # fichiers générés par Next/Turbopack et déclenche des faux positifs du scan
+  # de secrets. Les vraies clés (BUNNY_STREAM_API_KEY, TOKEN_AUTHENTICATION_KEY)
+  # restent scannées.
+  SECRETS_SCAN_OMIT_KEYS = "BUNNY_STREAM_LIBRARY_ID,BUNNY_STREAM_CDN_HOSTNAME"
 
 # Netlify détecte automatiquement le framework Next.js et utilise son adaptateur
 # OpenNext : Server Components, ISR, Route Handlers, Middleware et Server Actions
