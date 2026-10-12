@@ -61,35 +61,84 @@ git push origin main
 
 ### 3. Renseigner les variables d'environnement
 
-**Site configuration → Environment variables** (le build échouera ou le site
-affichera le catalogue de secours sans elles) :
+**Site configuration → Environment variables**. Le **scope** est aussi important
+que la valeur : voir l'encadré 🔐 en tête de [`netlify.toml`](./netlify.toml).
 
-| Variable | Portée | Remarque |
+| Variable | Scope | Remarque |
 | --- | --- | --- |
-| `DATABASE_URL` | Build + Functions | URL Neon **poolée** |
-| `DATABASE_READY` | Functions | Mettre `true` pour activer PostgreSQL (sinon `FALLBACK_CATALOG`) |
-| `NEXTAUTH_SECRET` | Functions | Secret JWT fort et unique (`openssl rand -base64 32`) |
-| `NEXTAUTH_URL` | Functions | URL publique du site, ex. `https://mon-site.netlify.app` |
-| `BUNNY_STREAM_LIBRARY_ID` | Functions | Video Library Bunny.net |
-| `BUNNY_STREAM_API_KEY` | Functions | Clé API de la Video Library |
-| `BUNNY_STREAM_CDN_HOSTNAME` | Build | Pull Zone, ex. `vz-xxxx.b-cdn.net` |
-| `BUNNY_STREAM_TOKEN_AUTHENTICATION_KEY` | Functions | Token Authentication |
-| `TMDB_API_TOKEN` (ou `TMDB_API_KEY`) | Functions | Import de métadonnées |
-| `NEXT_PUBLIC_APP_URL` | Build | URL publique du site |
-| `NEXT_PUBLIC_APP_NAME` | Build | Nom affiché |
+| `DATABASE_URL` | **Functions** | URL Neon **poolée** |
+| `DATABASE_READY` = `true` | **Functions** | Active PostgreSQL. Laisser hors du scope *Builds* : au build la valeur est `undefined`, donc `getAllMedias()` renvoie `FALLBACK_CATALOG` et n'interroge pas la base |
+| `NEXTAUTH_SECRET` | **Functions** | Secret JWT fort et unique (`openssl rand -base64 32`) |
+| `BUNNY_STREAM_LIBRARY_ID` | **Functions** | Video Library Bunny.net |
+| `BUNNY_STREAM_API_KEY` | **Functions** | Clé API de la Video Library |
+| `BUNNY_STREAM_TOKEN_AUTHENTICATION_KEY` | **Functions** | Token Authentication |
+| `BUNNY_STREAM_CDN_HOSTNAME` | **Functions** | Pull Zone, ex. `vz-xxxx.b-cdn.net` — utilisé seulement à la requête |
+| `TMDB_API_TOKEN` (ou `TMDB_API_KEY`) | **Functions** | Import de métadonnées |
+| `NEXT_PUBLIC_APP_URL` | **Builds** | URL publique (lu au prerender : `layout.tsx`, `sitemap.ts`) |
+| `NEXT_PUBLIC_APP_NAME` | **Builds** | Nom affiché |
+
+#### ⚠️ Pourquoi « Functions » et pas « Builds » pour les secrets
+
+Turbopack **inline** les `process.env.*` dans les chunks serveur au moment du
+build. Une clé déclarée en scope *Builds* se retrouve écrite en dur dans
+`.netlify/.next/**` (chunks, `.map`, cache `.sst`) et fait échouer le scanner de
+secrets Netlify :
+
+```
+found value at line 868 in .netlify/.next/build/chunks/[turbopack]_runtime.js
+found value at line 1 in .netlify/.next/next-minimal-server.js.nft.json
+```
+
+Tous vos secrets ne sont lus qu'à l'exécution (dans les route handlers), donc le
+scope *Functions* seul suffit — et supprime la fuite à la racine.
 
 > Ne commitez **jamais** le fichier `.env` : il est ignoré par Git (`.env*` dans
 > `.gitignore`). Seul `.env.example` est versionné.
 
+#### Filet de sécurité (optionnel)
+
+Si le hostname CDN reste signalé à tort (c'est un identifiant public, pas un
+secret), excluez les artefacts de build du scan dans l'UI Netlify :
+
+```
+SECRETS_SCAN_OMIT_PATHS          = .next/cache/**,**/*.map,**/*.sst,**/*.nft.json
+SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = vz-xxxxxxxx.b-cdn.net
+```
+
+N'utilisez `SECRETS_SCAN_ENABLED=false` qu'en dernier recours : vous perdez toute
+détection de fuite, y compris sur de vraies clés.
+
+
 ### 4. Appliquer le schéma Prisma sur la base de production
 
-Le déploiement Netlify ne migre **pas** la base. À faire une fois, en local avec
-la `DATABASE_URL` de production :
+Le déploiement Netlify ne migre **pas** la base. Il n'existe aucun dossier
+`prisma/migrations` dans ce dépôt : il faut donc soit en créer un, soit pousser
+le schéma directement.
+
+**Option A — pousser le schéma (le plus simple ici)**, en local avec la
+`DATABASE_URL` de production :
 
 ```bash
-npx prisma migrate deploy   # ou : npx prisma db push
-npm run db:seed             # optionnel, données de démonstration
+npx prisma db push     # crée les tables décrites dans schema.prisma
+npm run seed           # optionnel, données de démonstration
 ```
+
+**Option B — versionner une migration**, une fois pour toutes :
+
+```bash
+npx prisma migrate dev --name init   # génère prisma/migrations/<ts>_init/
+git add prisma/migrations && git commit -m "chore: migration initiale"
+```
+
+Puis à chaque déploiement suivant :
+
+```bash
+npx prisma migrate deploy
+```
+
+> `prisma migrate deploy` échoue sans dossier `prisma/migrations` : c'est
+> précisément l'option B qui le crée.
+
 
 ### Points d'attention
 

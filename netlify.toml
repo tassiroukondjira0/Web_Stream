@@ -12,13 +12,57 @@
   NODE_VERSION = "22"
   NEXT_TELEMETRY_DISABLED = "1"
 
+# ══════════════════════════════════════════════════════════════════════════════
+# 🔐 SCOPES DES VARIABLES D'ENVIRONNEMENT — À CONFIGURER DANS L'UI NETLIFY
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Turbopack INLINE les valeurs de `process.env.*` dans les chunks serveur au
+# moment du build. Toute variable secrète déclarée avec le scope « Builds »
+# se retrouve donc écrite en dur dans .netlify/.next/** et fait échouer le
+# scanner de secrets de Netlify.
+#
+# 👉 RÈGLE : tous les secrets doivent être en scope « Functions » UNIQUEMENT
+#    (jamais « Builds »). Ils ne sont lus qu'à l'exécution, dans les route
+#    handlers — ils n'ont aucun besoin d'exister au build.
+#
+#   Site configuration → Environment variables → Options → Edit variable scopes
+#
+# ─── Scope « Functions » uniquement ───────────────────────────────────────────
+#   DATABASE_URL                          URL Neon poolée
+#   DATABASE_READY            = true      Voir note ci-dessous
+#   NEXTAUTH_SECRET                       Secret JWT (openssl rand -base64 32)
+#   BUNNY_STREAM_LIBRARY_ID
+#   BUNNY_STREAM_API_KEY
+#   BUNNY_STREAM_TOKEN_AUTHENTICATION_KEY
+#   TMDB_API_TOKEN            (ou TMDB_API_KEY)
+#
+# ─── Scope « Builds » uniquement (non secrets, requis pour le prerender) ──────
+#   NEXT_PUBLIC_APP_URL                   URL publique (layout.tsx, sitemap.ts)
+#   NEXT_PUBLIC_APP_NAME                  Nom affiché
+#
+#   BUNNY_STREAM_CDN_HOSTNAME doit AUSSI passer en « Functions » : il n'est
+#   utilisé que dans buildBunnySignedUrl(), appelé à la requête.
+#
+# ─── Note sur DATABASE_READY ─────────────────────────────────────────────────
+# `src/lib/catalog.ts` renvoie FALLBACK_CATALOG tant que DATABASE_READY !== "true".
+# En le laissant en scope Functions :
+#   • au build  → undefined  → aucun accès PostgreSQL, build déterministe
+#   • au runtime → "true"    → vraies requêtes base
+# C'est ce qui supprime les 100 erreurs « table public.medias does not exist »
+# générées pendant « Generating static pages ».
+#
+# ─── Filet de sécurité (recommandé, à définir dans l'UI Netlify) ─────────────
+# Exclure du scan les artefacts de build, qui ne sont jamais servis au client :
+#
+#   SECRETS_SCAN_OMIT_PATHS=.next/cache/**,**/*.map,**/*.sst,**/*.nft.json
+#   SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES=<cdn_hostname>
+#
+# La 2ᵉ ligne sert UNIQUEMENT si le hostname CDN (identifiant public, pas un
+# secret) est signalé à tort. Ne jamais y mettre de vraie clé API.
+
 # Netlify détecte automatiquement le framework Next.js et utilise son adaptateur
 # OpenNext : Server Components, ISR, Route Handlers, Middleware et Server Actions
 # sont pris en charge sans configuration supplémentaire.
-
-# ⚠️ Les variables d'environnement (DATABASE_URL, NEXTAUTH_SECRET, BUNNY_STREAM_*,
-#    TMDB_API_*, NEXT_PUBLIC_APP_URL…) ne doivent PAS être commitée ici.
-#    Renseignez-les dans : Netlify → Site configuration → Environment variables.
 
 # ─── En-têtes de sécurité pour les routes API ─────────────────────────────────
 [[headers]]
@@ -27,3 +71,4 @@
     X-Content-Type-Options = "nosniff"
     X-Frame-Options = "DENY"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
