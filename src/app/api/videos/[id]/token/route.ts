@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getMediaBySlug } from "@/lib/catalog";
+import { buildBunnySignedUrl } from "@/lib/bunny-stream";
 
 interface RouteProps {
   params: Promise<{ id: string }>;
@@ -45,14 +46,29 @@ export async function GET(request: Request, { params }: RouteProps) {
       }
     }
 
-    // 3. Délivrance de l'autorisation de lecture
-    // Dans un environnement de production avec Cloudflare Stream :
-    // On générerait ici un token signé HMAC ou RSA Cloudflare Stream valide 2h.
+    // 3. Délivrance de l'autorisation de lecture avec URL signée Bunny.net
+    //    Si media.videoStreamId est renseigné (vidéo hébergée chez Bunny),
+    //    on génère une URL HLS signée valable 2 heures.
+    //    Sinon, on retourne la videoUrl directe (mode démo / vidéo externe).
+    let playbackUrl: string = media.videoUrl || "";
+
+    if (media.videoStreamId) {
+      // Extraction de l'IP du visiteur pour renforcer la protection (optionnel)
+      const forwardedFor = request.headers.get("x-forwarded-for");
+      const userIp = forwardedFor ? forwardedFor.split(",")[0].trim() : undefined;
+
+      playbackUrl = buildBunnySignedUrl({
+        videoId: media.videoStreamId,
+        expiresInSeconds: 7200, // 2 heures
+        userIp,
+      });
+    }
+
     return NextResponse.json({
       success: true,
       mediaId: media.id,
       videoStreamId: media.videoStreamId,
-      playbackUrl: media.videoUrl,
+      playbackUrl,
       expiresIn: 7200, // 2 heures
       authorizedFor: user?.email || "anonymous-free",
     });

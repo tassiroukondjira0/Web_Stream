@@ -1,0 +1,202 @@
+/**
+ * Client TMDB (The Movie Database) — API légale de métadonnées.
+ * Source officielle des titres, synopsis, affiches et genres.
+ * Voir https://developer.themoviedb.org/docs
+ *
+ * ⚠️ TMDB fournit UNIQUEMENT des métadonnées (pas les fichiers vidéo).
+ * Les fiches importées sont créées en BROUILLON (isPublished: false) :
+ * l'administrateur doit ajouter une vidéo pour laquelle il détient les droits,
+ * puis publier la fiche depuis le back-office.
+ */
+
+const TMDB_BASE = "https://api.themoviedb.org/3";
+const TMDB_IMG = "https://image.tmdb.org/t/p";
+
+/** Élément renvoyé par /movie/popular ou /tv/popular (champs utiles).
+ *  Films : title / release_date. Séries : name / first_air_date. */
+export interface TmdbMovie {
+  id: number;
+  title?: string;
+  name?: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  release_date?: string;
+  first_air_date?: string;
+  genre_ids: number[];
+  vote_average: number;
+  vote_count: number;
+}
+
+export interface TmdbPopularResponse {
+  page: number;
+  results: TmdbMovie[];
+  total_pages: number;
+  total_results: number;
+}
+
+/** Correspondance des identifiants de genres TMDB vers les catégories locales (FR). */
+export const TMDB_GENRES: Record<number, { name: string; slug: string }> = {
+  28: { name: "Action", slug: "action" },
+  12: { name: "Aventure", slug: "aventure" },
+  16: { name: "Animation", slug: "animation" },
+  35: { name: "Comédie", slug: "comedie" },
+  80: { name: "Crime", slug: "crime" },
+  99: { name: "Documentaire", slug: "documentaire" },
+  18: { name: "Drame", slug: "drame" },
+  10751: { name: "Familial", slug: "familial" },
+  14: { name: "Fantastique", slug: "fantastique" },
+  36: { name: "Histoire", slug: "histoire" },
+  27: { name: "Horreur", slug: "horreur" },
+  10402: { name: "Musique", slug: "musique" },
+  9648: { name: "Mystère", slug: "mystere" },
+  10749: { name: "Romance", slug: "romance" },
+  878: { name: "Science-Fiction", slug: "science-fiction" },
+  53: { name: "Thriller", slug: "thriller" },
+  10752: { name: "Guerre", slug: "guerre" },
+  37: { name: "Western", slug: "western" },
+};
+
+/** Construit les en-têtes / paramètres d'authentification TMDB. */
+function buildTmdbRequest(path: string, params: Record<string, string> = {}): { url: string; headers: Record<string, string> } {
+  const token = process.env.TMDB_API_TOKEN; // v4 (Bearer)
+  const key = process.env.TMDB_API_KEY; // v3 (api_key)
+
+  const url = new URL(`${TMDB_BASE}${path}`);
+  url.searchParams.set("language", "fr-FR");
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+
+  const headers: Record<string, string> = { accept: "application/json" };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  } else if (key) {
+    url.searchParams.set("api_key", key);
+  } else {
+    throw new Error(
+      "Authentification TMDB manquante : renseignez TMDB_API_TOKEN (v4) ou TMDB_API_KEY (v3) dans l'environnement."
+    );
+  }
+
+  return { url: url.toString(), headers };
+}
+
+async function tmdbFetch<T>(path: string, params: Record<string, string> = {}): Promise<T> {
+  const { url, headers } = buildTmdbRequest(path, params);
+  const res = await fetch(url, { headers, next: { revalidate: 3600 } });
+  if (!res.ok) {
+    throw new Error(`TMDB a répondu ${res.status} : ${await res.text()}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+/** Récupère une page de films populaires. */
+export function fetchPopularMovies(page = 1): Promise<TmdbPopularResponse> {
+  return tmdbFetch<TmdbPopularResponse>("/movie/popular", { page: String(page) });
+}
+
+/** Récupère une page de séries populaires. */
+export async function fetchPopularTv(page = 1): Promise<TmdbPopularResponse> {
+  // /tv/popular a la même forme de réponse utile
+  return tmdbFetch<TmdbPopularResponse>("/tv/popular", { page: String(page) });
+}
+
+/** Génère un slug URL propre à partir d'un titre (accents retirés). */
+export function slugify(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/['’]/g, "-")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+export interface MediaDraft {
+  title: string;
+  slug: string;
+  synopsis: string;
+  type: "MOVIE" | "SERIES";
+  accessLevel: "FREE" | "PREMIUM";
+  releaseYear: number;
+  durationMinutes: number | null;
+  posterUrl: string | null;
+  backdropUrl: string | null;
+  categorySlugs: string[];
+}
+
+/**
+ * Convertit un film/série TMDB en ébauche de média exploitable par Prisma.
+ * Gère les deux formes de champs : films (title/release_date) et séries
+ * (name/first_air_date). `isPublished` reste false côté appelant.
+ */
+export function tmdbToMediaDraft(
+  item: TmdbMovie,
+  type: "MOVIE" | "SERIES" = "MOVIE"
+): MediaDraft {
+  const rawTitle = (type === "SERIES" ? item.name : item.title) || item.title || item.name || "";
+  const rawDate = (type === "SERIES" ? item.first_air_date : item.release_date) || item.release_date || item.first_air_date || "";
+  const year = rawDate ? Number(rawDate.slice(0, 4)) : new Date().getFullYear();
+
+  const categorySlugs = (item.genre_ids || [])
+    .map((id) => TMDB_GENRES[id]?.slug)
+    .filter((s): s is string => Boolean(s));
+
+  return {
+    title: rawTitle,
+    slug: slugify(rawTitle),
+    synopsis: item.overview?.trim() || "Synopsis indisponible pour le moment.",
+    type,
+    accessLevel: "FREE",
+    releaseYear: Number.isFinite(year) ? year : new Date().getFullYear(),
+    durationMinutes: null,
+    posterUrl: item.poster_path ? `${TMDB_IMG}/w500${item.poster_path}` : null,
+    backdropUrl: item.backdrop_path ? `${TMDB_IMG}/original${item.backdrop_path}` : null,
+    categorySlugs,
+  };
+}
+
+// ─── Séries : détails, saisons et épisodes ──────────────────────────────────
+
+/** Épisode tel que renvoyé par /tv/{id}/season/{n} (champs utiles). */
+export interface TmdbEpisode {
+  id: number;
+  episode_number: number;
+  season_number: number;
+  name: string;
+  overview: string;
+  air_date: string | null;
+  still_path: string | null;
+  runtime: number | null;
+}
+
+/** Saison telle que renvoyée par /tv/{id}/season/{n} (champs utiles). */
+export interface TmdbSeason {
+  id: number;
+  season_number: number;
+  name: string;
+  episodes: TmdbEpisode[];
+}
+
+/** Détails d'une série tels que renvoyés par /tv/{id} (champs utiles). */
+export interface TmdbTvDetails {
+  id: number;
+  name: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  first_air_date: string;
+  number_of_seasons: number;
+  number_of_episodes: number;
+  genre_ids: number[];
+}
+
+/** Récupère les détails d'une série (nombre de saisons, etc.). */
+export function fetchTvDetails(seriesId: number): Promise<TmdbTvDetails> {
+  return tmdbFetch<TmdbTvDetails>(`/tv/${seriesId}`);
+}
+
+/** Récupère une saison précise avec la liste de ses épisodes. */
+export function fetchTvSeason(seriesId: number, seasonNumber: number): Promise<TmdbSeason> {
+  return tmdbFetch<TmdbSeason>(`/tv/${seriesId}/season/${seasonNumber}`);
+}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { createBunnyUploadSession } from "@/lib/bunny-stream";
 
 export async function POST(request: Request) {
   try {
@@ -11,41 +12,45 @@ export async function POST(request: Request) {
       );
     }
 
-    const { maxDurationSeconds = 7200 } = await request.json().catch(() => ({}));
+    const body = await request.json().catch(() => ({}));
+    const { title = "Sans titre", fileSizeBytes = 0 } = body as {
+      title?: string;
+      fileSizeBytes?: number;
+    };
 
-    // En environnement de production avec credentials Cloudflare configurés :
-    if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_STREAM_API_TOKEN) {
-      const cfRes = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/stream/direct_upload`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${process.env.CLOUDFLARE_STREAM_API_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            maxDurationSeconds,
-            requireSignedURLs: true,
-          }),
-        }
-      );
-
-      const cfData = await cfRes.json();
-      if (cfData.success) {
+    // ── Bunny.net Stream : création de la vidéo + session d'upload TUS ──────
+    if (process.env.BUNNY_STREAM_LIBRARY_ID && process.env.BUNNY_STREAM_API_KEY) {
+      try {
+        const session = await createBunnyUploadSession(title, fileSizeBytes);
         return NextResponse.json({
-          uploadUrl: cfData.result.uploadURL,
-          videoUid: cfData.result.uid,
+          success: true,
+          provider: "bunny",
+          videoId: session.videoId,          // → à stocker dans media.videoStreamId
+          uploadUrl: session.uploadUrl,       // → URL TUS à utiliser côté client
+          // Headers TUS requis côté client (à inclure dans toutes les requêtes TUS) :
+          tusHeaders: {
+            "Tus-Resumable": "1.0.0",
+            "Content-Type": "application/offset+octet-stream",
+          },
+          // Pour l'upload TUS Bunny, le client doit aussi envoyer dans chaque requête :
+          // AuthorizationSignature, AuthorizationExpire, VideoId, LibraryId
+          // Ces valeurs sont à récupérer séparément ou calculées côté client.
+          message: "Session de téléversement Bunny.net initialisée.",
         });
+      } catch (bunnyError) {
+        console.error("Erreur création vidéo Bunny :", bunnyError);
+        // On passe au fallback si Bunny échoue
       }
     }
 
-    // Fallback environnement local de développement
-    const mockUid = `stream-${Date.now()}`;
+    // ── Fallback développement local ─────────────────────────────────────────
+    const mockId = `bunny-mock-${Date.now()}`;
     return NextResponse.json({
       success: true,
-      videoUid: mockUid,
-      uploadUrl: `https://upload.videodemo.local/tus/${mockUid}`,
-      message: "Session de téléversement direct initialisée.",
+      provider: "mock",
+      videoId: mockId,
+      uploadUrl: `https://video.bunnycdn.com/tusupload`,
+      message: "Mode développement : configurez BUNNY_STREAM_LIBRARY_ID et BUNNY_STREAM_API_KEY dans .env",
     });
   } catch (error) {
     console.error("Erreur direct upload :", error);

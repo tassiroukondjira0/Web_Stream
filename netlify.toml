@@ -1,0 +1,29 @@
+# Configuration de déploiement Netlify — Next.js 16 (App Router)
+# Doc : https://docs.netlify.com/frameworks/next-js/overview/
+
+[build]
+  # `prisma generate` DOIT précéder `next build` : le client Prisma n'est pas
+  # versionné et doit être régénéré dans l'environnement de build Netlify.
+  command = "prisma generate && next build"
+  publish = ".next"
+
+[build.environment]
+  # Next.js 16 requiert Node >= 20.9.0 — on épingle la 22 pour la reproductibilité.
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+
+# Netlify détecte automatiquement le framework Next.js et utilise son adaptateur
+# OpenNext : Server Components, ISR, Route Handlers, Middleware et Server Actions
+# sont pris en charge sans configuration supplémentaire.
+
+# ⚠️ Les variables d'environnement (DATABASE_URL, NEXTAUTH_SECRET, BUNNY_STREAM_*,
+#    TMDB_API_*, NEXT_PUBLIC_APP_URL…) ne doivent PAS être commitée ici.
+#    Renseignez-les dans : Netlify → Site configuration → Environment variables.
+
+# ─── En-têtes de sécurité pour les routes API ─────────────────────────────────
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"

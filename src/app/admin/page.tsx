@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ShieldCheck, Plus, Trash2, Film, CheckCircle2, AlertTriangle, Eye, Lock } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, Film, CheckCircle2, AlertTriangle, Eye, Lock, Download, Pencil } from "lucide-react";
 
 interface MediaRecord {
   id: string;
@@ -32,6 +32,23 @@ export default function AdminDashboardPage() {
   const [durationMinutes, setDurationMinutes] = useState(15);
   const [rightsValidUntil, setRightsValidUntil] = useState("2030-12-31");
   const [message, setMessage] = useState("");
+
+  // Import TMDB
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importType, setImportType] = useState<"MOVIE" | "SERIES">("MOVIE");
+  const [importPages, setImportPages] = useState(1);
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
+
+  // Édition / publication d'un média
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editSlug, setEditSlug] = useState("");
+  const [editVideoId, setEditVideoId] = useState("");
+  const [editAccessLevel, setEditAccessLevel] = useState("FREE");
+  const [editRightsUntil, setEditRightsUntil] = useState("2030-12-31");
+  const [editPublished, setEditPublished] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editMessage, setEditMessage] = useState("");
 
   const loadData = () => {
     fetch("/api/admin/medias")
@@ -104,6 +121,79 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const openEdit = (media: MediaRecord) => {
+    setEditSlug(media.slug);
+    setEditVideoId("");
+    setEditAccessLevel(media.accessLevel || "FREE");
+    setEditRightsUntil(
+      media.rightsValidUntil ? media.rightsValidUntil.split("T")[0] : "2030-12-31"
+    );
+    setEditPublished(media.isPublished);
+    setEditMessage("");
+    setShowEditModal(true);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setEditMessage("");
+
+    try {
+      const res = await fetch("/api/admin/medias", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slug: editSlug,
+          videoStreamId: editVideoId.trim() || undefined,
+          accessLevel: editAccessLevel,
+          rightsValidUntil: editRightsUntil,
+          isPublished: editPublished,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setShowEditModal(false);
+        setMessage(data.message || "Média mis à jour.");
+        loadData();
+      } else {
+        setEditMessage(data.message || "Erreur lors de l'enregistrement.");
+      }
+    } catch {
+      setEditMessage("Erreur réseau.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleImportTmdb = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setImporting(true);
+    setImportMessage("");
+
+    try {
+      const res = await fetch("/api/admin/import/tmdb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: importType, pages: importPages }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setImportMessage(data.message || "Import terminé.");
+        setShowImportModal(false);
+        setMessage(data.message || "Import TMDB terminé.");
+        loadData();
+      } else {
+        setImportMessage(data.message || "Erreur lors de l'import TMDB.");
+      }
+    } catch {
+      setImportMessage("Erreur réseau lors de l'import.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-24 text-center text-sm text-zinc-400">
@@ -148,13 +238,22 @@ export default function AdminDashboardPage() {
           </h1>
         </div>
 
-        <button
-          onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-red-600/30 hover:bg-red-500 transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          Ajouter une œuvre
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-800 px-4 py-2.5 text-xs font-semibold text-white hover:bg-zinc-700 transition-colors"
+          >
+            <Download className="h-4 w-4" />
+            Importer depuis TMDB
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-red-600/30 hover:bg-red-500 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Ajouter une œuvre
+          </button>
+        </div>
       </div>
 
       {message && (
@@ -251,6 +350,13 @@ export default function AdminDashboardPage() {
                       <Eye className="h-4 w-4" />
                     </Link>
                     <button
+                      onClick={() => openEdit(m)}
+                      className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                      title="Éditer / Publier"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
                       onClick={() => handleDelete(m.slug)}
                       className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-red-500/10 hover:text-red-400"
                       title="Supprimer"
@@ -264,6 +370,147 @@ export default function AdminDashboardPage() {
           </table>
         </div>
       </div>
+
+      {/* Modal d'édition / publication */}
+      {showEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-1">Éditer &amp; publier</h3>
+            <p className="text-xs text-zinc-400 mb-4 font-mono">/{editSlug}</p>
+            <form onSubmit={handleSave} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-zinc-300 mb-1">ID vidéo (Bunny/Cloudflare Stream)</label>
+                <input
+                  type="text"
+                  value={editVideoId}
+                  onChange={(e) => setEditVideoId(e.target.value)}
+                  placeholder="Ex: 1a2b3c4d-....  (laisser vide si déjà défini)"
+                  className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white font-mono"
+                />
+                <p className="mt-1 text-[11px] text-zinc-500">Collez l&apos;identifiant de la vidéo licenciée. Requis pour pouvoir publier.</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-zinc-300 mb-1">Niveau d&apos;accès</label>
+                  <select
+                    value={editAccessLevel}
+                    onChange={(e) => setEditAccessLevel(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
+                  >
+                    <option value="FREE">Gratuit</option>
+                    <option value="PREMIUM">Premium</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-zinc-300 mb-1">Validité des droits</label>
+                  <input
+                    type="date"
+                    value={editRightsUntil}
+                    onChange={(e) => setEditRightsUntil(e.target.value)}
+                    className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
+                  />
+                </div>
+              </div>
+
+              <label className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 p-3 text-zinc-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editPublished}
+                  onChange={(e) => setEditPublished(e.target.checked)}
+                  className="h-4 w-4 accent-red-600"
+                />
+                Publier cette fiche (visible publiquement)
+              </label>
+
+              {editMessage && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-amber-300">
+                  {editMessage}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  className="rounded-xl border border-white/10 px-4 py-2 text-zinc-300 hover:bg-zinc-800"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-xl bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving ? "Enregistrement..." : "Enregistrer"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'import TMDB */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-1">Importer depuis TMDB</h3>
+            <p className="text-xs text-zinc-400 mb-4">
+              Récupère les métadonnées et affiches officielles. Les fiches sont créées en <span className="text-amber-400 font-semibold">brouillon</span> : vous devrez ajouter une vidéo licenciée puis publier.
+            </p>
+            <form onSubmit={handleImportTmdb} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-zinc-300 mb-1">Type de contenu</label>
+                <select
+                  value={importType}
+                  onChange={(e) => setImportType(e.target.value as "MOVIE" | "SERIES")}
+                  className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
+                >
+                  <option value="MOVIE">Films populaires</option>
+                  <option value="SERIES">Séries (avec saisons &amp; épisodes)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-zinc-300 mb-1">Nombre de pages (20 titres/page)</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={importPages}
+                  onChange={(e) => setImportPages(Math.min(Math.max(Number(e.target.value) || 1, 1), 5))}
+                  className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
+                />
+                <p className="mt-1 text-[11px] text-zinc-500">Maximum 5 pages. Pour les séries, chaque fiche déclenche aussi l&apos;import des saisons/épisodes.</p>
+              </div>
+
+              {importMessage && (
+                <div className="rounded-xl border border-white/10 bg-black/40 p-3 text-zinc-300">
+                  {importMessage}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-4 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setShowImportModal(false)}
+                  className="rounded-xl border border-white/10 px-4 py-2 text-zinc-300 hover:bg-zinc-800"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={importing}
+                  className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="h-4 w-4" />
+                  {importing ? "Import en cours..." : "Lancer l'import"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal d'ajout */}
       {showModal && (
