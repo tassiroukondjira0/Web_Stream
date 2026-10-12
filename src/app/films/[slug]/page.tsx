@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getMediaBySlug, getSimilarMedias, getAllMedias } from "@/lib/catalog";
 import { VideoPlayer } from "@/components/VideoPlayer";
-import { ShieldCheck, Film, Calendar, Clock, Share2, Bookmark } from "lucide-react";
+import { BookmarkButton } from "@/components/BookmarkButton";
+import { ShareButton } from "@/components/ShareButton";
+import { ShieldCheck, Film, Calendar, Clock } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -183,14 +185,8 @@ async function FilmContent({ params }: PageProps) {
 
           {/* Boutons d'interaction */}
           <div className="mt-8 flex flex-wrap gap-3">
-            <button className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-white/10 px-4 py-2.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 hover:text-white transition-colors">
-              <Bookmark className="h-4 w-4" />
-              Ajouter à mes favoris
-            </button>
-            <button className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-white/10 px-4 py-2.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 hover:text-white transition-colors">
-              <Share2 className="h-4 w-4" />
-              Partager ce film
-            </button>
+            <BookmarkButton mediaSlug={film.slug} />
+            <ShareButton title={film.title} />
           </div>
         </div>
 
