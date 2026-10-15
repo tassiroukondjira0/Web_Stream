@@ -1,15 +1,17 @@
-import { CheckoutSessionOperation } from "@hachther/mesomb";
+import crypto from "crypto";
 import { PaymentStatus, Prisma, Role, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Paiements du Pass Premium via MeSomb (agrégateur Mobile Money :
- * Wave, Orange Money, MTN MoMo, Moov, Airtel...).
+ * Paiements du Pass Premium via PayDunya (agrégateur : carte bancaire
+ * internationale + Mobile Money — Wave, Orange Money, Free Money…).
  *
  * Principe (CDC §13) : une transaction n'est validée qu'après confirmation du
- * prestataire. La confirmation arrive par webhook signé (`/api/payment/webhook`)
- * ou, à défaut, par vérification serveur du statut de la session
+ * prestataire. La confirmation arrive par IPN (`/api/payment/webhook`) ou, à
+ * défaut, par vérification serveur du statut de la facture
  * (`/api/payment/verify`). Jamais depuis le retour navigateur seul.
+ *
+ * API v1 HTTP/JSON : https://developers.paydunya.com/doc/EN/http_json
  */
 
 export type PremiumPlan = "MONTHLY" | "YEARLY";
@@ -24,52 +26,191 @@ export function isPremiumPlan(value: unknown): value is PremiumPlan {
   return value === "MONTHLY" || value === "YEARLY";
 }
 
-/**
- * MeSomb n'accepte que de l'ASCII dans le corps signé du Checkout.
- *
- * Le prestataire (Django) recalcule le hash du payload sur une forme ré-encodée
- * en ASCII ; tout caractère non-ASCII (accents, tiret cadratin « — », apostrophes
- * typographiques…) fait diverger la signature et renvoie « Mauvaise signature ».
- * On translittère donc toute chaîne envoyée dans le corps de la requête.
- */
-export function toAscii(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[\u2018\u2019\u02bc]/g, "'")
-    .replace(/[\u201c\u201d]/g, '"')
-    .replace(/[\u2013\u2014]/g, "-")
-    .replace(/\u2026/g, "...")
-    .replace(/[^\x20-\x7e]/g, "")
-    .trim();
-}
+const PAYDUNYA_TEST_BASE = "https://app.paydunya.com/sandbox-api/v1";
+const PAYDUNYA_LIVE_BASE = "https://app.paydunya.com/api/v1";
 
 function requireEnv(name: string): string {
   const value = process.env[name];
   if (!value || value.trim() === "") {
     throw new Error(
-      `${name} est requis pour les paiements MeSomb. Renseignez-le dans .env (voir business.mesomb.com).`
+      `${name} est requis pour les paiements PayDunya. Renseignez-le dans .env (voir paydunya.com → Integration API).`
     );
   }
   return value.trim();
 }
 
-/** Devise de collecte configurée pour le compte MeSomb. */
+/** Mode PayDunya : "test" (sandbox) par défaut, "live" en production. */
+export function getPaydunyaMode(): "test" | "live" {
+  return process.env.PAYDUNYA_MODE?.trim().toLowerCase() === "live" ? "live" : "test";
+}
+
+function getPaydunyaBaseUrl(): string {
+  const override = process.env.PAYDUNYA_BASE_URL?.trim();
+  if (override) return override.replace(/\/+$/, "");
+  return getPaydunyaMode() === "live" ? PAYDUNYA_LIVE_BASE : PAYDUNYA_TEST_BASE;
+}
+
+/** En-têtes d'authentification de l'API PayDunya (serveur uniquement). */
+function getPaydunyaHeaders(): Record<string, string> {
+  return {
+    "Content-Type": "application/json",
+    "PAYDUNYA-MASTER-KEY": requireEnv("PAYDUNYA_MASTER_KEY"),
+    "PAYDUNYA-PRIVATE-KEY": requireEnv("PAYDUNYA_PRIVATE_KEY"),
+    "PAYDUNYA-TOKEN": requireEnv("PAYDUNYA_TOKEN"),
+  };
+}
+
+/** Devise de facturation (le compte PayDunya détermine la devise réelle). */
 export function getPaymentCurrency(): string {
-  return process.env.MESOMB_CURRENCY?.trim() || "XOF";
+  return process.env.PAYDUNYA_CURRENCY?.trim() || "XOF";
 }
 
 /**
- * Client MeSomb pour les sessions de paiement hébergées (Checkout).
- * Le SDK gère la signature HMAC de chaque requête.
+ * Hash SHA-512 du Master Key : PayDunya l'inclut dans les IPN pour prouver
+ * leur origine. Sert de contrôle d'intégrité, jamais de source de vérité
+ * (le statut est toujours reconfirmé via l'endpoint `confirm`).
  */
-export function getCheckoutClient(): CheckoutSessionOperation {
-  return new CheckoutSessionOperation({
-    applicationKey: requireEnv("MESOMB_APPLICATION_KEY"),
-    accessKey: requireEnv("MESOMB_ACCESS_KEY"),
-    secretKey: requireEnv("MESOMB_SECRET_KEY"),
-    language: "fr",
+export function getPaydunyaHash(): string {
+  return crypto.createHash("sha512").update(requireEnv("PAYDUNYA_MASTER_KEY")).digest("hex");
+}
+
+/** Nom affiché du marchand sur la facture PayDunya. */
+function getStoreName(): string {
+  return (
+    process.env.PAYDUNYA_STORE_NAME?.trim() ||
+    process.env.NEXT_PUBLIC_APP_NAME?.trim() ||
+    "CinéMax"
+  );
+}
+
+/** Canaux affichés au guichet (vide = tous les moyens activés du compte). */
+function getPaydunyaChannels(): string[] {
+  const raw = process.env.PAYDUNYA_CHANNELS?.trim();
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((channel) => channel.trim())
+    .filter(Boolean);
+}
+
+export interface CreateInvoiceInput {
+  amount: number;
+  description: string;
+  returnUrl: string;
+  cancelUrl: string;
+  callbackUrl: string;
+  customData?: Record<string, unknown>;
+  customer?: { name?: string; email?: string; phone?: string };
+}
+
+export interface PaydunyaInvoice {
+  /** Jeton de facture — identifiant unique côté PayDunya (clé d'idempotence). */
+  token: string;
+  /** URL du guichet hébergé vers lequel rediriger l'utilisateur. */
+  url: string;
+  raw: unknown;
+}
+
+/** Résout l'URL de redirection retournée par la création de facture. */
+function resolveInvoiceUrl(data: Record<string, unknown>, token: string): string {
+  const candidates = [data.invoice_url, data.response_text];
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && /^https?:\/\//.test(candidate)) {
+      return candidate;
+    }
+  }
+  const host = getPaydunyaMode() === "live" ? "checkout" : "sandbox-checkout";
+  return `https://paydunya.com/${host}/invoice/${encodeURIComponent(token)}`;
+}
+
+/**
+ * Crée une facture de checkout hébergée chez PayDunya.
+ * L'utilisateur est ensuite redirigé vers `invoice.url` pour payer.
+ */
+export async function createPremiumInvoice(input: CreateInvoiceInput): Promise<PaydunyaInvoice> {
+  const channels = getPaydunyaChannels();
+
+  const body = {
+    invoice: {
+      total_amount: input.amount,
+      description: input.description,
+      items: {
+        item_0: {
+          name: input.description,
+          quantity: 1,
+          unit_price: String(input.amount),
+          total_price: String(input.amount),
+          description: "",
+        },
+      },
+      ...(channels.length > 0 ? { channels } : {}),
+      ...(input.customer
+        ? {
+            customer: {
+              ...(input.customer.name ? { name: input.customer.name } : {}),
+              ...(input.customer.email ? { email: input.customer.email } : {}),
+              ...(input.customer.phone ? { phone: input.customer.phone } : {}),
+            },
+          }
+        : {}),
+    },
+    store: { name: getStoreName() },
+    custom_data: input.customData ?? {},
+    actions: {
+      return_url: input.returnUrl,
+      cancel_url: input.cancelUrl,
+      callback_url: input.callbackUrl,
+    },
+  };
+
+  const response = await fetch(`${getPaydunyaBaseUrl()}/checkout-invoice/create`, {
+    method: "POST",
+    headers: getPaydunyaHeaders(),
+    body: JSON.stringify(body),
   });
+
+  const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (!data || data.response_code !== "00" || typeof data.token !== "string") {
+    const message = typeof data?.response_text === "string" ? data.response_text : "création refusée";
+    throw new Error(`PayDunya a refusé la création de la facture : ${message}`);
+  }
+
+  const token = data.token as string;
+  return { token, url: resolveInvoiceUrl(data, token), raw: data };
+}
+
+export interface PaydunyaConfirm {
+  /** Statut normalisé : COMPLETED | PENDING | CANCELLED | FAILED | "". */
+  status: string;
+  amount: number | null;
+  currency: string;
+  token: string;
+  customData: Record<string, unknown>;
+  raw: unknown;
+}
+
+/** Interroge le statut autoritatif d'une facture PayDunya. */
+export async function confirmInvoice(token: string): Promise<PaydunyaConfirm> {
+  const response = await fetch(
+    `${getPaydunyaBaseUrl()}/checkout-invoice/confirm/${encodeURIComponent(token)}`,
+    { method: "GET", headers: getPaydunyaHeaders() }
+  );
+
+  const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+
+  const invoice = (data?.invoice ?? {}) as Record<string, unknown>;
+  const amountRaw = invoice.total_amount;
+  const amount = amountRaw != null && amountRaw !== "" ? Number(amountRaw) : null;
+
+  return {
+    status: String(data?.status ?? "").toUpperCase(),
+    amount: amount != null && Number.isFinite(amount) ? amount : null,
+    currency: getPaymentCurrency(),
+    token: typeof invoice.token === "string" ? invoice.token : token,
+    customData: (data?.custom_data as Record<string, unknown> | undefined) ?? {},
+    raw: data,
+  };
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue | undefined {
@@ -78,7 +219,7 @@ function toJson(value: unknown): Prisma.InputJsonValue | undefined {
 }
 
 export interface ActivationInput {
-  /** Référence unique côté prestataire (id de la session de paiement). */
+  /** Référence unique côté prestataire (token de la facture PayDunya). */
   providerRef: string;
   /** Référence unique de l'événement, clé d'idempotence. */
   eventRef: string;
@@ -87,6 +228,7 @@ export interface ActivationInput {
   plan: PremiumPlan;
   amount?: number | null;
   currency?: string | null;
+  provider?: string;
   rawPayload?: unknown;
 }
 
@@ -99,13 +241,14 @@ export interface ActivationResult {
  * Active le Pass Premium de façon idempotente.
  *
  * - `Payment.providerRef` (unique) bloque un double débit.
- * - `PaymentEvent.eventRef` (unique) bloque un rejeu de webhook.
+ * - `PaymentEvent.eventRef` (unique) bloque un rejeu d'IPN.
  *
  * Dans une seule transaction : passage de l'utilisateur en SUBSCRIBER,
  * création de l'abonnement, validation du paiement, journalisation de l'événement.
  */
 export async function activatePremium(input: ActivationInput): Promise<ActivationResult> {
   const { providerRef, eventRef, eventType, userId, plan } = input;
+  const provider = input.provider || "PAYDUNYA";
   const amount = input.amount ?? PREMIUM_PLANS[plan].amount;
   const currency = input.currency || getPaymentCurrency();
   const rawPayload = toJson(input.rawPayload);
@@ -113,14 +256,14 @@ export async function activatePremium(input: ActivationInput): Promise<Activatio
   return prisma.$transaction(async (tx) => {
     const existingPayment = await tx.payment.findUnique({ where: { providerRef } });
 
-    // Déjà validé (webhook rejoué, ou webhook + vérification success_url).
+    // Déjà validé (IPN rejoué, ou IPN + vérification return_url).
     if (existingPayment?.status === PaymentStatus.PAID) {
       await tx.paymentEvent.upsert({
         where: { eventRef },
         update: { processed: true },
         create: {
           paymentId: existingPayment.id,
-          provider: "MESOMB",
+          provider,
           eventType,
           eventRef,
           processed: true,
@@ -152,7 +295,7 @@ export async function activatePremium(input: ActivationInput): Promise<Activatio
       update: {
         userId,
         subscriptionId: subscription.id,
-        provider: "MESOMB",
+        provider,
         amount,
         currency,
         status: PaymentStatus.PAID,
@@ -162,7 +305,7 @@ export async function activatePremium(input: ActivationInput): Promise<Activatio
       create: {
         userId,
         subscriptionId: subscription.id,
-        provider: "MESOMB",
+        provider,
         providerRef,
         amount,
         currency,
@@ -177,7 +320,7 @@ export async function activatePremium(input: ActivationInput): Promise<Activatio
       update: { paymentId: payment.id, processed: true, rawPayload },
       create: {
         paymentId: payment.id,
-        provider: "MESOMB",
+        provider,
         eventType,
         eventRef,
         processed: true,

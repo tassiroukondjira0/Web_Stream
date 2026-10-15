@@ -14,11 +14,13 @@ export const instant = false;
 export default async function PremiumSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ token?: string; session_id?: string }>;
 }) {
   await connection();
 
-  const { session_id } = await searchParams;
+  // PayDunya ajoute `?token=<token>` à l'URL de retour ; `session_id` reste
+  // accepté pour compatibilité.
+  const { token, session_id } = await searchParams;
 
-  return <PaymentStatus sessionId={session_id ?? null} />;
+  return <PaymentStatus sessionId={token ?? session_id ?? null} />;
 }

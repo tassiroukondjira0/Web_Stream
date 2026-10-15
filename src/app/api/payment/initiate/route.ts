@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { PaymentStatus } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { getAppUrl } from "@/lib/env";
-import { getCheckoutClient, getPaymentCurrency, isPremiumPlan, PREMIUM_PLANS, toAscii } from "@/lib/payments";
+import { createPremiumInvoice, getPaymentCurrency, isPremiumPlan, PREMIUM_PLANS } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Initiation du paiement du Pass Premium (MeSomb Checkout).
+ * Initiation du paiement du Pass Premium (PayDunya Checkout hébergé).
  *
- * Crée une session de paiement hébergée puis enregistre un `Payment` en attente.
- * La validation n'intervient qu'après confirmation du prestataire (webhook ou
+ * Crée une facture de paiement hébergée puis enregistre un `Payment` en attente.
+ * La validation n'intervient qu'après confirmation du prestataire (IPN ou
  * vérification serveur) — jamais sur le simple retour navigateur.
  */
 export async function POST(request: Request) {
@@ -30,55 +30,37 @@ export async function POST(request: Request) {
     const currency = getPaymentCurrency();
     const appUrl = getAppUrl();
 
-    const [firstName, ...lastNameParts] = (user.name || "").trim().split(/\s+/);
-    const firstNameAscii = toAscii(firstName || "");
-    const lastNameAscii = toAscii(lastNameParts.join(" "));
-
-    const client = getCheckoutClient();
-    const session = await client.create({
+    const invoice = await createPremiumInvoice({
       amount,
-      currency,
-      // Le pays/devise du compte MeSomb peut différer de la devise d'affichage
-      // (ex. compte XAF, collecte XOF à parité) : on autorise la conversion.
-      conversion: true,
-      description: toAscii(`${label} - acces integral au catalogue`),
-      success_url: `${appUrl}/premium/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/premium/cancel`,
-      client_reference_id: user.id,
-      metadata: { userId: user.id, plan },
-      call_to_action: "subscribe",
+      description: `${label} - acces integral au catalogue`,
+      returnUrl: `${appUrl}/premium/success`,
+      cancelUrl: `${appUrl}/premium/cancel`,
+      callbackUrl: `${appUrl}/api/payment/webhook`,
+      customData: { userId: user.id, plan },
       customer: {
+        name: user.name || undefined,
         email: user.email,
-        first_name: firstNameAscii || undefined,
-        last_name: lastNameAscii || undefined,
       },
     });
 
-    if (!session.url) {
-      console.error("MeSomb : session de paiement sans URL", session.getData());
-      return NextResponse.json(
-        { error: "Le prestataire n'a pas retourné de lien de paiement." },
-        { status: 502 }
-      );
-    }
-
-    // Trace locale en attente : le webhook retrouvera la ligne via providerRef.
+    // Trace locale en attente : l'IPN (ou la vérification) retrouvera la ligne
+    // via providerRef (token de facture PayDunya).
     await prisma.payment.create({
       data: {
         userId: user.id,
-        provider: "MESOMB",
-        providerRef: session.id,
+        provider: "PAYDUNYA",
+        providerRef: invoice.token,
         amount,
         currency,
         status: PaymentStatus.PENDING,
         plan,
-        rawPayload: { sessionId: session.id, plan, status: session.status },
+        rawPayload: { token: invoice.token, plan, provider: "PAYDUNYA" },
       },
     });
 
-    return NextResponse.json({ url: session.url, sessionId: session.id, provider: "MESOMB" });
+    return NextResponse.json({ url: invoice.url, sessionId: invoice.token, provider: "PAYDUNYA" });
   } catch (error) {
-    console.error("Erreur initiation paiement MeSomb :", error);
+    console.error("Erreur initiation paiement PayDunya :", error);
     return NextResponse.json(
       { error: "Impossible d'initier le paiement. Réessayez plus tard." },
       { status: 500 }

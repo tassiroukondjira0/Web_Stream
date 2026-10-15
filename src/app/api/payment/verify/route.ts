@@ -6,27 +6,23 @@ import {
   sessionCookieOptions,
   signSessionToken,
 } from "@/lib/auth";
-import { activatePremium, getCheckoutClient, isPremiumPlan } from "@/lib/payments";
+import { activatePremium, confirmInvoice, isPremiumPlan } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Vérification serveur du statut d'une session de paiement MeSomb.
+ * Vérification serveur du statut d'une facture PayDunya.
  *
- * Utilisée au retour du navigateur (`success_url`). Sert de repli lorsque le
- * webhook n'est pas joignable (notamment en développement local sans URL
- * publique) : le statut est interrogé directement auprès du prestataire, jamais
- * déduit du retour du navigateur.
+ * Utilisée au retour du navigateur (`return_url`, PayDunya y ajoute
+ * `?token=<token>`). Sert de repli lorsque l'IPN n'est pas joignable (notamment
+ * en développement local sans URL publique) : le statut est interrogé
+ * directement auprès du prestataire, jamais déduit du retour navigateur.
  *
  * En cas de succès confirmé, l'abonnement est activé et le cookie de session est
  * réémis avec le rôle SUBSCRIBER (le rôle est figé dans le JWT).
  */
 
-const SUCCESS_STATUSES = new Set(["SUCCESS", "SUCCEEDED", "COMPLETED", "COMPLETE", "PAID"]);
-const FAILED_STATUSES = new Set(["FAILED", "CANCELED", "CANCELLED", "EXPIRED", "INCOMPLETE"]);
-
-function normalizeStatus(status: string | undefined): string {
-  return (status || "").trim().toUpperCase();
-}
+const SUCCESS_STATUS = "COMPLETED";
+const FAILED_STATUSES = new Set(["CANCELLED", "CANCELED", "FAILED"]);
 
 export async function GET(request: Request) {
   // Lecture du cookie hors du try : lors du prérendu, le rejet de `cookies()`
@@ -38,12 +34,18 @@ export async function GET(request: Request) {
   }
 
   try {
-    const sessionId = new URL(request.url).searchParams.get("session_id");
-    if (!sessionId) {
-      return NextResponse.json({ error: "Paramètre session_id manquant." }, { status: 400 });
-    }
+    const params = new URL(request.url).searchParams;
+    const token = params.get("token") || params.get("session_id");
 
-    const payment = await prisma.payment.findUnique({ where: { providerRef: sessionId } });
+    // Sans token (return_url sans paramètre), on retombe sur la facture en
+    // attente la plus récente de l'utilisateur.
+    const payment = token
+      ? await prisma.payment.findUnique({ where: { providerRef: token } })
+      : await prisma.payment.findFirst({
+          where: { userId: user.id, status: "PENDING" },
+          orderBy: { createdAt: "desc" },
+        });
+
     if (!payment || payment.userId !== user.id) {
       return NextResponse.json({ error: "Paiement introuvable." }, { status: 404 });
     }
@@ -56,23 +58,26 @@ export async function GET(request: Request) {
     if (payment.status === "PAID") {
       const res = NextResponse.json({ status: "SUCCESS", premium: true, plan: payment.plan });
       if (hasPremiumAccess(user.role)) return res;
-      const token = await signSessionToken({ ...user, role: "SUBSCRIBER" });
-      res.cookies.set(COOKIE_NAME, token, sessionCookieOptions());
+      const token2 = await signSessionToken({ ...user, role: "SUBSCRIBER" });
+      res.cookies.set(COOKIE_NAME, token2, sessionCookieOptions());
       return res;
     }
 
-    const client = getCheckoutClient();
-    const session = await client.retrieve(sessionId);
-    const providerStatus = normalizeStatus(session.status);
+    const confirmed = await confirmInvoice(payment.providerRef);
+    const providerStatus = confirmed.status;
 
     if (FAILED_STATUSES.has(providerStatus)) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: "FAILED" },
+      });
       return NextResponse.json(
         { status: providerStatus || "FAILED", premium: false, plan: payment.plan, final: true },
         { status: 200 }
       );
     }
 
-    if (!SUCCESS_STATUSES.has(providerStatus)) {
+    if (providerStatus !== SUCCESS_STATUS) {
       return NextResponse.json(
         { status: providerStatus || "PENDING", premium: false, plan: payment.plan, final: false },
         { status: 200 }
@@ -80,24 +85,25 @@ export async function GET(request: Request) {
     }
 
     await activatePremium({
-      providerRef: session.id || sessionId,
-      eventRef: `verify_${session.id || sessionId}`,
-      eventType: "checkout.session.verified",
+      providerRef: confirmed.token || payment.providerRef,
+      eventRef: `verify_${payment.providerRef}`,
+      eventType: "invoice.verified",
       userId: user.id,
       plan: payment.plan,
-      amount: session.amount ?? payment.amount,
-      currency: session.currency ?? payment.currency,
-      rawPayload: session.getData(),
+      amount: confirmed.amount ?? payment.amount,
+      currency: confirmed.currency ?? payment.currency,
+      provider: "PAYDUNYA",
+      rawPayload: confirmed.raw,
     });
 
     const res = NextResponse.json({ status: "SUCCESS", premium: true, plan: payment.plan });
     if (!hasPremiumAccess(user.role)) {
-      const token = await signSessionToken({ ...user, role: "SUBSCRIBER" });
-      res.cookies.set(COOKIE_NAME, token, sessionCookieOptions());
+      const sessionToken = await signSessionToken({ ...user, role: "SUBSCRIBER" });
+      res.cookies.set(COOKIE_NAME, sessionToken, sessionCookieOptions());
     }
     return res;
   } catch (error) {
-    console.error("Erreur vérification paiement MeSomb :", error);
+    console.error("Erreur vérification paiement PayDunya :", error);
     return NextResponse.json({ error: "Vérification du paiement impossible." }, { status: 500 });
   }
 }

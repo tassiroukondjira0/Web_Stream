@@ -21,7 +21,6 @@
     "deploy": "vercel --prod"
   },
   "dependencies": {
-    "@hachther/mesomb": "^3.0.2",
     "@prisma/client": "6.4.1",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.12",

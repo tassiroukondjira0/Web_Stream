@@ -1,122 +1,102 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import { getPaymentCurrency, isPremiumPlan, activatePremium } from "@/lib/payments";
+import { activatePremium, confirmInvoice, getPaydunyaHash, getPaymentCurrency, isPremiumPlan } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Webhook de paiement MeSomb (CDC §13).
+ * IPN de paiement PayDunya (CDC §13).
  *
  * Critère : "Une transaction n'est validée qu'après confirmation du prestataire".
  *
  * Sécurité :
- *  - vérification de la signature `X-MeSomb-Webhook-Signature` (HMAC-SHA256 du
- *    corps brut préfixé de l'horodatage, comparaison à temps constant) ;
- *  - rejet des horodatages trop anciens (anti-rejeu) ;
- *  - idempotence via `PaymentEvent.eventRef` (unique).
+ *  - PayDunya POSTe un corps `application/x-www-form-urlencoded` contenant un
+ *    champ `data` (JSON). Le champ `hash` vaut SHA-512 du Master Key : il prouve
+ *    l'origine mais ne lie PAS le contenu (valeur statique). On ne s'y fie donc
+ *    jamais pour le statut : l'IPN ne sert que de déclencheur.
+ *  - Le statut autoritatif est TOUJOURS reconfirmé via `checkout-invoice/confirm`.
+ *  - Idempotence via `PaymentEvent.eventRef` (unique).
  */
 
-const TIMESTAMP_TOLERANCE_SECONDS = 300;
+const SUCCESS_STATUS = "COMPLETED";
 
-/** Vérifie la signature HMAC-SHA256 au format `t=<ts>,v1=<hex>`. */
-function verifySignature(rawBody: string, signatureHeader: string, secret: string): boolean {
-  const parts = signatureHeader.split(",").map((part) => part.trim());
-  const timestampPart = parts.find((part) => part.startsWith("t="));
-  const signaturePart = parts.find((part) => part.startsWith("v1="));
-
-  if (!timestampPart || !signaturePart) return false;
-
-  const timestamp = timestampPart.slice(2);
-  const received = signaturePart.slice(3);
-  const timestampNumber = Number(timestamp);
-
-  if (!Number.isFinite(timestampNumber)) return false;
-
-  const age = Math.abs(Math.floor(Date.now() / 1000) - timestampNumber);
-  if (age > TIMESTAMP_TOLERANCE_SECONDS) return false;
-
-  const expected = crypto
-    .createHmac("sha256", secret)
-    .update(`${timestamp}.${rawBody}`, "utf8")
-    .digest("hex");
-
-  const receivedBuffer = Buffer.from(received, "hex");
-  const expectedBuffer = Buffer.from(expected, "hex");
-
-  if (receivedBuffer.length !== expectedBuffer.length) return false;
-  return crypto.timingSafeEqual(receivedBuffer, expectedBuffer);
-}
-
-/** Un événement est finalisé s'il signale un succès de paiement. */
-function isSuccessfulEvent(eventType: string, status: string): boolean {
-  const normalizedType = eventType.toLowerCase();
-  const normalizedStatus = status.toLowerCase();
-
-  if (normalizedStatus) {
-    if (["succeeded", "success", "completed", "complete", "paid"].includes(normalizedStatus)) {
-      return true;
-    }
-    if (["pending", "processing", "failed", "canceled", "cancelled", "expired"].includes(normalizedStatus)) {
-      return false;
+/** Extrait la facture (token + statut éventuel) du corps de l'IPN. */
+function parseNotification(rawBody: string): Record<string, unknown> | null {
+  // Cas standard PayDunya : form-urlencoded avec un champ `data` = JSON.
+  const params = new URLSearchParams(rawBody);
+  const dataField = params.get("data");
+  if (dataField) {
+    try {
+      return JSON.parse(dataField) as Record<string, unknown>;
+    } catch {
+      return null;
     }
   }
+  // Repli : certains environnements transmettent directement du JSON.
+  try {
+    return JSON.parse(rawBody) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
-  return (
-    normalizedType.includes("succeeded") ||
-    normalizedType.includes("success") ||
-    normalizedType.includes("completed")
-  );
+/** Contrôle d'intégrité (facultatif) : le hash doit valoir SHA-512 du Master Key. */
+function isAuthenticHash(hash: unknown, expected: string): boolean {
+  if (typeof hash !== "string" || hash.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(expected));
 }
 
 export async function POST(request: Request) {
   try {
     const rawBody = await request.text();
-    const secret = process.env.MESOMB_WEBHOOK_SECRET?.trim();
-    const signatureHeader = request.headers.get("x-mesomb-webhook-signature");
+    const payload = parseNotification(rawBody);
 
-    if (secret) {
-      if (!signatureHeader || !verifySignature(rawBody, signatureHeader, secret)) {
-        return NextResponse.json({ error: "Signature de webhook invalide." }, { status: 401 });
-      }
-    } else if (process.env.NODE_ENV === "production") {
-      console.error("MESOMB_WEBHOOK_SECRET manquant : webhook refusé en production.");
-      return NextResponse.json({ error: "Configuration de paiement incomplète." }, { status: 500 });
-    } else {
-      console.warn("⚠️ MESOMB_WEBHOOK_SECRET absent : signature non vérifiée (développement).");
-    }
-
-    let payload: Record<string, unknown>;
-    try {
-      payload = JSON.parse(rawBody);
-    } catch {
+    if (!payload) {
       return NextResponse.json({ error: "Corps de requête illisible." }, { status: 400 });
     }
 
-    const eventId = (request.headers.get("x-mesomb-webhook-event-id") || payload.id) as string | undefined;
-    const eventType = String(payload.event_type || payload.type || "");
-    const data = (payload.data ?? {}) as Record<string, unknown>;
-    const object = (data.object ?? {}) as Record<string, unknown>;
-    const metadata = (object.metadata ?? {}) as Record<string, unknown>;
+    const invoice = (payload.invoice ?? {}) as Record<string, unknown>;
+    const token = typeof invoice.token === "string" ? invoice.token : undefined;
 
-    const status = String(object.status || payload.status || "");
-    const providerRef = String(object.id || object.reference || "");
-    const currency = (object.currency as string | undefined) || getPaymentCurrency();
-    const amount =
-      typeof object.amount === "number" ? object.amount : object.amount ? Number(object.amount) : null;
+    if (!token) {
+      return NextResponse.json({ error: "Facture introuvable dans la notification." }, { status: 400 });
+    }
 
-    if (!isSuccessfulEvent(eventType, status)) {
+    // Contrôle d'origine (le statut reste reconfirmé ci-dessous).
+    const masterKey = process.env.PAYDUNYA_MASTER_KEY?.trim();
+    if (masterKey) {
+      let expected = "";
+      try {
+        expected = getPaydunyaHash();
+      } catch {
+        expected = "";
+      }
+      if (expected && payload.hash != null && !isAuthenticHash(payload.hash, expected)) {
+        return NextResponse.json({ error: "Hash de notification invalide." }, { status: 401 });
+      }
+    } else if (process.env.NODE_ENV === "production") {
+      console.error("PAYDUNYA_MASTER_KEY manquant : IPN refusé en production.");
+      return NextResponse.json({ error: "Configuration de paiement incomplète." }, { status: 500 });
+    }
+
+    // Statut autoritatif : on ne fait jamais confiance au corps de l'IPN.
+    const confirmed = await confirmInvoice(token);
+
+    if (confirmed.status !== SUCCESS_STATUS) {
       return NextResponse.json(
-        { received: true, status: "ignored", message: "Événement non finalisé ignoré." },
+        { received: true, status: "ignored", message: "Paiement non finalisé ignoré." },
         { status: 200 }
       );
     }
 
     // Retrouve la ligne en attente créée à l'initiation.
-    const payment = providerRef
-      ? await prisma.payment.findUnique({ where: { providerRef } })
-      : null;
+    const payment = await prisma.payment.findUnique({ where: { providerRef: token } });
 
-    const userId = payment?.userId || (metadata.userId as string | undefined) || (object.client_reference_id as string | undefined);
-    const planCandidate = payment?.plan || metadata.plan;
+    const customData = (confirmed.customData ?? {}) as Record<string, unknown>;
+    const userId =
+      payment?.userId ||
+      (customData.userId as string | undefined) ||
+      (payload.custom_data as Record<string, unknown> | undefined)?.userId as string | undefined;
+    const planCandidate = payment?.plan || customData.plan || (payload.custom_data as Record<string, unknown> | undefined)?.plan;
 
     if (!userId || !isPremiumPlan(planCandidate)) {
       return NextResponse.json(
@@ -126,18 +106,19 @@ export async function POST(request: Request) {
     }
 
     const { activated, alreadyProcessed } = await activatePremium({
-      providerRef: payment?.providerRef || providerRef || `mesomb_${eventId}`,
-      eventRef: eventId || `mesomb_${providerRef}`,
-      eventType: eventType || "payment.succeeded",
+      providerRef: token,
+      eventRef: `paydunya_${token}`,
+      eventType: "invoice.completed",
       userId,
       plan: planCandidate,
-      amount,
-      currency,
-      rawPayload: object,
+      amount: confirmed.amount,
+      currency: confirmed.currency || getPaymentCurrency(),
+      provider: "PAYDUNYA",
+      rawPayload: confirmed.raw,
     });
 
     console.log(
-      `💳 [MESOMB] ${eventType} — user ${userId} (${planCandidate}) — ${
+      `💳 [PAYDUNYA] invoice.completed — user ${userId} (${planCandidate}) — ${
         activated ? "ACTIVÉ" : alreadyProcessed ? "déjà traité" : "ignoré"
       }`
     );
@@ -147,7 +128,7 @@ export async function POST(request: Request) {
       status: activated ? "ACTIVATED" : alreadyProcessed ? "ALREADY_PROCESSED" : "OK",
     });
   } catch (error) {
-    console.error("Erreur webhook paiement :", error);
+    console.error("Erreur IPN paiement PayDunya :", error);
     return NextResponse.json({ error: "Webhook processing error" }, { status: 500 });
   }
 }

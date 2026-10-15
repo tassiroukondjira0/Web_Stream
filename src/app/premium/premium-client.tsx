@@ -74,7 +74,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
         </p>
         <div className="mt-4 inline-flex items-center gap-2 text-xs text-zinc-500">
           <Smartphone className="h-3.5 w-3.5" />
-          Paiement Mobile Money sécurisé (Wave, Orange Money, MTN MoMo, Moov…)
+          Paiement par carte bancaire internationale et Mobile Money sécurisé.
         </div>
       </div>
 
@@ -175,7 +175,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
       </div>
 
       <p className="mx-auto mt-10 max-w-2xl text-center text-[11px] leading-relaxed text-zinc-500">
-        Le paiement est traité par MeSomb via votre opérateur Mobile Money. L&apos;accès Premium est activé
+        Le paiement est traité par PayDunya via votre moyen de paiement (carte bancaire ou Mobile Money). L&apos;accès Premium est activé
         automatiquement dès la confirmation de la transaction par le prestataire.
       </p>
     </div>

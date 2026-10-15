@@ -17,17 +17,16 @@ const MAX_ATTEMPTS = 6;
 const POLL_INTERVAL_MS = 3000;
 
 export default function PaymentStatus({ sessionId }: { sessionId: string | null }) {
-  const [state, setState] = useState<VerifyState>(sessionId ? "loading" : "missing");
+  const [state, setState] = useState<VerifyState>("loading");
   const [message, setMessage] = useState<string | null>(null);
   const attemptsRef = useRef(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const verifyRef = useRef<() => void>(() => {});
 
   const verify = useCallback(async () => {
-    if (!sessionId) return;
-
     try {
-      const res = await fetch(`/api/payment/verify?session_id=${encodeURIComponent(sessionId)}`, {
+      const query = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : "";
+      const res = await fetch(`/api/payment/verify${query}`, {
         cache: "no-store",
       });
       const data: VerifyResponse = await res.json().catch(() => ({}));
@@ -35,6 +34,12 @@ export default function PaymentStatus({ sessionId }: { sessionId: string | null 
       if (res.status === 401) {
         setState("error");
         setMessage("Votre session a expiré. Reconnectez-vous pour consulter votre abonnement.");
+        return;
+      }
+
+      if (res.status === 404) {
+        setState("error");
+        setMessage("Aucun paiement en attente n'a été trouvé pour votre compte.");
         return;
       }
 
