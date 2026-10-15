@@ -3,7 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, ShieldCheck, LogOut, Film, Clock, Bookmark, Sparkles, AlertCircle } from "lucide-react";
+import {
+  User,
+  ShieldCheck,
+  LogOut,
+  Film,
+  Clock,
+  Bookmark,
+  ListPlus,
+  Sparkles,
+  AlertCircle,
+  X,
+} from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -16,6 +27,9 @@ export default function AccountPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bookmarks, setBookmarks] = useState<string[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [listsLoading, setListsLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -33,10 +47,45 @@ export default function AccountPage() {
       });
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    Promise.all([
+      fetch("/api/bookmarks").then((r) => (r.ok ? r.json() : { bookmarks: [] })),
+      fetch("/api/wishlist").then((r) => (r.ok ? r.json() : { wishlist: [] })),
+    ])
+      .then(([b, w]) => {
+        setBookmarks(Array.isArray(b.bookmarks) ? b.bookmarks : []);
+        setWishlist(Array.isArray(w.wishlist) ? w.wishlist : []);
+      })
+      .catch(() => {
+        setBookmarks([]);
+        setWishlist([]);
+      })
+      .finally(() => setListsLoading(false));
+  }, [user]);
+
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/");
     router.refresh();
+  };
+
+  const removeBookmark = async (slug: string) => {
+    const res = await fetch("/api/bookmarks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mediaSlug: slug }),
+    });
+    if (res.ok) setBookmarks((prev) => prev.filter((s) => s !== slug));
+  };
+
+  const removeWishlist = async (slug: string) => {
+    const res = await fetch("/api/wishlist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mediaSlug: slug }),
+    });
+    if (res.ok) setWishlist((prev) => prev.filter((s) => s !== slug));
   };
 
   if (loading) {
@@ -60,7 +109,7 @@ export default function AccountPage() {
         <div className="mt-6 flex justify-center gap-3">
           <Link
             href="/connexion"
-            className="rounded-xl bg-red-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-red-600/30 hover:bg-red-500"
+            className="rounded-xl bg-violet-600 px-5 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500"
           >
             Se connecter
           </Link>
@@ -82,7 +131,7 @@ export default function AccountPage() {
       {/* En-tête profil */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-8">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-red-600 to-amber-600 text-2xl font-black text-white shadow-xl">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 to-amber-600 text-2xl font-black text-white shadow-xl">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -105,7 +154,7 @@ export default function AccountPage() {
 
         <button
           onClick={handleLogout}
-          className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-white/10 px-4 py-2.5 text-xs font-medium text-zinc-300 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30 transition-colors"
+          className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-white/10 px-4 py-2.5 text-xs font-medium text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400 hover:border-violet-500/30 transition-colors"
         >
           <LogOut className="h-4 w-4" />
           Déconnexion
@@ -152,28 +201,111 @@ export default function AccountPage() {
       </div>
 
       {/* Sections Favoris & Reprise de lecture */}
-      <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/40 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-white flex items-center gap-2">
-              <Bookmark className="h-4 w-4 text-red-500" />
-              Ma Liste de Favoris
+      <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* Favoris — persistés en base */}
+        <div id="favoris" className="scroll-mt-24 rounded-2xl border border-white/10 bg-zinc-900/40 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-base font-semibold text-white">
+              <Bookmark className="h-4 w-4 text-violet-500" />
+              Mes favoris
+              {!listsLoading && bookmarks.length > 0 && (
+                <span className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[11px] font-bold text-violet-400">
+                  {bookmarks.length}
+                </span>
+              )}
             </h3>
             <Link href="/films" className="text-xs text-zinc-400 hover:text-white">
               Explorer →
             </Link>
           </div>
-          <p className="text-xs text-zinc-400">
-            Retrouvez rapidement les films que vous avez enregistrés pour les visionner plus tard.
-          </p>
-          <div className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-zinc-500">
-            Aucun film ajouté pour le moment. Cliquez sur « Ajouter à mes favoris » sur la fiche d&apos;un film.
-          </div>
+          {listsLoading ? (
+            <p className="mt-4 text-center text-xs text-zinc-500">Chargement…</p>
+          ) : bookmarks.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-zinc-500">
+              Aucun favori pour le moment. Cliquez sur « Ajouter à mes favoris »
+              sur la fiche d&apos;un film ou d&apos;une série.
+            </div>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {bookmarks.map((slug) => (
+                <li
+                  key={slug}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-black/30 px-3 py-2"
+                >
+                  <Link
+                    href={slugToHref(slug)}
+                    className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-200 hover:text-white"
+                  >
+                    {prettyTitle(slug)}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => removeBookmark(slug)}
+                    title="Retirer des favoris"
+                    className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-violet-500/10 hover:text-violet-400"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/40 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-white flex items-center gap-2">
+        {/* Liste de souhaits — persistée en base */}
+        <div id="souhaits" className="scroll-mt-24 rounded-2xl border border-white/10 bg-zinc-900/40 p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-base font-semibold text-white">
+              <ListPlus className="h-4 w-4 text-amber-400" />
+              Ma liste de souhaits
+              {!listsLoading && wishlist.length > 0 && (
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-400">
+                  {wishlist.length}
+                </span>
+              )}
+            </h3>
+            <Link href="/series" className="text-xs text-zinc-400 hover:text-white">
+              Explorer →
+            </Link>
+          </div>
+          {listsLoading ? (
+            <p className="mt-4 text-center text-xs text-zinc-500">Chargement…</p>
+          ) : wishlist.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-zinc-500">
+              Aucune envie pour le moment. Cliquez sur « Ajouter à ma liste de
+              souhaits » sur la fiche d&apos;un titre.
+            </div>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {wishlist.map((slug) => (
+                <li
+                  key={slug}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-black/30 px-3 py-2"
+                >
+                  <Link
+                    href={slugToHref(slug)}
+                    className="min-w-0 flex-1 truncate text-xs font-medium text-zinc-200 hover:text-white"
+                  >
+                    {prettyTitle(slug)}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => removeWishlist(slug)}
+                    title="Retirer de la liste"
+                    className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-amber-500/10 hover:text-amber-400"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Reprise de lecture */}
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/40 p-6 md:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-base font-semibold text-white">
               <Clock className="h-4 w-4 text-amber-500" />
               Reprendre la lecture
             </h3>
@@ -189,4 +321,33 @@ export default function AccountPage() {
       </div>
     </div>
   );
+}
+
+/** Route de fiche correspondant à un slug (local ou partenaire externe). */
+function slugToHref(slug: string): string {
+  const m = slug.match(/^(frenchstream|frenchmanga)-(movie|series|anime)-(.+)$/);
+  if (m) {
+    const [, provider, kind, id] = m;
+    const isSeries = kind === "series" || (provider === "frenchmanga" && kind === "anime");
+    return isSeries ? `/series/frenchstream/${id}` : `/films/frenchstream/${id}`;
+  }
+  return `/films/${slug}`;
+}
+
+/** Libellé lisible à partir d'un slug (sans appel réseau). */
+function prettyTitle(slug: string): string {
+  const m = slug.match(/^(frenchstream|frenchmanga)-(movie|series|anime)-(.+)$/);
+  if (m) {
+    const [, , kind, id] = m;
+    return `${humanize(id)} ${kind === "movie" ? "· Film" : kind === "series" ? "· Série" : "· Animé"}`;
+  }
+  return humanize(slug);
+}
+
+function humanize(value: string): string {
+  return value
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

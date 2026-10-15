@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="78b2ecec-3179-4e15-a6d4-81f740a70585" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/check-posters.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/check-providers.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/clean-demo-media.ts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/app/api/admin/provider-assets/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.env.example" beforeDir="false" afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/neon.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/netlify.toml" beforeDir="false" afterPath="$PROJECT_DIR$/netlify.toml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/next.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/next.config.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/prisma/schema.prisma" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/schema.prisma" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/prisma/seed.ts" beforeDir="false" afterPath="$PROJECT_DIR$/prisma/seed.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/vercel-env.ps1" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/vercel-env.ps1" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/admin/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/admin/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/admin/medias/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/admin/medias/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/admin/videos/upload/route.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/auth/login/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/auth/login/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/auth/register/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/auth/register/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/bookmarks/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/bookmarks/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/api/videos/[id]/token/route.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/api/videos/[id]/token/route.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/conditions/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/conditions/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/confidentialite/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/confidentialite/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/connexion/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/connexion/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/films/[slug]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/films/[slug]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/films/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/films/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/globals.css" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/globals.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/inscription/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/inscription/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/layout.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/layout.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/mentions-legales/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/mentions-legales/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/mon-compte/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/mon-compte/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/nouveautes/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/nouveautes/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/recherche/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/recherche/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/series/[slug]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/series/[slug]/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/series/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/series/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/BookmarkButton.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/BookmarkButton.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Navbar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Navbar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/NewsletterBanner.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/NewsletterBanner.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/VideoPlayer.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/VideoPlayer.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/bunny-stream.ts" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/catalog.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/catalog.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/cloudflare-stream.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/cloudflare-stream.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/tmdb.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/tmdb.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/validation.ts" beforeDir="false" afterPath="$PROJECT_DIR$/tests/validation.ts" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0" />
+      <entry key="MS500" value="1.0" />
+      <entry key="S2" value="1.0000005586719785" />
+      <entry key="S5" value="1.0031743058141482" />
+      <entry key="S10" value="1.060667141079746" />
+      <entry key="S30" value="1.5718762210647768" />
+      <entry key="S60" value="2.520508873142515" />
+      <entry key="M2" value="4.851419417705161" />
+      <entry key="M5" value="9.428524131676294" />
+      <entry key="M10" value="13.52490882456066" />
+      <entry key="M15" value="16.960169908052727" />
+      <entry key="M30" value="27.65449224521465" />
+      <entry key="H1" value="55.03217464681511" />
+      <entry key="H2" value="121.30463532848123" />
+      <entry key="H4" value="225.5567058231919" />
+      <entry key="D1" value="430.1978531355293" />
+      <entry key="W1" value="485.8926100000721" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="8.7128042986946E-12" />
+      <entry key="MS500" value="0.006138066536465468" />
+      <entry key="S2" value="0.2799035411516524" />
+      <entry key="S5" value="0.6034395864521679" />
+      <entry key="S10" value="0.8295842605130386" />
+      <entry key="S30" value="1.472102970115833" />
+      <entry key="S60" value="2.4589123163185937" />
+      <entry key="M2" value="4.811356488274503" />
+      <entry key="M5" value="9.406960421676484" />
+      <entry key="M10" value="13.512562487003425" />
+      <entry key="M15" value="16.95150193449203" />
+      <entry key="M30" value="27.649870340493415" />
+      <entry key="H1" value="55.029683713027005" />
+      <entry key="H2" value="121.30318397477117" />
+      <entry key="H4" value="225.5558048213875" />
+      <entry key="D1" value="430.19764154760054" />
+      <entry key="W1" value="485.8925773004771" />
+    </decayedShown>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8,
+  &quot;fromUser&quot;: false
+}</component>
+  <component name="ProjectId" id="3KdmjWhOiGq6cgQwTjEy9CC9Yvd" />
+  <component name="ProjectLevelVcsManager">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
+    "git-widget-placeholder": "main",
+    "javascript.preferred.runtime.type.id": "node",
+    "js.debugger.nextJs.config.created.client": "true",
+    "js.debugger.nextJs.config.created.server": "true",
+    "junie.onboarding.icon.badge.shown": "true",
+    "junie.plugin.stays.banner.dismissed": "true",
+    "last_opened_file_path": "C:/Users/tassi/Downloads/Programs/Stream_Web",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "npm.Next.js: server-side.executor": "Run",
+    "python.packages.toolwindow.project.migrated.to.right.top.v2": "true",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "to.speed.mode.migration.done": "true",
+    "ts.external.directory.path": "C:\\Program Files\\JetBrains\\WebStorm 2025.3.3\\plugins\\javascript-plugin\\jsLanguageServicesImpl\\external"
+  }
+}]]></component>
+  <component name="RunManager" selected="npm.Next.js: server-side">
+    <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
+      <method v="2" />
+    </configuration>
+    <configuration name="Next.js: server-side" type="js.build_tools.npm">
+      <package-json value="$PROJECT_DIR$/package.json" />
+      <command value="run" />
+      <scripts>
+        <script value="dev" />
+      </scripts>
+      <node-interpreter value="project" />
+      <envs />
+      <method v="2" />
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-4abd2a77f808-JavaScript-WS-262.10968.77" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="78b2ecec-3179-4e15-a6d4-81f740a70585" name="Changes" comment="" />
+      <created>1791895955640</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1791895955640</updated>
+      <workItem from="1791895956780" duration="16280000" />
+      <workItem from="1791917866972" duration="206000" />
+      <workItem from="1791921093487" duration="14922000" />
+      <workItem from="1791966755876" duration="22629000" />
+      <workItem from="1792013486476" duration="6125000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

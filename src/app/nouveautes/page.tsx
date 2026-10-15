@@ -1,23 +1,32 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { getAllMedias } from "@/lib/catalog";
-import { Sparkles, Calendar, Play, ShieldCheck, Film } from "lucide-react";
+import { getLatestPartnerAssets, providerItemHref } from "@/lib/provider-catalog";
+import { ProviderPosterCard } from "@/components/ProviderPosterCard";
+import { Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Nouveautés & Sorties Récentes — Streaming Vidéo",
   description: "Découvrez les dernières nouveautés ajoutées au catalogue de streaming légal.",
 };
 
+function badgeFor(item: {
+  contentType: "MOVIE" | "SERIES" | "ANIME";
+  sourceType: "movie" | "tv" | null;
+}) {
+  if (item.contentType === "SERIES") return { badge: "Série", badgeTone: "sky" as const };
+  if (item.contentType === "ANIME") return { badge: "Animé", badgeTone: "fuchsia" as const };
+  return { badge: "Film", badgeTone: "fuchsia" as const };
+}
+
 async function NouveautesContent() {
-  const medias = await getAllMedias();
-  // Tri par année décroissante
-  const sorted = [...medias].sort((a, b) => b.releaseYear - a.releaseYear);
+  // Vrai catalogue synchronisé (ProviderAsset) — plus les titres de démonstration.
+  const items = await getLatestPartnerAssets(48);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="border-b border-white/10 pb-6">
-        <div className="inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400 mb-3">
+        <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-400 mb-3">
           <Sparkles className="h-3.5 w-3.5" />
           Calendrier des sorties
         </div>
@@ -25,62 +34,42 @@ async function NouveautesContent() {
           Derniers ajouts au catalogue
         </h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Les nouvelles créations et ajouts récents vérifiés et autorisés pour la diffusion.
+          Les films, séries et animés les plus récemment ajoutés, vérifiés et autorisés pour la diffusion.
         </p>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:gap-6">
-        {sorted.map((item) => (
+      {items.length === 0 ? (
+        <div className="py-24 text-center">
+          <Sparkles className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
+          <h3 className="text-lg font-medium text-white">Aucune nouveauté pour le moment</h3>
+          <p className="text-sm text-zinc-400 mt-1">
+            Le catalogue sera bientôt enrichi de nouveaux titres.
+          </p>
           <Link
-            key={item.slug}
-            href={`/films/${item.slug}`}
-            className="group relative flex flex-col overflow-hidden rounded-xl bg-zinc-900/60 border border-white/5 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-xl"
+            href="/films"
+            className="mt-4 inline-flex items-center rounded-lg bg-zinc-800 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-700"
           >
-            <div className="absolute top-2.5 right-2.5 z-10">
-              {item.accessLevel === "PREMIUM" ? (
-                <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-black">
-                  <ShieldCheck className="h-3 w-3" />
-                  PREMIUM
-                </span>
-              ) : (
-                <span className="inline-flex items-center rounded-md bg-emerald-500/90 px-2 py-0.5 text-[10px] font-bold text-black">
-                  GRATUIT
-                </span>
-              )}
-            </div>
-
-            <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-800">
-              <img
-                src={item.posterUrl}
-                alt={item.title}
-                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end p-4">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white shadow-md">
-                  <Play className="h-3 w-3 fill-white" />
-                  Regarder
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-1 flex-col p-3">
-              <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {item.releaseYear}
-                </span>
-                {item.durationMinutes && <span>• {item.durationMinutes} min</span>}
-              </div>
-              <h2 className="mt-1 text-sm font-semibold text-white line-clamp-1 group-hover:text-red-400 transition-colors">
-                {item.title}
-              </h2>
-              <p className="mt-0.5 text-[11px] text-zinc-500">
-                {item.categories.map((c) => c.name).join(" • ")}
-              </p>
-            </div>
+            Explorer le catalogue
           </Link>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-5">
+          {items.map((item) => {
+            const { badge, badgeTone } = badgeFor(item);
+            return (
+              <ProviderPosterCard
+                key={`${item.provider}-${item.contentType}-${item.externalId}`}
+                href={providerItemHref(item)}
+                posterUrl={item.posterUrl}
+                title={item.title}
+                year={item.releaseYear ? String(item.releaseYear) : null}
+                badge={badge}
+                badgeTone={badgeTone}
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

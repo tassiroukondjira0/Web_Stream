@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { getAllMedias } from "@/lib/catalog";
+import { searchPartnerAssets, providerItemHref } from "@/lib/provider-catalog";
+import type { ProviderCatalogItem } from "@/lib/provider-catalog";
+import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 import { Search as SearchIcon, Film, ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -27,6 +30,22 @@ async function SearchContent({ searchParams }: SearchPageProps) {
       )
     : [];
 
+  // Recherche dans le catalogue partenaire synchronisé (CDC §4.7 : grilles
+  // et recherche depuis ProviderAsset — locale, instantanée, sans quota API).
+  // Films, séries ET animés : les animés sont routés vers le bon lecteur via
+  // `sourceType` (film ou série).
+  let partnerResults: ProviderCatalogItem[] = [];
+  if (query) {
+    try {
+      partnerResults = await searchPartnerAssets(q!.trim(), 12);
+    } catch {
+      partnerResults = [];
+    }
+  }
+
+  const totalCount = results.length + partnerResults.length;
+  const hasResults = results.length > 0 || partnerResults.length > 0;
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Formulaire de recherche */}
@@ -45,12 +64,12 @@ async function SearchContent({ searchParams }: SearchPageProps) {
               type="text"
               name="q"
               defaultValue={q || ""}
-              placeholder="Ex: Big Buck Bunny, Sintel, animation..."
-              className="w-full rounded-2xl border border-white/10 bg-zinc-900/90 py-3.5 pl-12 pr-28 text-sm text-white placeholder-zinc-500 shadow-xl focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+              placeholder="Ex: Sintel, animation, action..."
+              className="w-full rounded-2xl border border-white/10 bg-zinc-900/90 py-3.5 pl-12 pr-28 text-sm text-white placeholder-zinc-500 shadow-xl focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
             <button
               type="submit"
-              className="absolute right-2 rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-500"
+              className="absolute right-2 rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500"
             >
               Rechercher
             </button>
@@ -64,14 +83,14 @@ async function SearchContent({ searchParams }: SearchPageProps) {
           <div>
             <div className="mb-6 flex items-center justify-between border-b border-white/10 pb-4">
               <h2 className="text-lg font-semibold text-white">
-                Résultats pour &laquo; <span className="text-red-400">{q}</span> &raquo;
+                Résultats pour &laquo; <span className="text-violet-400">{q}</span> &raquo;
               </h2>
               <span className="text-xs text-zinc-400">
-                {results.length} résultat{results.length > 1 ? "s" : ""}
+                {totalCount} résultat{totalCount > 1 ? "s" : ""}
               </span>
             </div>
 
-            {results.length === 0 ? (
+            {!hasResults && (
               <div className="py-16 text-center">
                 <Film className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
                 <p className="text-base font-medium text-white">Aucun résultat trouvé</p>
@@ -79,7 +98,9 @@ async function SearchContent({ searchParams }: SearchPageProps) {
                   Essayez avec un mot-clé plus générique ou vérifiez l&apos;orthographe.
                 </p>
               </div>
-            ) : (
+            )}
+
+            {results.length > 0 && (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:gap-6">
                 {results.map((item) => (
                   <Link
@@ -113,7 +134,7 @@ async function SearchContent({ searchParams }: SearchPageProps) {
                       <div className="text-[11px] text-zinc-400">
                         {item.releaseYear} • {item.durationMinutes} min
                       </div>
-                      <h3 className="mt-1 text-sm font-semibold text-white line-clamp-1 group-hover:text-red-400">
+                      <h3 className="mt-1 text-sm font-semibold text-white line-clamp-1 group-hover:text-violet-400">
                         {item.title}
                       </h3>
                       <p className="mt-0.5 text-[11px] text-zinc-500">
@@ -123,6 +144,32 @@ async function SearchContent({ searchParams }: SearchPageProps) {
                   </Link>
                 ))}
               </div>
+            )}
+
+            {/* Résultats du catalogue partenaire */}
+            {partnerResults.length > 0 && (
+              <section className="mt-14">
+                <div className="mb-6 flex items-baseline justify-between border-b border-white/10 pb-4">
+                  <h2 className="text-lg font-semibold text-white">
+                    Catalogue partenaire
+                  </h2>
+                  <span className="text-xs text-zinc-500">
+                    {partnerResults.length} résultat
+                    {partnerResults.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:gap-6">
+                  {partnerResults.map((item) => (
+                    <ProviderPosterCard
+                      key={`fs-${item.contentType}-${item.externalId}`}
+                      href={providerItemHref(item)}
+                      posterUrl={item.posterUrl}
+                      title={item.title}
+                      year={item.releaseYear ? String(item.releaseYear) : null}
+                    />
+                  ))}
+                </div>
+              </section>
             )}
           </div>
         ) : (

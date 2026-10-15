@@ -1,11 +1,25 @@
 @import "tailwindcss";
 
+/*
+ * Largeur maximale adaptative du conteneur standard `max-w-7xl`
+ * (navbar, page d'accueil, footer, pages catalogue…).
+ *
+ * Le contenu grandit naturellement avec la largeur de l'écran puis se centre
+ * grâce à `max-width` + `mx-auto`. On fixe la limite à 1600px (100rem) : assez
+ * large pour bien remplir un écran d'ordinateur, sans marges excessives sur
+ * les très grands écrans. La responsivité mobile/tablette n'est pas affectée
+ * car elle repose sur les breakpoints (sm/md/lg) et les paddings horizontaux.
+ */
+@theme {
+  --container-7xl: 100rem;
+}
+
 :root {
   --background: #09090b;
   --foreground: #fafafa;
   --card: #121217;
   --card-foreground: #fafafa;
-  --primary: #e50914;
+  --primary: #7c3aed;
   --primary-foreground: #ffffff;
   --muted: #27272a;
   --muted-foreground: #a1a1aa;
@@ -30,4 +44,25 @@ body {
   background: var(--background);
   color: var(--foreground);
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+img,
+video,
+iframe {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

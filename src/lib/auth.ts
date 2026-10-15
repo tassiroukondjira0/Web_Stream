@@ -27,11 +27,37 @@ function getJwtSecret(): Uint8Array {
 
 export const COOKIE_NAME = "stream_session";
 
+/**
+ * Durée de vie d'une session connectée : 1 semaine.
+ * L'utilisateur reste authentifié sans ressaisir ses identifiants pendant
+ * toute cette période (le jeton JWT et le cookie expirent simultanément).
+ */
+export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+
+/** Options de cookie de session, partagées par la connexion et l'inscription. */
+export function sessionCookieOptions() {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax" as const,
+    maxAge: SESSION_MAX_AGE_SECONDS,
+    path: "/",
+  };
+}
+
 export interface SessionUser {
   id: string;
   email: string;
   name: string;
   role: "USER" | "SUBSCRIBER" | "ADMIN";
+}
+
+/**
+ * Accès total au catalogue : l'ADMIN n'a pas besoin du pass Premium.
+ * SUBSCRIBER = abonné payant, ADMIN = accès implicite à tout.
+ */
+export function hasPremiumAccess(role: SessionUser["role"]): boolean {
+  return role === "SUBSCRIBER" || role === "ADMIN";
 }
 
 // 1. Hachage des mots de passe
@@ -49,7 +75,7 @@ export async function signSessionToken(user: SessionUser): Promise<string> {
   return new SignJWT({ ...user })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(`${SESSION_MAX_AGE_SECONDS}s`)
     .sign(getJwtSecret());
 }
 

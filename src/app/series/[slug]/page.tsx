@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getMediaBySlug, getAllMedias } from "@/lib/catalog";
 import { getAppUrl } from "@/lib/env";
+import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { Tv, Calendar, ShieldCheck, Play } from "lucide-react";
 
@@ -52,6 +54,10 @@ async function SeriesContent({ params, searchParams }: PageProps) {
   const sp = searchParams ? await searchParams : {};
   const currentEpNum = Number(sp.ep) || 1;
 
+  // L'ADMIN accède à tout le catalogue sans pass Premium.
+  const currentUser = await getCurrentUser().catch(() => null);
+  const hasFullAccess = currentUser ? hasPremiumAccess(currentUser.role) : false;
+
   // Épisodes de démonstration
   const episodes = [
     {
@@ -60,7 +66,7 @@ async function SeriesContent({ params, searchParams }: PageProps) {
       duration: "24 min",
       synopsis: "Découverte des artistes indépendants et des premiers jalons de création numérique.",
       access: "FREE",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
     },
     {
       number: 2,
@@ -91,12 +97,12 @@ async function SeriesContent({ params, searchParams }: PageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <nav className="mb-6 flex items-center gap-2 text-xs text-zinc-400">
+      <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
         <Link href="/" className="hover:text-white">Accueil</Link>
         <span>/</span>
         <Link href="/series" className="hover:text-white">Séries</Link>
         <span>/</span>
-        <span className="text-zinc-200">{serie.title}</span>
+        <span className="min-w-0 flex-1 truncate text-zinc-200 sm:flex-none">{serie.title}</span>
       </nav>
 
       {/* Lecteur de l'épisode sélectionné */}
@@ -106,14 +112,14 @@ async function SeriesContent({ params, searchParams }: PageProps) {
           poster={serie.backdropUrl}
           title={`${serie.title} - Épisode ${activeEpisode.number}: ${activeEpisode.title}`}
           isPremium={activeEpisode.access === "PREMIUM"}
-          hasAccess={activeEpisode.access === "FREE"}
+          hasAccess={activeEpisode.access === "FREE" || hasFullAccess}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-extrabold text-white">{serie.title}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="min-w-0 flex-1 text-2xl font-extrabold text-white sm:text-3xl">{serie.title}</h1>
             <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
               Saison 1
             </span>
@@ -132,6 +138,7 @@ async function SeriesContent({ params, searchParams }: PageProps) {
 
           <div className="mt-6 flex gap-3">
             <BookmarkButton mediaSlug={serie.slug} />
+            <WishlistButton mediaSlug={serie.slug} />
             <ShareButton title={serie.title} />
           </div>
 
@@ -147,13 +154,13 @@ async function SeriesContent({ params, searchParams }: PageProps) {
                     href={`/series/${serie.slug}?ep=${ep.number}`}
                     className={`flex items-start justify-between rounded-xl border p-4 transition-all ${
                       isSelected
-                        ? "border-red-500/50 bg-red-600/10"
+                        ? "border-violet-500/50 bg-violet-600/10"
                         : "border-white/5 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-800"
                     }`}
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-red-500">
+                        <span className="text-xs font-bold text-violet-500">
                           Épisode {ep.number}
                         </span>
                         <h3 className="text-sm font-semibold text-white">{ep.title}</h3>

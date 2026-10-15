@@ -44,7 +44,7 @@ export function NewsletterBanner() {
     <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-6 sm:p-8">
       <div className="max-w-xl">
         <h3 className="text-lg font-bold text-white flex items-center gap-2">
-          <Mail className="h-5 w-5 text-red-500" />
+          <Mail className="h-5 w-5 text-violet-500" />
           Restez informé des sorties et nouveaux films
         </h3>
         <p className="mt-1 text-xs text-zinc-400">
@@ -65,12 +65,12 @@ export function NewsletterBanner() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="votre-email@exemple.com"
-                className="flex-1 rounded-xl border border-white/10 bg-black/60 px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:border-red-500 focus:outline-none"
+                className="flex-1 rounded-xl border border-white/10 bg-black/60 px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:border-violet-500 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="rounded-xl bg-red-600 px-5 py-2 text-xs font-semibold text-white shadow-md hover:bg-red-500 disabled:opacity-50 transition-colors"
+                className="rounded-xl bg-violet-600 px-5 py-2 text-xs font-semibold text-white shadow-md hover:bg-violet-500 disabled:opacity-50 transition-colors"
               >
                 {status === "loading" ? "Inscription..." : "S'abonner"}
               </button>
@@ -81,7 +81,7 @@ export function NewsletterBanner() {
                 type="checkbox"
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
-                className="mt-0.5 rounded border-white/20 text-red-600 focus:ring-0"
+                className="mt-0.5 rounded border-white/20 text-violet-600 focus:ring-0"
               />
               <span>
                 J&apos;accepte de recevoir la newsletter mensuelle. Vous pouvez vous désinscrire à tout moment via le lien en bas de chaque e-mail.
@@ -89,7 +89,7 @@ export function NewsletterBanner() {
             </label>
 
             {status === "error" && (
-              <p className="text-xs text-red-400 flex items-center gap-1">
+              <p className="text-xs text-violet-400 flex items-center gap-1">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {message}
               </p>

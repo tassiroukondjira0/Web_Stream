@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyPassword, signSessionToken, COOKIE_NAME } from "@/lib/auth";
+import { verifyPassword, signSessionToken, COOKIE_NAME, sessionCookieOptions } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
@@ -11,45 +11,6 @@ export async function POST(request: Request) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-
-    // Comptes de démonstration pour le test immédiat sans base externe
-    if (normalizedEmail === "admin@streamweb.local") {
-      const user = {
-        id: "admin-1",
-        email: "admin@streamweb.local",
-        name: "Administrateur",
-        role: "ADMIN" as const,
-      };
-      const sessionToken = await signSessionToken(user);
-      const res = NextResponse.json({ success: true, user });
-      res.cookies.set(COOKIE_NAME, sessionToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/",
-      });
-      return res;
-    }
-
-    if (normalizedEmail === "abonne@streamweb.local" || normalizedEmail === "premium@streamweb.local") {
-      const user = {
-        id: "sub-1",
-        email: normalizedEmail,
-        name: "Abonné Premium",
-        role: "SUBSCRIBER" as const,
-      };
-      const sessionToken = await signSessionToken(user);
-      const res = NextResponse.json({ success: true, user });
-      res.cookies.set(COOKIE_NAME, sessionToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/",
-      });
-      return res;
-    }
 
     if (process.env.DATABASE_READY === "true") {
       const dbUser = await prisma.user.findUnique({
@@ -74,33 +35,16 @@ export async function POST(request: Request) {
 
       const sessionToken = await signSessionToken(user);
       const res = NextResponse.json({ success: true, user });
-      res.cookies.set(COOKIE_NAME, sessionToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/",
-      });
+      res.cookies.set(COOKIE_NAME, sessionToken, sessionCookieOptions());
       return res;
     }
 
-    // Utilisateur générique test
-    const user = {
-      id: `usr-${Date.now()}`,
-      email: normalizedEmail,
-      name: normalizedEmail.split("@")[0],
-      role: "USER" as const,
-    };
-    const sessionToken = await signSessionToken(user);
-    const res = NextResponse.json({ success: true, user });
-    res.cookies.set(COOKIE_NAME, sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
-    });
-    return res;
+    // Mode sans base de données : aucun compte n'est persisté de façon fiable,
+    // on refuse donc la connexion plutôt que d'ouvrir un accès non contrôlé.
+    return NextResponse.json(
+      { error: "La base de données n'est pas disponible." },
+      { status: 503 }
+    );
   } catch (error) {
     console.error("Erreur connexion :", error);
     return NextResponse.json({ error: "Erreur interne du serveur." }, { status: 500 });

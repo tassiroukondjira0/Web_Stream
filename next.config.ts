@@ -1,10 +1,21 @@
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
+
+/**
+ * Racine explicite du projet. Sans cela, Turbopack remonte l'arborescence à la
+ * recherche d'un lockfile et peut tomber sur un `package-lock.json` situé
+ * ailleurs (ex. dossier utilisateur), ce qui déclenche :
+ * « Warning: Next.js ignored package-lock.json … outside the current Git repository ».
+ */
+const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
+    root: projectRoot,
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],

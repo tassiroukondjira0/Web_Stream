@@ -2,7 +2,24 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ShieldCheck, Plus, Trash2, Film, CheckCircle2, AlertTriangle, Eye, Lock, Download, Pencil } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, Film, CheckCircle2, AlertTriangle, Eye, EyeOff, Lock, Download, Pencil, RefreshCw, Database, Library } from "lucide-react";
+import { TrafficCharts } from "@/components/admin/TrafficCharts";
+
+interface SyncRunRecord {
+  id: string;
+  status: string;
+  pagesFetched: number;
+  assetsUpserted: number;
+  assetsPruned: number;
+  error: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+interface SyncStatus {
+  assets: { total: number; movies: number; series: number; animes: number };
+  runs: SyncRunRecord[];
+}
 
 interface MediaRecord {
   id: string;
@@ -19,7 +36,7 @@ interface MediaRecord {
 export default function AdminDashboardPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [medias, setMedias] = useState<MediaRecord[]>([]);
-  const [stats, setStats] = useState({ totalMedias: 0, published: 0, premium: 0, free: 0 });
+  const [stats, setStats] = useState({ totalMedias: 0, published: 0, premium: 0, free: 0, partnerTotal: 0 });
   const [loading, setLoading] = useState(true);
 
   // Formulaire d'ajout
@@ -39,6 +56,30 @@ export default function AdminDashboardPage() {
   const [importPages, setImportPages] = useState(1);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState("");
+
+  // Synchro catalogue partenaire (FrenchStream)
+  const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
+  const [syncPages, setSyncPages] = useState(2);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+
+  // Titres partenaires (ProviderAsset) — publication contrôlée par l'admin
+  interface PartnerAsset {
+    id: string;
+    title: string;
+    provider: string;
+    contentType: string;
+    posterUrl: string | null;
+    isPublished: boolean;
+    releaseYear: number | null;
+  }
+  const [partnerAssets, setPartnerAssets] = useState<PartnerAsset[]>([]);
+  const [partnerTotal, setPartnerTotal] = useState(0);
+  const [partnerFilter, setPartnerFilter] = useState(""); // texte de recherche
+  const [partnerProvider, setPartnerProvider] = useState(""); // filtre fournisseur
+  const [partnerPage, setPartnerPage] = useState(1);
+  const [partnerPages, setPartnerPages] = useState(1);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   // Édition / publication d'un média
   const [showEditModal, setShowEditModal] = useState(false);
@@ -66,11 +107,57 @@ export default function AdminDashboardPage() {
         setIsAdmin(false);
         setLoading(false);
       });
+
+    // Historique synchro + compteurs d'assets (non bloquant).
+    fetch("/api/admin/sync/frenchstream")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success) setSyncStatus({ assets: data.assets, runs: data.runs });
+      })
+      .catch(() => {});
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Chargement des titres partenaires (publication admin) — rechargé à chaque
+  // changement de filtre ou de page.
+  useEffect(() => {
+    const params = new URLSearchParams({ page: String(partnerPage), pageSize: "12" });
+    if (partnerFilter) params.set("q", partnerFilter);
+    if (partnerProvider) params.set("provider", partnerProvider);
+    fetch(`/api/admin/provider-assets?${params.toString()}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setPartnerAssets(data.items || []);
+          setPartnerTotal(data.totalItems || 0);
+          setPartnerPages(data.totalPages || 1);
+        }
+      })
+      .catch(() => {});
+  }, [partnerFilter, partnerProvider, partnerPage]);
+
+  const togglePartnerPublished = async (id: string) => {
+    setTogglingId(id);
+    try {
+      const res = await fetch("/api/admin/provider-assets", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        setPartnerAssets((prev) =>
+          prev.map((a) => (a.id === id ? { ...a, isPublished: !a.isPublished } : a)),
+        );
+      }
+    } catch {
+      // silencieux
+    } finally {
+      setTogglingId(null);
+    }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -194,6 +281,32 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleSyncFrenchStream = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSyncing(true);
+    setSyncMessage("");
+
+    try {
+      const res = await fetch("/api/admin/sync/frenchstream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pages: syncPages }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSyncMessage(data.message || "Synchro terminée.");
+        loadData();
+      } else {
+        setSyncMessage(data.message || "Erreur lors de la synchro.");
+      }
+    } catch {
+      setSyncMessage("Erreur réseau lors de la synchro.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-24 text-center text-sm text-zinc-400">
@@ -205,7 +318,7 @@ export default function AdminDashboardPage() {
   if (isAdmin === false) {
     return (
       <div className="mx-auto max-w-md px-4 py-24 text-center">
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 mb-4">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 mb-4">
           <Lock className="h-7 w-7" />
         </div>
         <h1 className="text-2xl font-bold text-white">Accès Refusé</h1>
@@ -248,7 +361,7 @@ export default function AdminDashboardPage() {
           </button>
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-red-600/30 hover:bg-red-500 transition-colors"
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500 transition-colors"
           >
             <Plus className="h-4 w-4" />
             Ajouter une œuvre
@@ -263,14 +376,18 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Cartes Métriques */}
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
           <span className="text-xs text-zinc-400">Total Catalogue</span>
           <div className="mt-2 text-3xl font-black text-white">{stats.totalMedias}</div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
-          <span className="text-xs text-zinc-400">En Ligne (Publiés)</span>
+          <span className="text-xs text-zinc-400">Publications (catalogue local)</span>
           <div className="mt-2 text-3xl font-black text-emerald-400">{stats.published}</div>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
+          <span className="text-xs text-zinc-400">Titres partenaires</span>
+          <div className="mt-2 text-3xl font-black text-purple-400">{stats.partnerTotal}</div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
           <span className="text-xs text-zinc-400">Contenus Premium</span>
@@ -282,33 +399,134 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
+      {/* Trafic du site — visiteurs mensuels, premium vs standard */}
+      <div className="mt-10">
+        <h2 className="mb-4 text-lg font-bold text-white">Trafic & audience</h2>
+        <TrafficCharts />
+      </div>
+
+      {/* Catalogue partenaire (FrenchStream) — synchro incrémentale */}
+      <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40">
+        <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Database className="h-4 w-4 text-purple-400" />
+              Catalogue partenaire (FrenchStream)
+            </h2>
+            <p className="mt-1 text-[11px] text-zinc-500">
+              {syncStatus
+                ? `${syncStatus.assets.total} asset(s) en base — ${syncStatus.assets.movies} films, ${syncStatus.assets.series} séries, ${syncStatus.assets.animes} animés.`
+                : "Chargement de l'état du catalogue partenaire..."}
+            </p>
+          </div>
+          <form onSubmit={handleSyncFrenchStream} className="flex flex-wrap items-center gap-2 text-xs">
+            <label className="text-zinc-400">
+              Pages
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={syncPages}
+                onChange={(e) => setSyncPages(Math.min(Math.max(Number(e.target.value) || 1, 1), 20))}
+                className="ml-2 w-16 rounded-xl border border-white/10 bg-black/50 p-2 text-white"
+              />
+            </label>
+            <button
+              type="submit"
+              disabled={syncing}
+              className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 font-semibold text-white hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Synchro en cours..." : "Lancer la synchro"}
+            </button>
+          </form>
+        </div>
+
+        {syncMessage && (
+          <div className="mx-6 mt-4 rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-zinc-300">
+            {syncMessage}
+          </div>
+        )}
+
+        <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+          <table className="w-full min-w-[640px] text-left text-xs text-zinc-300">
+            <thead className="bg-black/40 text-zinc-400 uppercase tracking-wider text-[11px]">
+              <tr>
+                <th className="px-4 py-3.5 sm:px-6">Démarré le</th>
+                <th className="px-4 py-3.5 sm:px-6">Statut</th>
+                <th className="px-4 py-3.5 sm:px-6">Pages</th>
+                <th className="px-4 py-3.5 sm:px-6">À jour</th>
+                <th className="px-4 py-3.5 sm:px-6">Purgés</th>
+                <th className="px-4 py-3.5 sm:px-6">Erreur</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {!syncStatus || syncStatus.runs.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-4 text-zinc-500 sm:px-6">
+                    Aucune synchronisation enregistrée pour le moment.
+                  </td>
+                </tr>
+              ) : (
+                syncStatus.runs.map((r) => (
+                  <tr key={r.id} className="hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3 font-mono text-[11px] text-zinc-400 sm:px-6">
+                      {new Date(r.startedAt).toLocaleString("fr-FR")}
+                    </td>
+                    <td className="px-4 py-3 sm:px-6">
+                      {r.status === "SUCCESS" ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-400">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Succès
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-violet-400">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          {r.status}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 sm:px-6">{r.pagesFetched}</td>
+                    <td className="px-4 py-3 sm:px-6">{r.assetsUpserted}</td>
+                    <td className="px-4 py-3 sm:px-6">{r.assetsPruned}</td>
+                    <td className="px-4 py-3 sm:px-6 max-w-xs truncate text-zinc-500" title={r.error || ""}>
+                      {r.error || "—"}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Tableau du catalogue */}
       <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40">
-        <div className="px-6 py-4 border-b border-white/10">
+        <div className="border-b border-white/10 px-4 py-4 sm:px-6">
           <h2 className="text-base font-bold text-white">Œuvres sous gestion légale</h2>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-zinc-300">
+        <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+          <table className="w-full min-w-[720px] text-left text-xs text-zinc-300">
             <thead className="bg-black/40 text-zinc-400 uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="px-6 py-3.5">Titre & Slug</th>
-                <th className="px-6 py-3.5">Type</th>
-                <th className="px-6 py-3.5">Accès</th>
-                <th className="px-6 py-3.5">Statut</th>
-                <th className="px-6 py-3.5">Droits jusqu&apos;au</th>
-                <th className="px-6 py-3.5 text-right">Actions</th>
+                <th className="px-4 py-3.5 sm:px-6">Titre & Slug</th>
+                <th className="px-4 py-3.5 sm:px-6">Type</th>
+                <th className="px-4 py-3.5 sm:px-6">Accès</th>
+                <th className="px-4 py-3.5 sm:px-6">Statut</th>
+                <th className="px-4 py-3.5 sm:px-6">Droits jusqu&apos;au</th>
+                <th className="px-4 py-3.5 text-right sm:px-6">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {medias.map((m) => (
                 <tr key={m.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 font-medium text-white">
+                  <td className="px-4 py-4 font-medium text-white sm:px-6">
                     <div>{m.title}</div>
-                    <div className="text-[11px] text-zinc-500 font-mono">/films/{m.slug}</div>
+                    <div className="text-[11px] text-zinc-500 font-mono break-all">/films/{m.slug}</div>
                   </td>
-                  <td className="px-6 py-4">{m.type}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 sm:px-6">{m.type}</td>
+                  <td className="px-4 py-4 sm:px-6">
                     {m.accessLevel === "PREMIUM" ? (
                       <span className="inline-flex items-center gap-1 rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
                         PREMIUM
@@ -319,7 +537,7 @@ export default function AdminDashboardPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="px-4 py-4 sm:px-6">
                     {m.isPublished ? (
                       <span className="inline-flex items-center gap-1 text-emerald-400">
                         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -331,9 +549,9 @@ export default function AdminDashboardPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 font-mono text-[11px] text-zinc-400">
+                  <td className="px-4 py-4 font-mono text-[11px] text-zinc-400 sm:px-6">
                     {new Date(m.rightsValidUntil) < new Date() ? (
-                      <span className="text-red-400 font-semibold flex items-center gap-1">
+                      <span className="text-violet-400 font-semibold flex items-center gap-1">
                         <AlertTriangle className="h-3.5 w-3.5" />
                         Expiré
                       </span>
@@ -341,34 +559,159 @@ export default function AdminDashboardPage() {
                       m.rightsValidUntil.split("T")[0]
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    <Link
-                      href={`/films/${m.slug}`}
-                      className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                      title="Voir la fiche"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Link>
-                    <button
-                      onClick={() => openEdit(m)}
-                      className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                      title="Éditer / Publier"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(m.slug)}
-                      className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-red-500/10 hover:text-red-400"
-                      title="Supprimer"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <td className="px-4 py-4 text-right sm:px-6">
+                    <div className="inline-flex items-center gap-1">
+                      <Link
+                        href={`/films/${m.slug}`}
+                        className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                        title="Voir la fiche"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Link>
+                      <button
+                        onClick={() => openEdit(m)}
+                        className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                        title="Éditer / Publier"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(m.slug)}
+                        className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-violet-500/10 hover:text-violet-400"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Titres partenaires (catalogues externes) — publication par l'admin */}
+      <div className="mt-10">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-white">
+              <Library className="h-5 w-5 text-violet-400" />
+              Titres partenaires (catalogues externes)
+            </h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              {partnerTotal.toLocaleString("fr-FR")} titre(s) synchronisé(s). Un titre masqué
+              disparaît des grilles, de la recherche et de la une, mais reste en base.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={partnerFilter}
+              onChange={(e) => {
+                setPartnerFilter(e.target.value);
+                setPartnerPage(1);
+              }}
+              placeholder="Rechercher un titre…"
+              className="w-44 rounded-xl border border-white/10 bg-black/50 p-2 text-xs text-white placeholder:text-zinc-500"
+            />
+            <select
+              value={partnerProvider}
+              onChange={(e) => {
+                setPartnerProvider(e.target.value);
+                setPartnerPage(1);
+              }}
+              className="rounded-xl border border-white/10 bg-black/50 p-2 text-xs text-white"
+            >
+              <option value="">Tous les fournisseurs</option>
+              <option value="FrenchStream">FrenchStream</option>
+              <option value="FRENCHSTREAM">FrenchStream</option>
+              <option value="FRENCHMANGA">French-Manga</option>
+            </select>
+          </div>
+        </div>
+
+        {partnerAssets.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-xs text-zinc-500">
+            Aucun titre partenaire synchronisé. Lancez une synchro depuis le panneau précédent.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {partnerAssets.map((a) => (
+              <div
+                key={a.id}
+                className={`flex items-center gap-3 rounded-2xl border p-3 ${
+                  a.isPublished ? "border-white/10 bg-zinc-900/60" : "border-amber-500/20 bg-amber-500/5"
+                }`}
+              >
+                <img
+                  src={a.posterUrl || "/placeholder-poster.svg"}
+                  alt=""
+                  className="h-16 w-11 flex-shrink-0 rounded-lg object-cover bg-zinc-800"
+                  loading="lazy"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-white" title={a.title}>
+                    {a.title}
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-zinc-500">
+                    {a.provider} · {a.contentType}
+                    {a.releaseYear ? ` · ${a.releaseYear}` : ""}
+                  </p>
+                  <span
+                    className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                      a.isPublished
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-amber-500/10 text-amber-400"
+                    }`}
+                  >
+                    {a.isPublished ? "Publié" : "Masqué"}
+                  </span>
+                </div>
+                <button
+                  onClick={() => togglePartnerPublished(a.id)}
+                  disabled={togglingId === a.id}
+                  title={a.isPublished ? "Masquer ce titre" : "Publier ce titre"}
+                  className={`flex-shrink-0 rounded-lg p-2 transition-colors disabled:opacity-50 ${
+                    a.isPublished
+                      ? "text-zinc-400 hover:bg-zinc-800 hover:text-amber-400"
+                      : "text-amber-400 hover:bg-emerald-500/10 hover:text-emerald-400"
+                  }`}
+                >
+                  {togglingId === a.id ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : a.isPublished ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {partnerPages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <button
+              onClick={() => setPartnerPage((p) => Math.max(1, p - 1))}
+              disabled={partnerPage <= 1}
+              className="rounded-lg border border-white/10 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Précédent
+            </button>
+            <span className="text-xs text-zinc-500">
+              Page {partnerPage} / {partnerPages}
+            </span>
+            <button
+              onClick={() => setPartnerPage((p) => Math.min(partnerPages, p + 1))}
+              disabled={partnerPage >= partnerPages}
+              className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Suivant
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Modal d'édition / publication */}
@@ -379,7 +722,7 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-zinc-400 mb-4 font-mono">/{editSlug}</p>
             <form onSubmit={handleSave} className="space-y-4 text-xs">
               <div>
-                <label className="block text-zinc-300 mb-1">ID vidéo (Bunny/Cloudflare Stream)</label>
+                <label className="block text-zinc-300 mb-1">ID vidéo (flux externe)</label>
                 <input
                   type="text"
                   value={editVideoId}
@@ -418,7 +761,7 @@ export default function AdminDashboardPage() {
                   type="checkbox"
                   checked={editPublished}
                   onChange={(e) => setEditPublished(e.target.checked)}
-                  className="h-4 w-4 accent-red-600"
+                  className="h-4 w-4 accent-violet-600"
                 />
                 Publier cette fiche (visible publiquement)
               </label>
@@ -440,7 +783,7 @@ export default function AdminDashboardPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-xl bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? "Enregistrement..." : "Enregistrer"}
                 </button>
@@ -501,7 +844,7 @@ export default function AdminDashboardPage() {
                 <button
                   type="submit"
                   disabled={importing}
-                  className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="h-4 w-4" />
                   {importing ? "Import en cours..." : "Lancer l'import"}
@@ -586,7 +929,7 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-500"
+                  className="rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500"
                 >
                   Enregistrer
                 </button>

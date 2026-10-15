@@ -56,13 +56,13 @@ export function BookmarkButton({ mediaSlug }: BookmarkButtonProps) {
       disabled={loading}
       className={`inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-medium transition-colors ${
         isBookmarked
-          ? "border-red-500/50 bg-red-600/20 text-red-300 hover:bg-red-600/30"
+          ? "border-violet-500/50 bg-violet-600/20 text-violet-300 hover:bg-violet-600/30"
           : "border-white/10 bg-zinc-900 text-zinc-200 hover:bg-zinc-800 hover:text-white"
       }`}
     >
       {isBookmarked ? (
         <>
-          <Check className="h-4 w-4 text-red-400" />
+          <Check className="h-4 w-4 text-violet-400" />
           Dans mes favoris
         </>
       ) : (

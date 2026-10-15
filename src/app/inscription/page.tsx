@@ -44,7 +44,7 @@ export default function RegisterPage() {
     <div className="mx-auto flex min-h-[75vh] max-w-md flex-col justify-center px-4 py-12 sm:px-6">
       <div className="rounded-3xl border border-white/10 bg-zinc-900/70 p-8 shadow-2xl backdrop-blur-xl">
         <div className="text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-600 font-black text-white shadow-lg shadow-red-600/30">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-600 font-black text-white shadow-lg shadow-violet-600/30">
             C
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-white">Créer un compte</h1>
@@ -54,7 +54,7 @@ export default function RegisterPage() {
         </div>
 
         {error && (
-          <div className="mt-6 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-400">
+          <div className="mt-6 rounded-xl border border-violet-500/20 bg-violet-500/10 p-3 text-xs text-violet-400">
             {error}
           </div>
         )}
@@ -70,7 +70,7 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Alex Dupont"
-                className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               />
             </div>
           </div>
@@ -85,7 +85,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nom@exemple.com"
-                className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               />
             </div>
           </div>
@@ -101,7 +101,7 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="6 caractères minimum"
-                className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+                className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               />
             </div>
           </div>
@@ -110,7 +110,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 py-3 text-sm font-semibold text-white shadow-lg shadow-red-600/30 hover:bg-red-500 disabled:opacity-50 transition-colors"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500 disabled:opacity-50 transition-colors"
             >
               {loading ? "Création en cours..." : "Créer mon compte"}
               <ArrowRight className="h-4 w-4" />
@@ -120,7 +120,7 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-center text-xs text-zinc-500">
           Vous avez déjà un compte ?{" "}
-          <Link href="/connexion" className="text-red-400 hover:underline">
+          <Link href="/connexion" className="text-violet-400 hover:underline">
             Se connecter
           </Link>
         </p>

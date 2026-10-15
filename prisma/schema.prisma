@@ -35,6 +35,13 @@ enum SubscriptionPlan {
   YEARLY
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
 model User {
   id            String         @id @default(cuid())
   name          String?
@@ -49,6 +56,8 @@ model User {
   subscriptions Subscription[]
   watchHistory  WatchHistory[]
   bookmarks     Bookmark[]
+  wishlist      WishlistItem[]
+  pageViews     PageView[]
 
   @@map("users")
 }
@@ -63,8 +72,51 @@ model Subscription {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
+  payments Payment[]
+
   @@index([userId])
   @@map("subscriptions")
+}
+
+/// Paiement d'un abonnement Premium — ne stocke AUCUNE coordonnée bancaire
+/// (CDC §8.2 : seuls l'identifiant du prestataire et les montants).
+model Payment {
+  id            String        @id @default(cuid())
+  subscriptionId String?
+  subscription  Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  userId        String?
+  provider      String        // "WAVE" | "CINETPAY" | "PAYDUNYA" | "STRIPE" | "MANUAL"
+  providerRef   String        @unique // id de transaction côté prestataire — clé d'idempotence (§8.2)
+  amount        Int           // montant en centimes/minor units
+  currency      String        @default("XOF")
+  status        PaymentStatus @default(PENDING)
+  plan          SubscriptionPlan @default(MONTHLY)
+  rawPayload    Json?         // payload brut du webhook (audit, jamais de CB)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  events PaymentEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
+}
+
+/// Journal brut des événements reçus du prestataire (CDC §13 payment_events).
+/// `eventRef` unique → rejouer le même webhook est sans effet (idempotence §8.2).
+model PaymentEvent {
+  id         String   @id @default(cuid())
+  paymentId  String?
+  payment    Payment? @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  provider   String
+  eventType  String   // ex. "payment.succeeded", "charge.completed"
+  eventRef   String   @unique // identifiant d'événement côté prestataire
+  processed  Boolean  @default(false)
+  rawPayload Json?
+  createdAt  DateTime @default(now())
+
+  @@index([provider, eventType])
+  @@map("payment_events")
 }
 
 model Category {
@@ -97,7 +149,6 @@ model Media {
   categories       MediaCategory[]
   seasons          Season[]
   watchHistory     WatchHistory[]
-  bookmarks        Bookmark[]
 
   @@index([slug])
   @@index([type, accessLevel, isPublished])
@@ -167,11 +218,112 @@ model Bookmark {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mediaId   String
-  media     Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  /// Slug du titre : Media.slug local OU identifiant externe
+  /// (`frenchstream-movie-…`, `frenchstream-series-…`, `frenchmanga-anime-…`).
+  /// Pas de FK vers Media pour ne pas exclure le catalogue partenaire.
+  mediaSlug String
   createdAt DateTime @default(now())
 
-  @@unique([userId, mediaId])
+  @@unique([userId, mediaSlug])
   @@index([userId])
   @@map("bookmarks")
+}
+
+/// Liste de souhaits d'un utilisateur — même logique que Bookmark :
+/// slug libre (local ou partenaire externe), sans FK vers Media.
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaSlug String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, mediaSlug])
+  @@index([userId])
+  @@map("wishlist_items")
+}
+
+/// Visite de page — trafic du site pour le dashboard admin.
+/// Une ligne par page vue (anonyme par défaut, reliée à l'utilisateur si
+/// connecté). Aucune donnée personnelle : chemin + horodatage suffisent
+/// pour les visiteurs mensuels et les courbes de trafic.
+model PageView {
+  id        String   @id @default(cuid())
+  path      String   @db.VarChar(512)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path, createdAt])
+  @@map("page_views")
+}
+
+/* ------------------------------------------------------------------ */
+/* Catalogue externe (CDC §13 : content_providers / provider_assets)   */
+/*                                                                     */
+/* Les assets externes ne sont JAMAIS mélangés à Media : clé           */
+/* (provider, externalId, contentType) — l'identifiant CinéMax reste   */
+/* indépendant de l'identifiant TMDB/IMDb (§4.6).                     */
+/* ------------------------------------------------------------------ */
+
+enum ProviderContentType {
+  MOVIE
+  SERIES
+  ANIME
+}
+
+enum ProviderSyncStatus {
+  RUNNING
+  SUCCESS
+  PARTIAL
+  FAILED
+}
+
+/// Un titre du catalogue d'un fournisseur externe (métadonnées seulement).
+model ProviderAsset {
+  id            String               @id @default(cuid())
+  provider                          String // "FRENCHSTREAM" — générique pour tout futur fournisseur
+  externalId                        String // TMDB/IMDb ; nom pour les animés (pas d'id exposé)
+  contentType   ProviderContentType
+  title                             String
+  releaseYear   Int?
+  posterUrl                           String?
+  totalEpisodes Int?                 // animés uniquement
+  /// Forme de lecture réelle chez le fournisseur : "movie" ou "tv".
+  /// Indispensable pour les animés (un même catalogue mélange films et séries)
+  /// et pour router vers le bon lecteur (/films vs /series).
+  sourceType    String?
+  /// Rang dans l'ordre « popular » du fournisseur (1 = plus tendance). Alimente la
+  /// section « À la une ». Rafraîchi à chaque synchro de l'ordre popular.
+  trendingRank  Int?
+  /// Publication contrôlée par l'admin : un asset masqué (isPublished=false)
+  /// disparaît des grilles, de la recherche et de la une, mais reste en base.
+  /// La synchro ne l'écrase jamais (l'admin reste maître de la mise en ligne).
+  /// Par défaut, un asset importé est publié (comportement historique).
+  isPublished   Boolean            @default(true)
+  firstSeenAt   DateTime             @default(now())
+  lastSeenAt    DateTime             @default(now()) // rafraîchi à chaque synchro
+
+  @@unique([provider, externalId, contentType])
+  @@index([provider, contentType, lastSeenAt])
+  @@index([provider, contentType, trendingRank])
+  @@index([provider, isPublished])
+  @@map("provider_assets")
+}
+
+/// Journal d'une synchro incrémentale (audit, reprise après incident §15).
+model ProviderSyncRun {
+  id             String             @id @default(cuid())
+  provider       String
+  status         ProviderSyncStatus @default(RUNNING)
+  pagesFetched   Int                @default(0)
+  assetsUpserted Int                @default(0)
+  assetsPruned   Int                @default(0)
+  error          String?            @db.Text
+  startedAt      DateTime           @default(now())
+  finishedAt     DateTime?
+
+  @@index([provider, startedAt])
+  @@map("provider_sync_runs")
 }

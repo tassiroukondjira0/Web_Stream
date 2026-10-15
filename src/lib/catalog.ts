@@ -20,27 +20,6 @@ export interface MediaItem {
 
 export const FALLBACK_CATALOG: MediaItem[] = [
   {
-    id: "med-1",
-    title: "Big Buck Bunny",
-    slug: "big-buck-bunny",
-    synopsis:
-      "Un classique de l'animation libre en haute définition. Suivez les péripéties d'un lapin géant au grand cœur confronté à un trio de petits tyrans de la forêt qui perturbent la paix de la clairière.",
-    type: "MOVIE",
-    accessLevel: "FREE",
-    releaseYear: 2008,
-    durationMinutes: 10,
-    posterUrl: "https://upload.wikimedia.org/wikipedia/commons/c/c5/Big_buck_bunny_poster_big.jpg",
-    backdropUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1600",
-    videoStreamId: "demo-bunny",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
-    isPublished: true,
-    rightsValidUntil: "2030-12-31",
-    categories: [
-      { name: "Animation", slug: "animation" },
-      { name: "Comédie", slug: "comedie" },
-    ],
-  },
-  {
     id: "med-2",
     title: "Sintel",
     slug: "sintel",
@@ -116,7 +95,7 @@ export const FALLBACK_CATALOG: MediaItem[] = [
     posterUrl: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=800",
     backdropUrl: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=1600",
     videoStreamId: "demo-series-1",
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
     isPublished: true,
     rightsValidUntil: "2032-12-31",
     categories: [

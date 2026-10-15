@@ -200,3 +200,30 @@ export function fetchTvDetails(seriesId: number): Promise<TmdbTvDetails> {
 export function fetchTvSeason(seriesId: number, seasonNumber: number): Promise<TmdbSeason> {
   return tmdbFetch<TmdbSeason>(`/tv/${seriesId}/season/${seasonNumber}`);
 }
+
+// ─── Enrichissement d'affiches (catalogue partenaire) ───────────────────────
+
+/** Vrai si un identifiant TMDB (v4) ou une clé (v3) est configuré. */
+export function hasTmdbCredentials(): boolean {
+  return Boolean(process.env.TMDB_API_TOKEN || process.env.TMDB_API_KEY);
+}
+
+/**
+ * Résout l'URL d'affiche TMDB d'un titre par son identifiant TMDB.
+ * Utilisé pour compléter les affiches manquantes du catalogue partenaire
+ * (les endpoints `/tv` et `/anime` de certains fournisseurs n'exposent pas de
+ * poster).
+ * Retourne null si absent ou en cas d'erreur — jamais d'exception remontée.
+ */
+export async function fetchTmdbPoster(
+  tmdbId: string,
+  kind: "movie" | "tv"
+): Promise<string | null> {
+  if (!/^\d{1,10}$/.test(tmdbId)) return null;
+  try {
+    const data = await tmdbFetch<{ poster_path: string | null }>(`/${kind}/${tmdbId}`);
+    return data.poster_path ? `${TMDB_IMG}/w500${data.poster_path}` : null;
+  } catch {
+    return null;
+  }
+}

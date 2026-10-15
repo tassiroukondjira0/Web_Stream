@@ -65,9 +65,9 @@ async function runValidationTests() {
 
   // TEST 4 : Droits de diffusion & Détection d'expiration (Section 13)
   try {
-    const bunny = await getMediaBySlug("big-buck-bunny");
-    assert(!!bunny, "Catalogue : Fiche Big Buck Bunny accessible");
-    const isValid = bunny ? new Date(bunny.rightsValidUntil) > new Date() : false;
+    const sintel = await getMediaBySlug("sintel");
+    assert(!!sintel, "Catalogue : Fiche Sintel accessible");
+    const isValid = sintel ? new Date(sintel.rightsValidUntil) > new Date() : false;
     assert(isValid, "Droits : Une œuvre avec droits valides peut être visionnée");
 
     // Simulation œuvre expirée
@@ -80,7 +80,7 @@ async function runValidationTests() {
 
   // TEST 5 : Modèle Freemium & Séparation des rôles
   try {
-    const freeMovie = await getMediaBySlug("big-buck-bunny");
+    const freeMovie = await getMediaBySlug("sintel");
     assert(freeMovie?.accessLevel === "FREE", "Freemium : Contenu d'appel gratuit identifié");
 
     const premiumMovie = await getMediaBySlug("tears-of-steel");
@@ -91,8 +91,8 @@ async function runValidationTests() {
 
   // TEST 6 : Recherche & URLs propres (Section 12.1)
   try {
-    const bunny = await getMediaBySlug("big-buck-bunny");
-    assert(bunny?.slug === "big-buck-bunny", "SEO : Format d'URL propre /films/nom-du-film respecté");
+    const sintel = await getMediaBySlug("sintel");
+    assert(sintel?.slug === "sintel", "SEO : Format d'URL propre /films/nom-du-film respecté");
     const serie = await getMediaBySlug("chroniques-pionnieres");
     assert(serie?.type === "SERIES", "Séries : Format de série avec épisodes reconnu");
   } catch (e) {

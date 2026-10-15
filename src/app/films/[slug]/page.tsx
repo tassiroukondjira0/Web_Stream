@@ -4,8 +4,10 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getMediaBySlug, getSimilarMedias, getAllMedias } from "@/lib/catalog";
 import { getAppUrl } from "@/lib/env";
+import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
+import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { ShieldCheck, Film, Calendar, Clock } from "lucide-react";
 
@@ -72,6 +74,11 @@ async function FilmContent({ params }: PageProps) {
 
   const similarFilms = await getSimilarMedias(film.slug, film.categories[0]?.slug);
   const appUrl = getAppUrl();
+  // L'ADMIN accède à tout le catalogue sans pass Premium.
+  const currentUser = await getCurrentUser().catch(() => null);
+  const hasAccess =
+    film.accessLevel === "FREE" ||
+    (currentUser ? hasPremiumAccess(currentUser.role) : false);
 
   // Données structurées JSON-LD adaptées aux films (Schema.org / Google Rich Results)
   const jsonLd = {
@@ -99,7 +106,7 @@ async function FilmContent({ params }: PageProps) {
       />
 
       {/* Fil d'Ariane */}
-      <nav className="mb-6 flex items-center gap-2 text-xs text-zinc-400">
+      <nav className="mb-6 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
         <Link href="/" className="hover:text-white transition-colors">
           Accueil
         </Link>
@@ -108,7 +115,7 @@ async function FilmContent({ params }: PageProps) {
           Films
         </Link>
         <span>/</span>
-        <span className="text-zinc-200">{film.title}</span>
+        <span className="min-w-0 flex-1 truncate text-zinc-200 sm:flex-none">{film.title}</span>
       </nav>
 
       {/* Lecteur Vidéo Principal */}
@@ -118,8 +125,7 @@ async function FilmContent({ params }: PageProps) {
           poster={film.backdropUrl || film.posterUrl}
           title={film.title}
           isPremium={film.accessLevel === "PREMIUM"}
-          // Par défaut pour la démo, l'accès au contenu gratuit est ouvert, et premium simule le verrou
-          hasAccess={film.accessLevel === "FREE"}
+          hasAccess={hasAccess}
         />
       </div>
 
@@ -128,7 +134,7 @@ async function FilmContent({ params }: PageProps) {
         <div className="lg:col-span-2">
           {/* En-tête */}
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl lg:text-4xl">
               {film.title}
             </h1>
             {film.accessLevel === "PREMIUM" ? (
@@ -188,6 +194,7 @@ async function FilmContent({ params }: PageProps) {
           {/* Boutons d'interaction */}
           <div className="mt-8 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={film.slug} />
+            <WishlistButton mediaSlug={film.slug} />
             <ShareButton title={film.title} />
           </div>
         </div>
@@ -208,7 +215,7 @@ async function FilmContent({ params }: PageProps) {
                   className="h-16 w-12 rounded-md object-cover bg-zinc-800 flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-semibold text-white truncate group-hover:text-red-400 transition-colors">
+                  <h4 className="text-sm font-semibold text-white truncate group-hover:text-violet-400 transition-colors">
                     {sim.title}
                   </h4>
                   <p className="text-xs text-zinc-400 mt-0.5">

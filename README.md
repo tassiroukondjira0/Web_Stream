@@ -80,11 +80,7 @@ git push origin main
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` | Signature des sessions. **Aucun repli** |
 | `NEXT_PUBLIC_APP_NAME` | `CinéMax` | Nom affiché |
 | `NEXT_PUBLIC_APP_URL` | *(optionnel)* | Voir encadré ci-dessous |
-| `BUNNY_STREAM_LIBRARY_ID` | ID Video Library | Vidéos |
-| `BUNNY_STREAM_API_KEY` | Clé API Library | Vidéos |
-| `BUNNY_STREAM_CDN_HOSTNAME` | Pull Zone hostname | URLs signées |
-| `BUNNY_STREAM_TOKEN_AUTHENTICATION_KEY` | Token Authentication | URLs signées |
-| `TMDB_API_TOKEN` | Token v4 | Import de métadonnées |
+| `TMDB_API_TOKEN` | Token v4 | Affiches et métadonnées |
 
 #### Automatiser l'envoi (recommandé)
 
@@ -149,6 +145,89 @@ npm run deploy       # vercel --prod
 
 Ou pousser sur `main` : chaque commit déclenche un déploiement automatique.
 
+
+## Déploiement sur Netlify
+
+Netlify propose un déploiement serverless avec un Runtime Next.js natif. Contrairement à Vercel, la base de données PostgreSQL (Neon, Supabase, Railway) est hébergée séparément, mais le déploiement est simple et gratuit pour commencer.
+
+### 1. Pousser le code sur GitHub
+
+```bash
+git add .
+git commit -m "feat: configuration Netlify"
+git push origin main
+```
+
+### 2. Créer le site Netlify
+
+1. Sur [app.netlify.com/start](https://app.netlify.com/start) → **Add new site** → **Import site**
+2. Sélectionner le dépôt `Weeb_Stream`
+3. Dans *Build configuration* :
+   - **Build command** : `npx prisma generate && npx prisma db push && next build`
+   - **Install command** : `npm ci`
+   - **Publish directory** : `.next/standalone`
+4. Cliquer sur **Deploy site**
+
+### 3. Configurer les variables d'environnement
+
+**Site → Settings → Environment Variables** → *Add a variable*.
+Renseigner les variables pour **Production** et **Preview** (cocher les deux colonnes `Production` et `Preview`).
+
+| Variable | Valeur | Remarque |
+| --- | --- | --- |
+| `DATABASE_URL` | URL Neon **poolée** | Obligatoire. Prisma en a besoin au build |
+| `DATABASE_READY` | `true` | Active PostgreSQL. Sinon `FALLBACK_CATALOG` |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32` | Signature des sessions. **Aucun repli** |
+| `NEXT_PUBLIC_APP_NAME` | `CinéMax` | Nom affiché |
+| `NEXT_PUBLIC_APP_URL` | *(optionnel)* | Voir encadré ci-dessous |
+| `TMDB_API_TOKEN` | Token TMDB (v4) | Affiches et métadonnées |
+
+> `NEXT_PUBLIC_APP_URL` : laisser vide pour le premier déploiement. Renseigner
+> uniquement si vous attachez un domaine personnalisé.
+
+### 4. Vérifier la base de données
+
+Contrairement à Vercel, **le build applique les tables** grâce à `prisma db push`
+dans la commande de build. En local :
+
+```bash
+npm run db:studio    # ou : npm run db:push si les tables manquent
+```
+
+> Si vous optez pour des migrations versionnées plus tard, remplacez `prisma db push`
+> par `prisma migrate deploy` dans la commande de build de Netlify.
+
+### 5. Redéployer
+
+Le déploiement est automatique à chaque push sur `main` :
+
+```bash
+git push origin main
+```
+
+Ou sur l'interface Netlify : **Deploys** → **Trigger deploy**.
+
+## Netlify vs Vercel : choix du fournisseur
+
+### Vercel (recommandé pour ce projet)
+
+- Support natif et complet de Next.js 16 (Turbopack, Partial Prerender)
+- Pas de fichier de configuration (`netlify.toml`, `vercel.json`)
+- Le projet est déjà préparé pour Vercel (`vercel.json`, `scripts/vercel-env.ps1`)
+
+### Netlify
+
+- Fonctionne mais nécessite `netlify.toml` (créé dans ce dépôt)
+- La base de données PostgreSQL doit être externe (Neon, Supabase, Railway)
+- Le build inclut `prisma db push` pour créer les tables automatiquement
+- Les fonctions serverless ont un timeout de 10 s (suffisant pour ce projet)
+
+> **Recommandation** : pour ce projet, qui utilise Next.js 16, Prisma
+> et une base de données externe, **Vercel reste la solution la plus simple**
+> (pas de `netlify.toml` à maintenir). Netlify est une alternative valable si
+> vous utilisez déjà l'écosystème Netlify.
+
+
 ## Variables d'environnement : ce qui est lu par le code
 
 | Variable | Lue dans | Portée |
@@ -158,7 +237,6 @@ Ou pousser sur `main` : chaque commit déclenche un déploiement automatique.
 | `NEXTAUTH_SECRET` | `src/lib/auth.ts` | Runtime |
 | `NEXT_PUBLIC_APP_URL` | `src/lib/env.ts` | Build (inliné) |
 | `NEXT_PUBLIC_APP_NAME` | — *(non lue actuellement)* | Build |
-| `BUNNY_STREAM_*` | `src/lib/bunny-stream.ts` | Runtime |
 | `TMDB_API_TOKEN` / `TMDB_API_KEY` | `src/lib/tmdb.ts` | Runtime |
 
 **Non utilisées** (ne les renseignez pas) : `NEXTAUTH_URL`, `CLOUDFLARE_*`.
@@ -188,8 +266,8 @@ production : le serverless ouvre de nombreuses connexions courtes.
   dès qu'il y a monétisation. Avec un système d'abonnement (`/premium`,
   webhook de paiement), vérifiez votre éligibilité.
 - **Limites Hobby** : 100 Go de bande passante, 1 M d'invocations de fonctions,
-  4 h de CPU actif et 5 000 transformations d'images par mois. Vos vidéos
-  passant par Bunny.net, votre consommation reste faible.
+  4 h de CPU actif et 5 000 transformations d'images par mois. Les vidéos étant
+  lues via un lecteur partenaire, votre consommation reste faible.
 - **Timeout des fonctions** : 10 s par défaut. L'import TMDB
   (`/api/admin/import/tmdb`) peut le dépasser sur un gros lot.
 - **Webhook de paiement** : mettez à jour l'URL de callback chez le

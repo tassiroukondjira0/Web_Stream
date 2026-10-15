@@ -1,180 +1,73 @@
+import { Suspense } from "react";
+import { connection } from "next/server";
 import Link from "next/link";
-import { Play, Sparkles, Clock, ShieldCheck, Film, Tv } from "lucide-react";
+import { ShieldCheck, Flame, Clapperboard, Globe } from "lucide-react";
 import { NewsletterBanner } from "@/components/NewsletterBanner";
+import {
+  getPartnerAnimes,
+  getFeaturedPartner,
+  getFrenchStreamMovies,
+  getFrenchStreamSeries,
+  providerItemHref,
+  FEATURED_PERIOD_DAYS,
+} from "@/lib/provider-catalog";
+import { PosterCarousel } from "@/components/PosterCarousel";
+import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 
-const DEMO_FEATURED = {
-  title: "Big Buck Bunny",
-  slug: "big-buck-bunny",
-  synopsis: "Un classique de l'animation libre en haute définition. Suivez les péripéties d'un lapin géant au grand cœur confronté à un trio de petits tyrans de la forêt.",
-  duration: "10 min",
-  year: 2008,
-  genre: "Animation • Comédie",
-  access: "Gratuit",
-  backdrop: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1600",
+/** Nombre de titres affichés dans la vitrine « Mangas ». */
+const MANGA_LIMIT = 18;
+/** Nombre de titres dans la sélection « À la une » rotative. */
+const FEATURED_LIMIT = 16;
+/** Nombre de titres par rangée (films / séries) sur l'accueil. */
+const RECENT_LIMIT = 12;
+
+export const metadata = {
+  title: "CinéMax — Streaming de films et séries",
+  description:
+    "Découvrez un large catalogue de films, séries et animés en streaming. Nouveautés et coups de cœur.",
 };
-
-const DEMO_CATALOG = [
-  {
-    title: "Sintel",
-    slug: "sintel",
-    type: "Film",
-    year: 2010,
-    duration: "15 min",
-    genre: "Aventure • Fantastique",
-    access: "Gratuit",
-    isPremium: false,
-    poster: "https://upload.wikimedia.org/wikipedia/commons/8/8f/Sintel_poster.jpg",
-  },
-  {
-    title: "Tears of Steel",
-    slug: "tears-of-steel",
-    type: "Film",
-    year: 2012,
-    duration: "12 min",
-    genre: "Science-Fiction",
-    access: "Premium",
-    isPremium: true,
-    poster: "https://upload.wikimedia.org/wikipedia/commons/0/02/Tears_of_Steel_poster.jpg",
-  },
-  {
-    title: "Cosmos Laundromat",
-    slug: "cosmos-laundromat",
-    type: "Film",
-    year: 2015,
-    duration: "12 min",
-    genre: "Animation • Sci-Fi",
-    access: "Premium",
-    isPremium: true,
-    poster: "https://upload.wikimedia.org/wikipedia/commons/0/00/Cosmos_Laundromat_poster.jpg",
-  },
-  {
-    title: "Les Chroniques Pionnières",
-    slug: "chroniques-pionnieres",
-    type: "Série",
-    year: 2024,
-    duration: "2 épisodes",
-    genre: "Documentaire",
-    access: "Gratuit",
-    isPremium: false,
-    poster: "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=800",
-  },
-];
 
 export default function HomePage() {
   return (
     <div className="flex flex-col gap-12 pb-16">
-      {/* Hero Banner */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-zinc-900 to-zinc-950 px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
-              <Sparkles className="h-3.5 w-3.5" />
-              Contenu à l&apos;affiche
+      {/* À la une — sélection rotative (renouvelée automatiquement) */}
+      <Suspense
+        fallback={
+          <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/40 p-8 text-center text-sm text-zinc-400">
+              Chargement de la sélection…
             </div>
-            <h1 className="mt-4 text-4xl font-extrabold tracking-tight sm:text-6xl text-white">
-              {DEMO_FEATURED.title}
-            </h1>
-            <p className="mt-3 text-sm text-zinc-400">
-              {DEMO_FEATURED.genre} • {DEMO_FEATURED.year} • {DEMO_FEATURED.duration}
-            </p>
-            <p className="mt-4 text-base text-zinc-300 leading-relaxed">
-              {DEMO_FEATURED.synopsis}
-            </p>
+          </section>
+        }
+      >
+        <FeaturedSection />
+      </Suspense>
 
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link
-                href={`/films/${DEMO_FEATURED.slug}`}
-                className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-red-600/30 transition-transform hover:scale-105 hover:bg-red-500"
-              >
-                <Play className="h-4 w-4 fill-white" />
-                Lancer la lecture
-              </Link>
-              <Link
-                href={`/films/${DEMO_FEATURED.slug}`}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-zinc-900/60 px-5 py-3 text-sm font-medium text-white backdrop-blur-sm hover:bg-zinc-800"
-              >
-                Fiche détaillée
-              </Link>
+      {/* Films & séries — nouveautés en haut du catalogue */}
+      <Suspense
+        fallback={
+          <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/40 p-8 text-center text-sm text-zinc-400">
+              Chargement du catalogue…
             </div>
-          </div>
-        </div>
-      </section>
+          </section>
+        }
+      >
+        <RecentSection />
+      </Suspense>
 
-      {/* Catalogue en vedette */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-              Nouveautés & Coups de cœur
-            </h2>
-            <p className="text-xs text-zinc-400 sm:text-sm">
-              Sélection disponible en haute fidélité visuelle et sonore
-            </p>
-          </div>
-          <Link
-            href="/films"
-            className="text-xs font-medium text-red-400 hover:text-red-300 sm:text-sm"
-          >
-            Tout voir →
-          </Link>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:gap-6">
-          {DEMO_CATALOG.map((item) => (
-            <Link
-              key={item.slug}
-              href={item.type === "Film" ? `/films/${item.slug}` : `/series/${item.slug}`}
-              className="group relative flex flex-col overflow-hidden rounded-xl bg-zinc-900/60 border border-white/5 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:shadow-xl hover:shadow-black/50"
-            >
-              {/* Badge Freemium */}
-              <div className="absolute top-2.5 right-2.5 z-10">
-                {item.isPremium ? (
-                  <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold text-black backdrop-blur-md">
-                    <ShieldCheck className="h-3 w-3" />
-                    PREMIUM
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-md bg-emerald-500/90 px-2 py-0.5 text-[10px] font-bold text-black backdrop-blur-md">
-                    GRATUIT
-                  </span>
-                )}
-              </div>
-
-              {/* Affiche */}
-              <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-800">
-                <img
-                  src={item.poster}
-                  alt={item.title}
-                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end p-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white shadow-md">
-                    <Play className="h-3 w-3 fill-white" />
-                    Visionner
-                  </span>
-                </div>
-              </div>
-
-              {/* Métadonnées */}
-              <div className="flex flex-1 flex-col p-3">
-                <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                  <span className="flex items-center gap-1">
-                    {item.type === "Film" ? <Film className="h-3 w-3" /> : <Tv className="h-3 w-3" />}
-                    {item.type}
-                  </span>
-                  <span>•</span>
-                  <span>{item.year}</span>
-                </div>
-                <h3 className="mt-1 text-sm font-semibold text-white line-clamp-1 group-hover:text-red-400 transition-colors">
-                  {item.title}
-                </h3>
-                <p className="mt-0.5 text-[11px] text-zinc-500">{item.genre}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      {/* Mangas / animés */}
+      <Suspense
+        fallback={
+          <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/40 p-8 text-center text-sm text-zinc-400">
+              Chargement des animés…
+            </div>
+          </section>
+        }
+      >
+        <MangaSection />
+      </Suspense>
 
       {/* Bannière Modèle Freemium */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -202,10 +95,186 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Newsletter facultative avec consentement */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <NewsletterBanner />
-      </section>
+      <NewsletterBanner />
     </div>
+  );
+}
+
+/**
+ * Nouveautés du catalogue — films puis séries, affichés en haut de page.
+ * Données issues de la base synchronisée (ProviderAsset publiés par l'admin).
+ */
+async function RecentSection() {
+  const [movies, series] = await Promise.all([
+    getFrenchStreamMovies(1, RECENT_LIMIT),
+    getFrenchStreamSeries(1, RECENT_LIMIT),
+  ]);
+
+  const hasMovies = movies.items.length > 0;
+  const hasSeries = series.items.length > 0;
+
+  if (!hasMovies && !hasSeries) return null;
+
+  return (
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      {hasMovies && (
+        <div className="mb-10">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Clapperboard className="h-5 w-5 text-sky-500" />
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+                  Films récents
+                </h2>
+                <p className="text-xs text-zinc-400 sm:text-sm">
+                  Les derniers films ajoutés
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/films"
+              className="text-xs font-medium text-sky-400 hover:text-sky-300 sm:text-sm"
+            >
+              Tout voir →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-5">
+            {movies.items.map((item) => (
+              <ProviderPosterCard
+                key={`movie-${item.externalId}`}
+                href={providerItemHref(item)}
+                posterUrl={item.posterUrl}
+                title={item.title}
+                year={item.releaseYear ? String(item.releaseYear) : null}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {hasSeries && (
+        <div>
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-sky-500" />
+              <div>
+                <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+                  Séries récentes
+                </h2>
+                <p className="text-xs text-zinc-400 sm:text-sm">
+                  Les dernières séries ajoutées
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/series"
+              className="text-xs font-medium text-sky-400 hover:text-sky-300 sm:text-sm"
+            >
+              Tout voir →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-5">
+            {series.items.map((item) => (
+              <ProviderPosterCard
+                key={`series-${item.externalId}`}
+                href={providerItemHref(item)}
+                posterUrl={item.posterUrl}
+                title={item.title}
+                year={item.releaseYear ? String(item.releaseYear) : null}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Mangas / animés — vitrine horizontale. */
+async function MangaSection() {
+  const animes = await getPartnerAnimes(1, MANGA_LIMIT);
+  if (animes.items.length === 0) return null;
+
+  return (
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+            Mangas & animés
+          </h2>
+          <p className="text-xs text-zinc-400 sm:text-sm">
+            Les derniers animés ajoutés
+          </p>
+        </div>
+        <Link
+          href="/animes"
+          className="text-xs font-medium text-fuchsia-400 hover:text-fuchsia-300 sm:text-sm"
+        >
+          Tout voir →
+        </Link>
+      </div>
+      <div className="mt-6">
+        <PosterCarousel
+          items={animes.items.map((item) => ({
+            key: `manga-${item.externalId}`,
+            href: providerItemHref(item),
+            posterUrl: item.posterUrl,
+            title: item.title,
+            year: item.releaseYear ? String(item.releaseYear) : null,
+            badge: item.sourceType === "tv" ? "Série" : "Film",
+            badgeTone: item.sourceType === "tv" ? "sky" : "fuchsia",
+          }))}
+        />
+      </div>
+    </section>
+  );
+}
+
+/**
+ * « À la une » — vitrine horizontale glissable des films les plus tendance.
+ * La sélection suit l'ordre « popular » du fournisseur et se renouvelle
+ * automatiquement toutes les FEATURED_PERIOD_DAYS (2 semaines) : sélection
+ * déterministe calculée côté données (getFeaturedPartner) — aucun cron requis.
+ */
+async function FeaturedSection() {
+  await connection();
+
+  const { items, renewalLabel } = await getFeaturedPartner(FEATURED_LIMIT);
+  if (items.length === 0) return null;
+
+  return (
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="rounded-2xl border border-fuchsia-500/20 bg-gradient-to-r from-zinc-900 via-zinc-900 to-fuchsia-950/30 p-6 sm:p-8">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-lg shadow-purple-600/30">
+            <Flame className="h-5 w-5 text-white" />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+              À la une
+            </h2>
+            <p className="text-xs text-zinc-400 sm:text-sm">
+              Les films les plus tendance — renouvelé toutes les{" "}
+              {FEATURED_PERIOD_DAYS} jours (prochaine mise à jour : {renewalLabel})
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <PosterCarousel
+            size="lg"
+            items={items.map((item) => ({
+              key: `featured-${item.externalId}`,
+              href: item.href,
+              posterUrl: item.posterUrl,
+              title: item.title,
+              year: item.releaseYear ? String(item.releaseYear) : null,
+              badge: "Tendance",
+              badgeTone: "fuchsia",
+            }))}
+          />
+        </div>
+      </div>
+    </section>
   );
 }

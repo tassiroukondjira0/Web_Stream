@@ -36,10 +36,6 @@ $Whitelist = [ordered]@{
     "NEXTAUTH_SECRET"                     = $null   # signature des sessions JWT
     "NEXT_PUBLIC_APP_NAME"                = $null
     "NEXT_PUBLIC_APP_URL"                 = $null   # vide => fallback Vercel
-    "BUNNY_STREAM_LIBRARY_ID"             = $null
-    "BUNNY_STREAM_API_KEY"                = $null
-    "BUNNY_STREAM_CDN_HOSTNAME"           = $null
-    "BUNNY_STREAM_TOKEN_AUTHENTICATION_KEY" = $null
     "TMDB_API_TOKEN"                      = $null
     "TMDB_API_KEY"                        = $null
 }

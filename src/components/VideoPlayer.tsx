@@ -148,7 +148,7 @@ export function VideoPlayer({
       {!isPlaying && (
         <button
           onClick={togglePlay}
-          className="absolute inset-0 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-600/90 text-white shadow-xl shadow-red-600/40 backdrop-blur-sm transition-transform hover:scale-110"
+          className="absolute inset-0 m-auto flex h-16 w-16 items-center justify-center rounded-full bg-violet-600/90 text-white shadow-xl shadow-violet-600/40 backdrop-blur-sm transition-transform hover:scale-110"
           aria-label="Démarrer la vidéo"
         >
           <Play className="h-8 w-8 fill-white ml-1" />
@@ -169,7 +169,7 @@ export function VideoPlayer({
             max={duration || 100}
             value={currentTime}
             onChange={handleSeek}
-            className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-red-600 hover:h-2 transition-all"
+            className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-violet-600 hover:h-2 transition-all"
             aria-label="Position de lecture"
           />
         </div>
@@ -179,7 +179,7 @@ export function VideoPlayer({
           <div className="flex items-center gap-4">
             <button
               onClick={togglePlay}
-              className="hover:text-red-400 transition-colors"
+              className="hover:text-violet-400 transition-colors"
               aria-label={isPlaying ? "Pause" : "Lecture"}
             >
               {isPlaying ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 fill-white" />}
@@ -199,7 +199,7 @@ export function VideoPlayer({
             <div className="flex items-center gap-2">
               <button onClick={toggleMute} aria-label="Muet">
                 {isMuted || volume === 0 ? (
-                  <VolumeX className="h-5 w-5 text-red-400" />
+                  <VolumeX className="h-5 w-5 text-violet-400" />
                 ) : (
                   <Volume2 className="h-5 w-5" />
                 )}
@@ -231,7 +231,7 @@ export function VideoPlayer({
             )}
             <button
               onClick={toggleFullscreen}
-              className="hover:text-red-400 transition-colors"
+              className="hover:text-violet-400 transition-colors"
               aria-label="Plein écran"
             >
               <Maximize className="h-5 w-5" />

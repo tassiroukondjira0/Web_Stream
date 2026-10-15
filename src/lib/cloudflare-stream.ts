@@ -5,8 +5,8 @@ import { SignJWT } from "jose";
  * - Création d'URLs de téléversement direct (Direct Creator Upload via TUS)
  * - Signature de jetons de lecture restreints (Signed URL / Tokens)
  *
- * ⚠️ MODULE NON UTILISÉ — aucun import dans src/. Le projet s'appuie sur
- *    Bunny.net (src/lib/bunny-stream.ts). Les valeurs de repli sont
+ * ⚠️ MODULE NON UTILISÉ — aucun import dans src/. Le projet s'appuie sur un
+ *    lecteur externe. Les valeurs de repli sont
  *    volontairement vides : y mettre un gabarit faisait échouer le scanner de
  *    secrets Netlify (qui compare ces chaînes aux variables d'environnement).
  *    Fournir la configuration via les variables CLOUDFLARE_STREAM_* à l'usage.

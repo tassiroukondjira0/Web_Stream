@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { getAllMedias } from "@/lib/catalog";
+import { getPartnerMovies, providerItemHref } from "@/lib/provider-catalog";
+import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 import { Film, Play, ShieldCheck, Filter } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -11,11 +12,11 @@ export const metadata: Metadata = {
 };
 
 interface FilmsPageProps {
-  searchParams: Promise<{ categorie?: string; acces?: string }>;
+  searchParams: Promise<{ categorie?: string; acces?: string; page?: string }>;
 }
 
 async function FilmsContent({ searchParams }: FilmsPageProps) {
-  const { categorie, acces } = await searchParams;
+  const { categorie, acces, page } = await searchParams;
   const allMedias = await getAllMedias();
 
   // Filtrage
@@ -35,6 +36,12 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
     { label: "Action", slug: "action" },
     { label: "Comédie", slug: "comedie" },
   ];
+
+  // Catalogue partenaire — lu depuis la base synchronisée (CDC §4.7 :
+  // grilles depuis ProviderAsset, pagination côté serveur). Le local
+  // (Media) et l'externe coexistent sans se mélanger (§4.6).
+  const partnerPage = Math.max(1, parseInt(page || "1", 10) || 1);
+  const partner = await getPartnerMovies(partnerPage, 24);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -65,7 +72,7 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
                 href={`/films${queryParams.toString() ? `?${queryParams.toString()}` : ""}`}
                 className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
                   isActive
-                    ? "bg-red-600 text-white font-semibold shadow-md shadow-red-600/30"
+                    ? "bg-violet-600 text-white font-semibold shadow-md shadow-violet-600/30"
                     : "bg-zinc-900 border border-white/10 text-zinc-300 hover:border-white/20 hover:text-white"
                 }`}
               >
@@ -122,7 +129,7 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
                   loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end p-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-red-600 px-3 py-1 text-xs font-semibold text-white shadow-md">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-3 py-1 text-xs font-semibold text-white shadow-md">
                     <Play className="h-3 w-3 fill-white" />
                     Regarder
                   </span>
@@ -140,7 +147,7 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
                     </>
                   )}
                 </div>
-                <h2 className="mt-1 text-sm font-semibold text-white line-clamp-1 group-hover:text-red-400 transition-colors">
+                <h2 className="mt-1 text-sm font-semibold text-white line-clamp-1 group-hover:text-violet-400 transition-colors">
                   {film.title}
                 </h2>
                 <p className="mt-0.5 text-[11px] text-zinc-500">
@@ -150,6 +157,56 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
             </Link>
           ))}
         </div>
+      )}
+
+      {/* Catalogue partenaire — films récents, paginés depuis la base */}
+      {partner.items.length > 0 && (
+        <section className="mt-16">
+          <div className="flex items-baseline justify-between border-b border-white/10 pb-4">
+            <h2 className="text-xl font-bold text-white">
+              Films du catalogue
+            </h2>
+            <span className="text-xs text-zinc-500">
+              {partner.totalItems} titres — page {partner.page} / {partner.totalPages}
+            </span>
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-5">
+            {partner.items.map((item) => (
+              <ProviderPosterCard
+                key={`fs-${item.contentType}-${item.externalId}`}
+                href={providerItemHref(item)}
+                posterUrl={item.posterUrl}
+                title={item.title}
+                year={item.releaseYear ? String(item.releaseYear) : null}
+              />
+            ))}
+          </div>
+
+          {/* Pagination côté serveur */}
+          {partner.totalPages > 1 && (
+            <div className="mt-8 flex items-center justify-center gap-2">
+              {partnerPage > 1 && (
+                <Link
+                  href={`/films${buildPartnerPageHref(partnerPage - 1, categorie, acces)}`}
+                  className="rounded-lg bg-zinc-800 border border-white/10 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700"
+                >
+                  ← Précédent
+                </Link>
+              )}
+              <span className="text-xs text-zinc-500">
+                {partner.page} / {partner.totalPages}
+              </span>
+              {partnerPage < partner.totalPages && (
+                <Link
+                  href={`/films${buildPartnerPageHref(partnerPage + 1, categorie, acces)}`}
+                  className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500"
+                >
+                  Suivant →
+                </Link>
+              )}
+            </div>
+          )}
+        </section>
       )}
     </div>
   );
@@ -167,4 +224,14 @@ export default function FilmsCatalogPage({ searchParams }: FilmsPageProps) {
       <FilmsContent searchParams={searchParams} />
     </Suspense>
   );
+}
+
+/** Conserve les filtres (categorie, acces) lors de la navigation partenaire. */
+function buildPartnerPageHref(targetPage: number, categorie?: string, acces?: string): string {
+  const q = new URLSearchParams();
+  if (categorie) q.set("categorie", categorie);
+  if (acces) q.set("acces", acces);
+  if (targetPage > 1) q.set("page", String(targetPage));
+  const s = q.toString();
+  return s ? `?${s}` : "";
 }

@@ -61,6 +61,16 @@ export async function GET() {
       });
 
       const items = medias.map(dbMediaToItem);
+
+      // Total des titres partenaires (FrenchStream, FrenchManga) — agrégé pour
+      // la carte du dashboard. Inclut publiés et masqués.
+      let partnerTotal = 0;
+      try {
+        partnerTotal = await prisma.providerAsset.count();
+      } catch {
+        partnerTotal = 0;
+      }
+
       return NextResponse.json({
         medias: items,
         stats: {
@@ -68,6 +78,7 @@ export async function GET() {
           published: items.filter((m) => m.isPublished).length,
           premium: items.filter((m) => m.accessLevel === "PREMIUM").length,
           free: items.filter((m) => m.accessLevel === "FREE").length,
+          partnerTotal,
         },
       });
     } catch (error) {
@@ -83,6 +94,8 @@ export async function GET() {
       published: adminCatalog.filter((m) => m.isPublished).length,
       premium: adminCatalog.filter((m) => m.accessLevel === "PREMIUM").length,
       free: adminCatalog.filter((m) => m.accessLevel === "FREE").length,
+      // Sans base, aucun titre partenaire n'est synchronisé.
+      partnerTotal: 0,
     },
   });
 }
@@ -117,7 +130,7 @@ export async function POST(request: Request) {
       posterUrl: body.posterUrl || "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=800",
       backdropUrl: body.backdropUrl || "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1600",
       videoStreamId: body.videoStreamId || `stream-${Date.now()}`,
-      videoUrl: videoUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+      videoUrl: videoUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
       isPublished: isPublished ?? true,
       rightsValidUntil: rightsValidUntil || "2030-12-31",
       categories: body.categories || [{ name: "Général", slug: "general" }],
