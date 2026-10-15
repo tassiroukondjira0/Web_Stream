@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getMediaBySlug, getAllMedias } from "@/lib/catalog";
+import { getMediaBySlug } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { getAppUrl } from "@/lib/env";
 import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
@@ -17,11 +17,9 @@ interface PageProps {
   searchParams?: Promise<{ ep?: string }>;
 }
 
-export async function generateStaticParams() {
-  const medias = await getAllMedias();
-  return medias.filter((m) => m.type === "SERIES").map((m) => ({ slug: m.slug }));
-}
-
+// Pas de generateStaticParams : le catalogue est lu à la requête (base vide au
+// build). Les paramètres sont donc des données runtime, résolues dans le
+// <Suspense> de SeriesPage.
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const serie = await getMediaBySlug(slug);

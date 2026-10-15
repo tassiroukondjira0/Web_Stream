@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getMediaBySlug, getSimilarMedias, getAllMedias } from "@/lib/catalog";
+import { getMediaBySlug, getSimilarMedias } from "@/lib/catalog";
 import { getAppUrl } from "@/lib/env";
 import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
 import { VideoPlayer } from "@/components/VideoPlayer";
@@ -15,12 +15,9 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-// Génération dynamique des paramètres statiques pour pré-rendu SEO
-export async function generateStaticParams() {
-  const medias = await getAllMedias();
-  return medias.filter((m) => m.type === "MOVIE").map((m) => ({ slug: m.slug }));
-}
-
+// Pas de generateStaticParams : le catalogue est lu à la requête (base vide au
+// build). Les paramètres sont donc des données runtime, résolues dans le
+// <Suspense> de FilmPage.
 // 12.1 SEO : Titres et descriptions uniques + OpenGraph pour chaque fiche
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
