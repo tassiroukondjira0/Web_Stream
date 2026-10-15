@@ -37,6 +37,10 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: [
+    { url: "/favicon.svg", type: "image/svg+xml" },
+    { url: "/favicon.ico" },
+  ],
 };
 
 export const viewport: Viewport = {
@@ -62,9 +66,7 @@ function NavbarFallback() {
           href="/"
           className="flex min-w-0 items-center gap-2 text-lg font-bold tracking-tight text-white sm:text-xl"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-base font-black text-white shadow-lg shadow-violet-600/30 sm:h-9 sm:w-9">
-            C
-          </span>
+          <img src="/logo.svg" alt="CinéMax" className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
           <span className="truncate bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
             CinéMax
           </span>
