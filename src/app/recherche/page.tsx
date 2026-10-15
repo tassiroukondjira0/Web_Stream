@@ -64,7 +64,7 @@ async function SearchContent({ searchParams }: SearchPageProps) {
               type="text"
               name="q"
               defaultValue={q || ""}
-              placeholder="Ex: Sintel, animation, action..."
+              placeholder="Ex: titre, animation, action..."
               className="w-full rounded-2xl border border-white/10 bg-zinc-900/90 py-3.5 pl-12 pr-28 text-sm text-white placeholder-zinc-500 shadow-xl focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
             />
             <button

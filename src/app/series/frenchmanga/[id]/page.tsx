@@ -6,7 +6,8 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { prisma } from "@/lib/prisma";
-import { fetchMangaDetail } from "@/modules/providers/frenchmanga/frenchmanga.client";
+import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
+import { fetchMangaDetail, fetchMangaMeta } from "@/modules/providers/frenchmanga/frenchmanga.client";
 
 /**
  * Fiche & lecteur d'un manga du catalogue French-Manga.
@@ -33,8 +34,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       select: { title: true },
     })
     .catch(() => null);
+  const title = asset?.title ?? "Manga";
+  const description = await fetchTmdbOverviewByTitle(title).catch(() => null);
   return {
-    title: `${asset?.title ?? "Manga"} — CinéMax`,
+    title: `${title} — CinéMax`,
+    description: description?.slice(0, 160) ?? undefined,
     robots: { index: false },
   };
 }
@@ -44,18 +48,31 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
   const { id } = await params;
   const sp = await searchParams;
 
-  const [asset, detail] = await Promise.all([
-    prisma.providerAsset
-      .findFirst({
-        where: { provider: "FRENCHMANGA", externalId: id, contentType: "ANIME" },
-        select: { title: true, posterUrl: true, totalEpisodes: true },
-      })
-      .catch(() => null),
+  const asset = await prisma.providerAsset
+    .findFirst({
+      where: { provider: "FRENCHMANGA", externalId: id, contentType: "ANIME" },
+      select: { title: true, posterUrl: true, totalEpisodes: true, releaseYear: true },
+    })
+    .catch(() => null);
+
+  const [detail, overview, fiche] = await Promise.all([
     fetchMangaDetail(id),
+    fetchTmdbOverviewByTitle(asset?.title ?? ""),
+    fetchMangaMeta(id),
   ]);
 
   const title = asset?.title ?? detail?.title ?? "Manga";
+  // Synopsis : TMDB d'abord (FR soigné), sinon la fiche du fournisseur.
+  const synopsis = overview ?? fiche.synopsis;
+  // Année : catalogue, sinon fiche source.
+  const year = asset?.releaseYear ?? fiche.releaseYear;
   const streams = detail?.streams.filter((s) => s.url) ?? [];
+  // Nombre d'épisodes : décompte réel des flux, complété par le catalogue
+  // (mli-eps) quand celui-ci en annonce davantage.
+  const totalEpisodes = Math.max(
+    new Set(streams.map((s) => s.episode)).size,
+    asset?.totalEpisodes ?? 0,
+  );
 
   if (streams.length === 0) {
     return (
@@ -135,21 +152,49 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
       </div>
 
       {episodes.length > 1 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {episodes.map((e) => (
-            <Link
-              key={e}
-              href={`${base}?lang=${encodeURIComponent(lang)}&ep=${e}`}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                e === episode
-                  ? "border-violet-500 bg-violet-600 text-white"
-                  : "border-white/10 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
-              }`}
-            >
-              Ép. {e}
-            </Link>
-          ))}
-        </div>
+        <section aria-label="Liste des épisodes" className="mt-6">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">
+            Épisodes · {lang.toUpperCase()} ({episodes.length})
+          </h2>
+          <ol className="mt-3 max-h-96 space-y-2 overflow-y-auto pr-1">
+            {episodes.map((e) => {
+              const isActive = e === episode;
+              return (
+                <li key={e}>
+                  <Link
+                    href={`${base}?lang=${encodeURIComponent(lang)}&ep=${e}`}
+                    aria-current={isActive ? "true" : undefined}
+                    className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
+                      isActive
+                        ? "border-violet-500 bg-violet-600/20"
+                        : "border-white/10 bg-zinc-900 hover:border-zinc-600 hover:bg-zinc-800"
+                    }`}
+                  >
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-extrabold ${
+                        isActive ? "bg-violet-600 text-white" : "bg-zinc-800 text-zinc-200"
+                      }`}
+                    >
+                      {e}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-semibold text-white">
+                        Épisode {e}
+                      </span>
+                    </span>
+                    {isActive ? (
+                      <span className="shrink-0 rounded-full bg-violet-600 px-2.5 py-1 text-[11px] font-bold text-white">
+                        En cours
+                      </span>
+                    ) : (
+                      <Play className="h-4 w-4 shrink-0 text-zinc-500" />
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
       )}
 
       {hosts.length > 1 && (
@@ -182,9 +227,11 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
         <div>
           <h1 className="text-2xl font-extrabold text-white sm:text-3xl">{title}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
-            {episodes.length > 1 && <span>{episodes.length} épisode(s)</span>}
-            {(asset?.totalEpisodes ?? 0) > episodes.length && (
-              <span>• {asset?.totalEpisodes} épisodes annoncés</span>
+            {year && <span>{year}</span>}
+            {totalEpisodes > 0 && (
+              <span className={year ? "border-l border-white/10 pl-3" : ""}>
+                {totalEpisodes} épisode{totalEpisodes > 1 ? "s" : ""}
+              </span>
             )}
           </div>
           {detail?.altTitles && Object.keys(detail.altTitles).length > 0 && (
@@ -193,6 +240,9 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
                 .map(([k, v]) => `${k.toUpperCase()}: ${v}`)
                 .join(" · ")}
             </p>
+          )}
+          {synopsis && (
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{synopsis}</p>
           )}
           <div className="mt-4 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`frenchmanga-anime-${id}`} />

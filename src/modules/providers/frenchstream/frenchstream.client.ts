@@ -114,16 +114,106 @@ export async function fetchCatalogPage(
   return html ? parseCatalog(html) : [];
 }
 
-/** Fiche d'un film : extrait l'URL d'embed du lecteur (`data-url`). */
+/**
+ * Embed servi par l'API AJAX de la fiche (`/engine/ajax/film_api.php?id=`).
+ * Les fiches récentes n'exposent plus `data-url` : le lecteur est injecté côté
+ * client depuis cette réponse (`players.<hébergeur>.<version>`). Priorité
+ * VF/FRENCH, puis VOSTFR, puis tout autre flux disponible.
+ * Retourne null en cas d'échec — jamais d'exception remontée.
+ */
+export async function fetchApiEmbed(externalId: string): Promise<string | null> {
+  if (!/^\d{1,10}$/.test(externalId)) return null;
+  const base = await getBaseUrl();
+  const text = await fetchText(`${base}/engine/ajax/film_api.php?id=${externalId}`, {
+    "X-Requested-With": "XMLHttpRequest",
+    Referer: `${base}/index.php?newsid=${externalId}`,
+  });
+  if (!text) return null;
+  try {
+    const data = JSON.parse(text) as { players?: Record<string, Record<string, string>> };
+    const byHost = Object.values(data.players ?? {});
+    // 1) Versions préférées, tous hébergeurs confondus.
+    for (const key of ["default", "vf", "vff", "vfq", "french", "vostfr", "vo"]) {
+      for (const host of byHost) {
+        const url = host?.[key];
+        if (typeof url === "string" && /^https?:\/\//.test(url)) return url;
+      }
+    }
+    // 2) N'importe quelle autre URL d'embed disponible.
+    for (const host of byHost) {
+      for (const url of Object.values(host ?? {})) {
+        if (typeof url === "string" && /^https?:\/\//.test(url)) return url;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Embed d'un film : `data-url` de la fiche historique, sinon (fiches récentes
+ * au lecteur chargé en AJAX) l'API `/engine/ajax/film_api.php`.
+ */
 export async function fetchMovieEmbed(externalId: string): Promise<string | null> {
   if (!/^\d{1,10}$/.test(externalId)) return null;
   const base = await getBaseUrl();
   const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
-  if (!html) return null;
-  const m =
-    html.match(/data-url="(https?:\/\/[^"]+)"/) ??
-    html.match(/<iframe[^>]+id="main-player"[^>]+src="(https?:\/\/[^"]+)"/);
-  return m ? m[1] : null;
+  if (html) {
+    const m =
+      html.match(/data-url="(https?:\/\/[^"]+)"/) ??
+      html.match(/<iframe[^>]+id="main-player"[^>]+src="(https?:\/\/[^"]+)"/);
+    if (m) return m[1];
+  }
+  return fetchApiEmbed(externalId);
+}
+
+export interface FrenchStreamFicheMeta {
+  synopsis: string | null;
+  /** Durée affichée par la fiche (« 1h45 », « 42 min »), préfixe « - » retiré. */
+  runtime: string | null;
+  /** Année de sortie annoncée par la fiche (le catalogue ne la stocke pas). */
+  releaseYear: number | null;
+}
+
+/**
+ * Métadonnées d'une fiche (film ou série), lues en une seule requête : synopsis
+ * (`div.fdesc`), durée (`span.runtime`) et année (« date-de-sortie »). Le
+ * catalogue partenaire ne stocke ni durée ni année — ces champs enrichissent la
+ * fiche. Toute erreur est absorbée (valeurs nulles), jamais d'exception (§11).
+ */
+export async function fetchFicheMeta(externalId: string): Promise<FrenchStreamFicheMeta> {
+  const empty: FrenchStreamFicheMeta = { synopsis: null, runtime: null, releaseYear: null };
+  if (!/^\d{1,10}$/.test(externalId)) return empty;
+  const base = await getBaseUrl();
+  const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
+  if (!html) return empty;
+
+  // Synopsis : bloc fdesc, sans le paragraphe boilerplate « Résumé … ».
+  let synopsis: string | null = null;
+  const block = html.match(/<div\s+class="fdesc[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+  if (block) {
+    const withoutBoilerplate = block[1].replace(/<p\s+class="desc-text"[^>]*>[\s\S]*?<\/p>/gi, " ");
+    const text = decodeHtml(withoutBoilerplate.replace(/<[^>]+>/g, " "))
+      .replace(/\s+/g, " ")
+      .replace(/^[>"'\s]+/, "")
+      .trim();
+    synopsis = text.length >= 20 ? text : null;
+  }
+
+  // Durée : `<span class="runtime">- 2h15</span>` (film) ou « 42 min » (série).
+  const runtimeRaw = html.match(/<span\s+class="runtime"[^>]*>([^<]*)</i)?.[1] ?? "";
+  const runtime = decodeHtml(runtimeRaw).replace(/^[\s\-–—]+/, "").trim() || null;
+
+  // Année : lien « date-de-sortie » (film) ou `span.release` (série).
+  const yearRaw =
+    html.match(/date-de-sortie[^"]*xf=(\d{4})/i)?.[1] ??
+    html.match(/<span\s+class="release"[^>]*>\s*(\d{4})/i)?.[1] ??
+    html.match(/<span\s+class="release_date"[^>]*>[\s\S]{0,80}?(\d{4})</i)?.[1] ??
+    null;
+  const releaseYear = yearRaw ? Number.parseInt(yearRaw, 10) : null;
+
+  return { synopsis, runtime, releaseYear };
 }
 
 /** Détail d'une série : flux (langues × épisodes × hôtes) + infos épisodes. */

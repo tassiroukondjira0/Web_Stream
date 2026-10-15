@@ -74,8 +74,11 @@ export function providerItemHref(
       ? `/series/frenchstream/${item.externalId}`
       : `/films/frenchstream/${item.externalId}`;
   }
-  const isSeries = item.contentType === "SERIES" || (item.contentType === "ANIME" && item.sourceType === "tv");
-  return isSeries ? `/series/frenchstream/${item.externalId}` : `/films/frenchstream/${item.externalId}`;
+  // FrenchManga (animés) : lecteur dédié `/series/frenchmanga/`. Router vers la
+  // page FrenchStream ferait échouer `/ep-data.php` (IDs inconnus) → message
+  // « indisponible » à tort. La page FrenchManga lit l'API JSON du site ; un
+  // film d'animation n'est qu'un flux unique (épisode 1), géré de la même façon.
+  return `/series/frenchmanga/${item.externalId}`;
 }
 
 const ASSET_SELECT = {

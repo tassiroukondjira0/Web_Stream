@@ -3,13 +3,14 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getMediaBySlug, getAllMedias } from "@/lib/catalog";
+import { prisma } from "@/lib/prisma";
 import { getAppUrl } from "@/lib/env";
 import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
-import { Tv, Calendar, ShieldCheck, Play } from "lucide-react";
+import { Tv, Calendar } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -58,27 +59,29 @@ async function SeriesContent({ params, searchParams }: PageProps) {
   const currentUser = await getCurrentUser().catch(() => null);
   const hasFullAccess = currentUser ? hasPremiumAccess(currentUser.role) : false;
 
-  // Épisodes de démonstration
-  const episodes = [
-    {
-      number: 1,
-      title: "L'Étincelle Créative",
-      duration: "24 min",
-      synopsis: "Découverte des artistes indépendants et des premiers jalons de création numérique.",
-      access: "FREE",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+  // Saisons et épisodes issus de la base : aucun contenu de démonstration.
+  const dbMedia = await prisma.media.findUnique({
+    where: { slug: serie.slug },
+    include: {
+      seasons: {
+        orderBy: { seasonNumber: "asc" },
+        include: { episodes: { orderBy: { episodeNumber: "asc" } } },
+      },
     },
-    {
-      number: 2,
-      title: "Au-delà du Réel",
-      duration: "26 min",
-      synopsis: "L'intégration des technologies 3D ouvertes et des effets visuels de nouvelle génération.",
-      access: "PREMIUM",
-      videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    },
-  ];
+  });
 
-  const activeEpisode = episodes.find((e) => e.number === currentEpNum) || episodes[0];
+  const episodes = (dbMedia?.seasons ?? []).flatMap((season) =>
+    season.episodes.map((ep) => ({
+      number: ep.episodeNumber,
+      title: ep.title,
+      duration: ep.durationMinutes ? `${ep.durationMinutes} min` : "",
+      synopsis: ep.synopsis || "",
+      access: ep.accessLevel as "FREE" | "PREMIUM",
+    }))
+  );
+
+  const activeEpisode =
+    episodes.find((e) => e.number === currentEpNum) || episodes[0] || null;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -107,13 +110,18 @@ async function SeriesContent({ params, searchParams }: PageProps) {
 
       {/* Lecteur de l'épisode sélectionné */}
       <div className="mb-8">
-        <VideoPlayer
-          src={activeEpisode.videoUrl}
-          poster={serie.backdropUrl}
-          title={`${serie.title} - Épisode ${activeEpisode.number}: ${activeEpisode.title}`}
-          isPremium={activeEpisode.access === "PREMIUM"}
-          hasAccess={activeEpisode.access === "FREE" || hasFullAccess}
-        />
+        {activeEpisode ? (
+          <VideoPlayer
+            poster={serie.backdropUrl}
+            title={`${serie.title} - Épisode ${activeEpisode.number}: ${activeEpisode.title}`}
+            isPremium={activeEpisode.access === "PREMIUM"}
+            hasAccess={activeEpisode.access === "FREE" || hasFullAccess}
+          />
+        ) : (
+          <div className="flex aspect-video w-full items-center justify-center rounded-2xl border border-white/10 bg-zinc-950 text-sm text-zinc-500">
+            Aucun épisode disponible pour cette série.
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
@@ -144,10 +152,10 @@ async function SeriesContent({ params, searchParams }: PageProps) {
 
           {/* Liste des épisodes */}
           <div className="mt-10 border-t border-white/10 pt-6">
-            <h2 className="text-lg font-bold text-white mb-4">Épisodes de la Saison 1</h2>
+            <h2 className="text-lg font-bold text-white mb-4">Épisodes</h2>
             <div className="space-y-3">
               {episodes.map((ep) => {
-                const isSelected = ep.number === activeEpisode.number;
+                const isSelected = activeEpisode?.number === ep.number;
                 return (
                   <Link
                     key={ep.number}

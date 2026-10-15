@@ -328,7 +328,11 @@ function slugToHref(slug: string): string {
   const m = slug.match(/^(frenchstream|frenchmanga)-(movie|series|anime)-(.+)$/);
   if (m) {
     const [, provider, kind, id] = m;
-    const isSeries = kind === "series" || (provider === "frenchmanga" && kind === "anime");
+    // FrenchManga : lecteur dédié (films d'animation comme séries, épisode unique).
+    if (provider === "frenchmanga") {
+      return `/series/frenchmanga/${id}`;
+    }
+    const isSeries = kind === "series";
     return isSeries ? `/series/frenchstream/${id}` : `/films/frenchstream/${id}`;
   }
   return `/films/${slug}`;

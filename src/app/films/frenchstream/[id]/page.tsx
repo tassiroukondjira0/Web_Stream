@@ -6,7 +6,8 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { prisma } from "@/lib/prisma";
-import { fetchMovieEmbed } from "@/modules/providers/frenchstream/frenchstream.client";
+import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
+import { fetchFicheMeta, fetchMovieEmbed, fetchSeriesDetail } from "@/modules/providers/frenchstream/frenchstream.client";
 
 /**
  * Fiche & lecteur d'un film FrenchStream. Le film n'a qu'un seul flux
@@ -27,22 +28,48 @@ export async function generateMetadata({ params }: FrenchStreamMoviePageProps): 
       select: { title: true },
     })
     .catch(() => null);
-  return { title: `${asset?.title ?? "Film"} — CinéMax`, robots: { index: false } };
+  const title = asset?.title ?? "Film";
+  const description = await fetchTmdbOverviewByTitle(title).catch(() => null);
+  return {
+    title: `${title} — CinéMax`,
+    description: description?.slice(0, 160) ?? undefined,
+    robots: { index: false },
+  };
 }
 
 export default async function FrenchStreamMoviePage({ params }: FrenchStreamMoviePageProps) {
   await connection();
   const { id } = await params;
 
-  const [asset, embedUrl] = await Promise.all([
-    prisma.providerAsset
-      .findFirst({
-        where: { provider: "FRENCHSTREAM", externalId: id, contentType: "MOVIE" },
-        select: { title: true, posterUrl: true, releaseYear: true },
-      })
-      .catch(() => null),
+  const asset = await prisma.providerAsset
+    .findFirst({
+      where: { provider: "FRENCHSTREAM", externalId: id, contentType: "MOVIE" },
+      select: { title: true, posterUrl: true, releaseYear: true },
+    })
+    .catch(() => null);
+
+  const [movieEmbed, overview, fiche] = await Promise.all([
     fetchMovieEmbed(id),
+    fetchTmdbOverviewByTitle(asset?.title ?? ""),
+    fetchFicheMeta(id),
   ]);
+
+  // Synopsis : TMDB d'abord (FR soigné), sinon la fiche du fournisseur.
+  const synopsis = overview ?? fiche.synopsis;
+
+  // Métadonnées de la fiche : le catalogue partenaire ne stocke pas la durée ni
+  // toujours l'année — on complète depuis la fiche source.
+  const year = asset?.releaseYear ?? fiche.releaseYear;
+  const runtime = fiche.runtime;
+
+  // Repli cross-type : si aucun embed film n'est exposé (player chargé en AJAX
+  // côté fournisseur), le titre est peut-être une série mal classée. On tente
+  // alors /ep-data.php et on lit son premier flux disponible.
+  let embedUrl = movieEmbed;
+  if (!embedUrl) {
+    const detail = await fetchSeriesDetail(id).catch(() => null);
+    embedUrl = detail?.streams?.[0]?.url ?? null;
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -83,8 +110,16 @@ export default async function FrenchStreamMoviePage({ params }: FrenchStreamMovi
         )}
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-extrabold text-white sm:text-2xl lg:text-3xl">{asset?.title ?? "Film"}</h1>
-          {asset?.releaseYear && (
-            <div className="mt-1 text-xs text-zinc-400">{asset.releaseYear}</div>
+          {(year || runtime) && (
+            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
+              {year && <span>{year}</span>}
+              {runtime && (
+                <span className={year ? "border-l border-white/10 pl-3" : ""}>{runtime}</span>
+              )}
+            </div>
+          )}
+          {synopsis && (
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{synopsis}</p>
           )}
           <div className="mt-4 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`frenchstream-movie-${id}`} />

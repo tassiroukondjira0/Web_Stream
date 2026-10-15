@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { FALLBACK_CATALOG, MediaItem } from "@/lib/catalog";
+import { MediaItem } from "@/lib/catalog";
 
 const DB_READY = process.env.DATABASE_READY === "true";
 
@@ -40,8 +40,9 @@ function dbMediaToItem(m: {
   };
 }
 
-// Stockage modifiable en mémoire pour le back-office en mode démo / sans base active
-const adminCatalog: MediaItem[] = [...FALLBACK_CATALOG];
+// Stockage modifiable en mémoire pour le back-office lorsque la base n'est pas active.
+// Vide au démarrage : aucun contenu de démonstration n'est préchargé.
+const adminCatalog: MediaItem[] = [];
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -130,7 +131,7 @@ export async function POST(request: Request) {
       posterUrl: body.posterUrl || "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=800",
       backdropUrl: body.backdropUrl || "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1600",
       videoStreamId: body.videoStreamId || `stream-${Date.now()}`,
-      videoUrl: videoUrl || "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+      videoUrl: videoUrl || "",
       isPublished: isPublished ?? true,
       rightsValidUntil: rightsValidUntil || "2030-12-31",
       categories: body.categories || [{ name: "Général", slug: "general" }],

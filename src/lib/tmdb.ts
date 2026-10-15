@@ -227,3 +227,64 @@ export async function fetchTmdbPoster(
     return null;
   }
 }
+
+// ─── Recherche de synopsis par titre (catalogue partenaire) ─────────────────
+
+/** Élément brut d'une recherche multi TMDB (champs utiles). */
+interface TmdbSearchItem {
+  id: number;
+  media_type: string;
+  title?: string;
+  name?: string;
+  overview: string;
+  poster_path: string | null;
+  vote_count: number;
+  popularity: number;
+}
+
+interface TmdbSearchResponse {
+  results: TmdbSearchItem[];
+}
+
+/**
+ * Nettoie un titre de fournisseur avant recherche TMDB : retire les suffixes de
+ * saison / langue / qualité (« Antigang - Saison 2 », « Maid (Saison 1) »,
+ * « Film - VF »…). Ne touche pas au titre sans marqueur reconnu.
+ */
+function stripTitleSuffix(title: string): string {
+  return title
+    .replace(/\s*[-–—]\s*saison\s*\d+.*$/i, "")
+    .replace(/\s*\(?\bsaison\s*\d+\b\)?.*$/i, "")
+    .replace(/\s*[-–—]\s*(vf|vostfr|vo|truefrench|french|multi)\b.*$/i, "")
+    .replace(/\s*[-–—]\s*(hd|fhd|4k|1080p|720p)\b.*$/i, "")
+    .trim();
+}
+
+/**
+ * Résout le synopsis FR d'un titre par son nom via la recherche TMDB
+ * (`/search/multi`). Utilisé pour enrichir les fiches du catalogue partenaire,
+ * dont le modèle `ProviderAsset` ne stocke pas de synopsis.
+ *
+ * Retourne null si TMDB n'est pas configuré, si aucun film/série avec synopsis
+ * ne correspond, ou en cas d'erreur — jamais d'exception remontée (CDC §11 : le
+ * service reste utilisable même si un fournisseur de métadonnées tombe).
+ */
+export async function fetchTmdbOverviewByTitle(title: string): Promise<string | null> {
+  if (!hasTmdbCredentials()) return null;
+  const cleaned = stripTitleSuffix(title);
+  if (cleaned.length < 2) return null;
+  try {
+    const data = await tmdbFetch<TmdbSearchResponse>("/search/multi", {
+      query: cleaned,
+      include_adult: "false",
+    });
+    // Meilleur résultat : film ou série disposant d'un synopsis non vide. TMDB
+    // trie déjà par popularité pertinente, on prend le premier éligible.
+    const best = (data.results ?? []).find(
+      (r) => (r.media_type === "movie" || r.media_type === "tv") && r.overview?.trim(),
+    );
+    return best ? best.overview.trim() : null;
+  } catch {
+    return null;
+  }
+}

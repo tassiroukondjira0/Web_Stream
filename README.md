@@ -76,7 +76,7 @@ git push origin main
 | Variable | Valeur | Remarque |
 | --- | --- | --- |
 | `DATABASE_URL` | URL Neon **poolée** | Obligatoire. Prisma en a besoin au build |
-| `DATABASE_READY` | `true` | Active PostgreSQL. Sinon `FALLBACK_CATALOG` |
+| `DATABASE_READY` | `true` | Active PostgreSQL. Sinon le catalogue local reste vide |
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` | Signature des sessions. **Aucun repli** |
 | `NEXT_PUBLIC_APP_NAME` | `CinéMax` | Nom affiché |
 | `NEXT_PUBLIC_APP_URL` | *(optionnel)* | Voir encadré ci-dessous |
@@ -176,7 +176,7 @@ Renseigner les variables pour **Production** et **Preview** (cocher les deux col
 | Variable | Valeur | Remarque |
 | --- | --- | --- |
 | `DATABASE_URL` | URL Neon **poolée** | Obligatoire. Prisma en a besoin au build |
-| `DATABASE_READY` | `true` | Active PostgreSQL. Sinon `FALLBACK_CATALOG` |
+| `DATABASE_READY` | `true` | Active PostgreSQL. Sinon le catalogue local reste vide |
 | `NEXTAUTH_SECRET` | `openssl rand -base64 32` | Signature des sessions. **Aucun repli** |
 | `NEXT_PUBLIC_APP_NAME` | `CinéMax` | Nom affiché |
 | `NEXT_PUBLIC_APP_URL` | *(optionnel)* | Voir encadré ci-dessous |

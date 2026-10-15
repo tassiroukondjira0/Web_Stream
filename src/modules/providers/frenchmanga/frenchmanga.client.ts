@@ -123,6 +123,40 @@ export async function fetchMangaDetail(externalId: string): Promise<FrenchMangaD
   }
 }
 
+export interface FrenchMangaFicheMeta {
+  synopsis: string | null;
+  /** Année de sortie annoncée par la fiche (`span.release`). */
+  releaseYear: number | null;
+}
+
+/**
+ * Métadonnées d'une fiche animé, lues en une seule requête : synopsis
+ * (`div.fdesc`) et année (`span.release`). La synopsis sert de repli local quand
+ * TMDB n'est pas configuré ; l'année complète le catalogue, qui ne la stocke pas.
+ * Toute erreur est absorbée (valeurs nulles), jamais d'exception remontée.
+ */
+export async function fetchMangaMeta(externalId: string): Promise<FrenchMangaFicheMeta> {
+  const empty: FrenchMangaFicheMeta = { synopsis: null, releaseYear: null };
+  if (!/^\d{1,10}$/.test(externalId)) return empty;
+  const base = await getBaseUrl();
+  const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
+  if (!html) return empty;
+
+  let synopsis: string | null = null;
+  const m = html.match(/<div\s+class="fdesc"[^>]*>([\s\S]*?)<\/div>/i);
+  if (m) {
+    const text = decodeHtml(m[1].replace(/<[^>]+>/g, " "))
+      .replace(/\s+/g, " ")
+      .trim();
+    synopsis = text.length >= 20 ? text : null;
+  }
+
+  const yearRaw = html.match(/<span\s+class="release"[^>]*>(\d{4})</i)?.[1] ?? null;
+  const releaseYear = yearRaw ? Number.parseInt(yearRaw, 10) : null;
+
+  return { synopsis, releaseYear };
+}
+
 /** Normalise la réponse `{ "<lang>": { "<ep>": { "<host>": "<url>" } }, "alt_titles": {...} }`. */
 function mapDetail(externalId: string, data: unknown): FrenchMangaDetail {
   const streams: FrenchMangaStream[] = [];
