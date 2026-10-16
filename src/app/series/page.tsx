@@ -41,13 +41,6 @@ async function SeriesContent({ searchParams }: SeriesPageProps) {
     .map((i) => i.releaseYear)
     .filter((y): y is number => Boolean(y));
 
-  const activeFilters = {
-    categorie: categorie ?? null,
-    language: language ?? null,
-    theme: theme ?? null,
-    year: year ?? null,
-  };
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="border-b border-white/10 pb-6">
@@ -59,11 +52,7 @@ async function SeriesContent({ searchParams }: SeriesPageProps) {
         </p>
       </div>
 
-      <AdvancedFilter
-        current={activeFilters}
-        availableYears={availableYears}
-        label="Filtres"
-      />
+      <AdvancedFilter availableYears={availableYears} label="Filtres" />
 
       <section className="mt-8">
         <div className="flex items-baseline justify-between border-b border-white/10 pb-4">

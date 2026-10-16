@@ -1,24 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useMemo } from "react";
 import { CATALOG_LANGUAGES, CATALOG_THEMES } from "@/lib/provider-catalog";
 import { type Category, getAllCategories } from "@/lib/categories";
 
 interface AdvancedFilterProps {
-  current?: {
-    categorie?: string | null;
-    language?: string | null;
-    theme?: string | null;
-    year?: string | null;
-  };
   availableYears?: number[];
   label?: string;
 }
 
 export function AdvancedFilter({
-  current,
   availableYears = [],
   label = "Filtres",
 }: AdvancedFilterProps) {
@@ -30,20 +22,20 @@ export function AdvancedFilter({
   const langs = CATALOG_LANGUAGES;
   const themes = CATALOG_THEMES;
 
-  const cat = current?.categorie ?? searchParams.get("categorie") ?? undefined;
-  const lang = current?.language ?? searchParams.get("language") ?? undefined;
-  const theme = current?.theme ?? searchParams.get("theme") ?? undefined;
-  const year = current?.year ?? searchParams.get("year") ?? undefined;
+  const cat = searchParams.get("categorie") ?? "";
+  const lang = searchParams.get("language") ?? "";
+  const theme = searchParams.get("theme") ?? "";
+  const year = searchParams.get("year") ?? "";
 
-  const buildURL = useCallback(
-    (updates: Partial<Record<string, string | null>>) => {
+  const hasActive = Boolean(cat || lang || theme || year);
+
+  const setFilter = useCallback(
+    (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
-      for (const [key, value] of Object.entries(updates)) {
-        if (value === null || value === undefined || value === "") {
-          params.delete(key);
-        } else {
-          params.set(key, value);
-        }
+      if (value === "") {
+        params.delete(key);
+      } else {
+        params.set(key, value);
       }
       router.push(`${pathname}?${params.toString()}`, { scroll: false });
     },
@@ -54,8 +46,6 @@ export function AdvancedFilter({
     const params = new URLSearchParams();
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   }, [pathname, router]);
-
-  const hasActive = Boolean(cat || lang || theme || year);
 
   return (
     <section className="mb-8">
@@ -73,120 +63,104 @@ export function AdvancedFilter({
         )}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-        {/* Genre */}
-        <div className="col-span-full sm:col-span-2">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => buildURL({ categorie: null })}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                !cat ? "bg-violet-600 text-white" : "bg-zinc-800 border border-white/10 text-zinc-300 hover:bg-zinc-700"
-              }`}
-            >
-              Tous genres
-            </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Genre — menu déroulant */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            Genre
+          </label>
+          <select
+            value={cat}
+            onChange={(e) => setFilter("categorie", e.target.value)}
+            className="rounded-xl border border-white/10 bg-zinc-900/50 px-3 py-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-colors cursor-pointer"
+          >
+            <option value="">Tous les genres</option>
             {categories.map((c) => (
-              <button
-                key={c.slug}
-                onClick={() => buildURL({ categorie: c.slug })}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  cat === c.slug
-                    ? "bg-violet-600 text-white"
-                    : "bg-zinc-800 border border-white/10 text-zinc-300 hover:bg-zinc-700"
-                }`}
-              >
+              <option key={c.slug} value={c.slug}>
                 {c.name}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
-        {/* Langue */}
-        <div className="col-span-full sm:col-span-1">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => buildURL({ language: null })}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                !lang ? "bg-violet-600 text-white" : "bg-zinc-800 border border-white/10 text-zinc-300 hover:bg-zinc-700"
-              }`}
-            >
-              Toutes langues
-            </button>
+        {/* Langue — menu déroulant */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            Langue
+          </label>
+          <select
+            value={lang}
+            onChange={(e) => setFilter("language", e.target.value)}
+            className="rounded-xl border border-white/10 bg-zinc-900/50 px-3 py-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-colors cursor-pointer"
+          >
+            <option value="">Toutes les langues</option>
             {langs.map((l) => (
-              <button
-                key={l.value}
-                onClick={() => buildURL({ language: l.value })}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  lang === l.value
-                    ? "bg-violet-600 text-white"
-                    : "bg-zinc-800 border border-white/10 text-zinc-300 hover:bg-zinc-700"
-                }`}
-              >
+              <option key={l.value} value={l.value}>
                 {l.label}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
-        {/* Thème */}
-        <div className="col-span-full sm:col-span-2">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => buildURL({ theme: null })}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                !theme ? "bg-violet-600 text-white" : "bg-zinc-800 border border-white/10 text-zinc-300 hover:bg-zinc-700"
-              }`}
-            >
-              Tous thèmes
-            </button>
+        {/* Thème — menu déroulant */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            Thème
+          </label>
+          <select
+            value={theme}
+            onChange={(e) => setFilter("theme", e.target.value)}
+            className="rounded-xl border border-white/10 bg-zinc-900/50 px-3 py-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-colors cursor-pointer"
+          >
+            <option value="">Tous les thèmes</option>
             {themes.map((t) => (
-              <button
-                key={t.value}
-                onClick={() => buildURL({ theme: t.value })}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  theme === t.value
-                    ? "bg-violet-600 text-white"
-                    : "bg-zinc-800 border border-white/10 text-zinc-300 hover:bg-zinc-700"
-                }`}
-              >
+              <option key={t.value} value={t.value}>
                 {t.label}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
-        {/* Année */}
-        <div className="col-span-full sm:col-span-1">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => buildURL({ year: null })}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                !year ? "bg-violet-600 text-white" : "bg-zinc-800 border border-white/10 text-zinc-300 hover:bg-zinc-700"
-              }`}
-            >
-              Toutes années
-            </button>
-            {availableYears.slice().sort((a, b) => b - a).map((y) => (
-              <button
-                key={y}
-                onClick={() => buildURL({ year: String(y) })}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  year === String(y)
-                    ? "bg-violet-600 text-white"
-                    : "bg-zinc-800 border border-white/10 text-zinc-300 hover:bg-zinc-700"
-                }`}
-              >
-                {y}
-              </button>
-            ))}
-          </div>
+        {/* Année — menu déroulant */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            Année
+          </label>
+          <select
+            value={year}
+            onChange={(e) => setFilter("year", e.target.value)}
+            className="rounded-xl border border-white/10 bg-zinc-900/50 px-3 py-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-colors cursor-pointer"
+          >
+            <option value="">Toutes les années</option>
+            {availableYears
+              .slice()
+              .sort((a, b) => b - a)
+              .map((y) => (
+                <option key={y} value={String(y)}>
+                  {y}
+                </option>
+              ))}
+          </select>
         </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-500">
-        {cat && <span className="bg-zinc-800/50 rounded px-2 py-1">Genre : {categories.find((c) => c.slug === cat)?.name ?? cat}</span>}
-        {lang && <span className="bg-zinc-800/50 rounded px-2 py-1">Langue : {langs.find((l) => l.value === lang)?.label ?? lang}</span>}
-        {theme && <span className="bg-zinc-800/50 rounded px-2 py-1">Thème : {themes.find((t) => t.value === theme)?.label ?? theme}</span>}
+        {cat && (
+          <span className="bg-zinc-800/50 rounded px-2 py-1">
+            Genre :{" "}
+            {categories.find((c) => c.slug === cat)?.name ?? cat}
+          </span>
+        )}
+        {lang && (
+          <span className="bg-zinc-800/50 rounded px-2 py-1">
+            Langue : {langs.find((l) => l.value === lang)?.label ?? lang}
+          </span>
+        )}
+        {theme && (
+          <span className="bg-zinc-800/50 rounded px-2 py-1">
+            Thème : {themes.find((t) => t.value === theme)?.label ?? theme}
+          </span>
+        )}
         {year && <span className="bg-zinc-800/50 rounded px-2 py-1">Année : {year}</span>}
       </div>
     </section>
