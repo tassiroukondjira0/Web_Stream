@@ -179,6 +179,34 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
         title={title}
       />
 
+      {/* Liste des épisodes juste après le lecteur */}
+      {seasonsToShow.length > 0 && (
+        <>
+          {seasonsToShow.map((s) => {
+            const detail = seasonDetailsMap.get(s.season);
+            const episodes =
+              detail && detail.episodes?.length > 0
+                ? detail.episodes
+                : fallbackEpisodes(s.episodes);
+            return (
+              <EpisodeList
+                key={s.season}
+                seasonNumber={s.season}
+                episodes={episodes}
+                hrefFor={({ season, episode, lang: episodeLang }) =>
+                  hrefFor({
+                    lang: episodeLang ?? sp.lang ?? undefined,
+                    season,
+                    episode,
+                  })
+                }
+                lang={sp.lang ?? null}
+              />
+            );
+          })}
+        </>
+      )}
+
       <div className="mt-8 flex gap-5">
         {poster && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -199,43 +227,19 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
             )}
           </div>
 
-          <SeasonSelector
-            seasons={seasonsWithPosters}
-            currentSeason={currentSeason}
-            seriesPoster={poster}
-          />
-
-          {/* Liste des épisodes (avant la synopsis) */}
-          {seasonsToShow.length > 0 && (
-            <>
-              {seasonsToShow.map((s) => {
-                const detail = seasonDetailsMap.get(s.season);
-                const episodes =
-                  detail && detail.episodes?.length > 0
-                    ? detail.episodes
-                    : fallbackEpisodes(s.episodes);
-                return (
-                  <EpisodeList
-                    key={s.season}
-                    seasonNumber={s.season}
-                    episodes={episodes}
-                    hrefFor={({ season, episode, lang: episodeLang }) =>
-                      hrefFor({
-                        lang: episodeLang ?? sp.lang ?? undefined,
-                        season,
-                        episode,
-                      })
-                    }
-                    lang={sp.lang ?? null}
-                  />
-                );
-              })}
-            </>
-          )}
-
           {overview && (
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
           )}
+
+          {/* Sélecteur de saisons (grille avec couvertures) après la synopsis */}
+          {playback?.seasons && playback.seasons.length > 0 && (
+            <SeasonSelector
+              seasons={seasonsWithPosters}
+              currentSeason={currentSeason}
+              seriesPoster={poster}
+            />
+          )}
+
           <div className="mt-4 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`tmdb-series-${id}`} />
             <WishlistButton mediaSlug={`tmdb-series-${id}`} />
