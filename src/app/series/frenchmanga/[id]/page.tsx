@@ -6,6 +6,7 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
+import { SeasonSelector } from "@/components/SeasonSelector";
 import { prisma } from "@/lib/prisma";
 import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
@@ -105,6 +106,8 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
+  const currentSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+
   const hrefFor = ({
     lang,
     season,
@@ -125,9 +128,6 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
     return `/series/frenchmanga/${id}${qs ? `?${qs}` : ""}`;
   };
 
-  // Liste unique des épisodes disponibles, triée par numéro.
-  const episodeNumbers = getUniqueEpisodeNumbers(detail?.streams ?? []);
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
@@ -143,7 +143,7 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
         hrefFor={hrefFor}
         selection={{
           lang: sp.lang,
-          season: Number.parseInt(sp.season ?? "", 10) || null,
+          season: currentSeason,
           episode: Number.parseInt(sp.ep ?? "", 10) || null,
           host: sp.host,
         }}
@@ -179,6 +179,7 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
           {synopsis && (
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{synopsis}</p>
           )}
+          <SeasonSelector seasons={playback?.seasons ?? []} currentSeason={currentSeason} />
           <div className="mt-4 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`frenchmanga-anime-${id}`} />
             <WishlistButton mediaSlug={`frenchmanga-anime-${id}`} />
@@ -187,29 +188,6 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
         </div>
       </div>
 
-      {/* Liste des épisodes */}
-      {episodeNumbers.length > 0 && (
-        <section className="mt-12 border-t border-white/10 pt-8">
-          <h2 className="text-xl font-bold text-white mb-6">Épisodes</h2>
-          <ul className="max-h-[480px] overflow-y-auto rounded-xl border border-white/10 bg-zinc-950/30 p-1.5">
-            {episodeNumbers.map((epNum) => (
-              <li key={epNum}>
-                <Link
-                  href={hrefFor({ episode: epNum, lang: sp.lang ?? "vf" })}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800"
-                >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-zinc-900/70 text-xs font-semibold">
-                    {epNum}
-                  </span>
-                  <span className="flex-1">Épisode {epNum}</span>
-                  <Play className="h-4 w-4 text-zinc-500" />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       <p className="mt-8 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 p-3 text-xs text-zinc-400">
         <Play className="h-4 w-4 text-violet-500" />
         Plusieurs sources sont proposées quand elles sont disponibles. La disponibilité et les
@@ -217,15 +195,4 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
       </p>
     </div>
   );
-}
-
-/**
- * Extrait les numéros d'épisode uniques depuis un tableau de streams, triés par ordre croissant.
- */
-function getUniqueEpisodeNumbers(streams: { episode: number }[]): number[] {
-  const seen = new Set<number>();
-  for (const s of streams) {
-    if (s.episode > 0) seen.add(s.episode);
-  }
-  return Array.from(seen).sort((a, b) => a - b);
 }

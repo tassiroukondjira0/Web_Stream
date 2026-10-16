@@ -6,6 +6,7 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
+import { SeasonSelector } from "@/components/SeasonSelector";
 import { prisma } from "@/lib/prisma";
 import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
@@ -99,6 +100,8 @@ export default async function PartnerSeriesPage({
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
+  const currentSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+
   const hrefFor = ({
     lang,
     season,
@@ -134,7 +137,7 @@ export default async function PartnerSeriesPage({
         hrefFor={hrefFor}
         selection={{
           lang: sp.lang,
-          season: Number.parseInt(sp.season ?? "", 10) || null,
+          season: currentSeason,
           episode: Number.parseInt(sp.ep ?? "", 10) || null,
           host: sp.host,
         }}
@@ -163,6 +166,7 @@ export default async function PartnerSeriesPage({
           {overview && (
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
           )}
+          <SeasonSelector seasons={playback?.seasons ?? []} currentSeason={currentSeason} />
           <div className="mt-4 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`partner-series-${id}`} />
             <WishlistButton mediaSlug={`partner-series-${id}`} />
@@ -170,38 +174,6 @@ export default async function PartnerSeriesPage({
           </div>
         </div>
       </div>
-
-      {/* Liste des saisons et épisodes */}
-      {playback?.seasons && playback.seasons.length > 0 && (
-        <section className="mt-12 border-t border-white/10 pt-8">
-          <h2 className="text-xl font-bold text-white mb-6">Saisons & épisodes</h2>
-          {playback.seasons.map((season) => (
-            <div key={season.season} className="mb-8">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Saison {season.season}
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {season.episodes.map((epNum) => (
-                  <Link
-                    key={epNum}
-                    href={hrefFor({
-                      season: season.season,
-                      episode: epNum,
-                      lang: sp.lang ?? "vf",
-                    })}
-                    className="group flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/60 px-3 py-3 text-xs transition-all hover:border-white/30 hover:bg-zinc-800"
-                  >
-                    <Play className="h-4 w-4 text-zinc-500 group-hover:text-violet-400" />
-                    <span className="font-medium text-zinc-200 leading-none">
-                      S{season.season}E{epNum}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </section>
-      )}
 
       <p className="mt-8 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 p-3 text-xs text-zinc-400">
         <Play className="h-4 w-4 text-violet-500" />
