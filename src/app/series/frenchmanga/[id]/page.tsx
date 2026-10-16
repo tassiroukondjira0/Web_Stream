@@ -191,18 +191,22 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
       {episodeNumbers.length > 0 && (
         <section className="mt-12 border-t border-white/10 pt-8">
           <h2 className="text-xl font-bold text-white mb-6">Épisodes</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          <ul className="max-h-[480px] overflow-y-auto rounded-xl border border-white/10 bg-zinc-950/30 p-1.5">
             {episodeNumbers.map((epNum) => (
-              <Link
-                key={epNum}
-                href={hrefFor({ episode: epNum, lang: sp.lang ?? "vf" })}
-                className="group flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/60 px-3 py-3 text-xs transition-all hover:border-white/30 hover:bg-zinc-800"
-              >
-                <Play className="h-4 w-4 text-zinc-500 group-hover:text-violet-400" />
-                <span className="font-medium text-zinc-200 leading-none">Ép. {epNum}</span>
-              </Link>
+              <li key={epNum}>
+                <Link
+                  href={hrefFor({ episode: epNum, lang: sp.lang ?? "vf" })}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-zinc-300 transition-colors hover:bg-zinc-800"
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-zinc-900/70 text-xs font-semibold">
+                    {epNum}
+                  </span>
+                  <span className="flex-1">Épisode {epNum}</span>
+                  <Play className="h-4 w-4 text-zinc-500" />
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       )}
 

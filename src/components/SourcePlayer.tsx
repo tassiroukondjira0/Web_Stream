@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Play } from "lucide-react";
 import type { PlayerSelection, PlayerSource } from "@/lib/player-sources";
 
 /**
@@ -136,12 +135,12 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
       )}
 
       {/* Épisodes. */}
-      {!isMovie && (
+      {!isMovie && episodes.length > 0 && (
         <section className="mt-6">
           <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">
             Épisodes · {lang.toUpperCase()} ({episodes.length})
           </h2>
-          <ol className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+          <ul className="mt-3 max-h-[420px] overflow-y-auto rounded-xl border border-white/10 bg-zinc-950/30 p-1.5">
             {episodes.map((ep) => {
               const isCurrent = ep === episode;
               return (
@@ -149,23 +148,26 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
                   <Link
                     href={hrefFor({ lang, season, episode: ep, host: null })}
                     aria-current={isCurrent ? "true" : undefined}
-                    className={`flex flex-col items-center gap-1 rounded-lg border px-3 py-2 text-xs transition-colors ${
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
                       isCurrent
-                        ? "border-violet-500 bg-violet-600/20 text-white"
-                        : "border-white/10 bg-zinc-900 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800"
+                        ? "bg-violet-600/30 text-white"
+                        : "text-zinc-300 hover:bg-zinc-800"
                     }`}
                   >
-                    {isCurrent ? (
-                      <Play className="h-3.5 w-3.5 fill-white text-white" />
-                    ) : (
-                      <Play className="h-3.5 w-3.5 text-zinc-500" />
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-zinc-900/70 text-xs font-semibold">
+                      {ep}
+                    </span>
+                    <span className="flex-1 truncate">
+                      Épisode {ep}
+                    </span>
+                    {isCurrent && (
+                      <span className="text-[11px] font-medium text-violet-300">Actuel</span>
                     )}
-                    <span>{ep}</span>
                   </Link>
                 </li>
               );
             })}
-          </ol>
+          </ul>
         </section>
       )}
     </div>
