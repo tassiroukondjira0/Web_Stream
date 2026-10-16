@@ -7,7 +7,7 @@ import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
 import { SeasonSelector } from "@/components/SeasonSelector";
-import { EpisodeGrid } from "@/components/EpisodeGrid";
+import { EpisodeList } from "@/components/EpisodeList";
 import { prisma } from "@/lib/prisma";
 import {
   fetchTmdbOverviewByTitle,
@@ -220,15 +220,13 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
                 .join(" · ")}
             </p>
           )}
-          {synopsis && (
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{synopsis}</p>
-          )}
           <SeasonSelector
             seasons={seasonsWithPosters}
             currentSeason={currentSeason}
             seriesPoster={poster}
           />
 
+          {/* Liste des épisodes (avant la synopsis) */}
           {seasonsToShow.length > 0 && (
             <>
               {seasonsToShow.map((s) => {
@@ -238,7 +236,7 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
                     ? detail.episodes
                     : fallbackEpisodes(s.episodes);
                 return (
-                  <EpisodeGrid
+                  <EpisodeList
                     key={s.season}
                     seasonNumber={s.season}
                     episodes={episodes}
@@ -254,6 +252,10 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
                 );
               })}
             </>
+          )}
+
+          {synopsis && (
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{synopsis}</p>
           )}
 
           <div className="mt-4 flex flex-wrap gap-3">

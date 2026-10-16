@@ -7,7 +7,7 @@ import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
 import { SeasonSelector } from "@/components/SeasonSelector";
-import { EpisodeGrid } from "@/components/EpisodeGrid";
+import { EpisodeList } from "@/components/EpisodeList";
 import { prisma } from "@/lib/prisma";
 import {
   fetchTmdbOverviewById,
@@ -198,6 +198,41 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
               </span>
             )}
           </div>
+
+          <SeasonSelector
+            seasons={seasonsWithPosters}
+            currentSeason={currentSeason}
+            seriesPoster={poster}
+          />
+
+          {/* Liste des épisodes (avant la synopsis) */}
+          {seasonsToShow.length > 0 && (
+            <>
+              {seasonsToShow.map((s) => {
+                const detail = seasonDetailsMap.get(s.season);
+                const episodes =
+                  detail && detail.episodes?.length > 0
+                    ? detail.episodes
+                    : fallbackEpisodes(s.episodes);
+                return (
+                  <EpisodeList
+                    key={s.season}
+                    seasonNumber={s.season}
+                    episodes={episodes}
+                    hrefFor={({ season, episode, lang: episodeLang }) =>
+                      hrefFor({
+                        lang: episodeLang ?? sp.lang ?? undefined,
+                        season,
+                        episode,
+                      })
+                    }
+                    lang={sp.lang ?? null}
+                  />
+                );
+              })}
+            </>
+          )}
+
           {overview && (
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
           )}
@@ -208,43 +243,6 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
           </div>
         </div>
       </div>
-
-      {/* Sélecteur de saisons (grille avec couvertures) */}
-      {playback?.seasons && playback.seasons.length > 0 && (
-        <SeasonSelector
-          seasons={seasonsWithPosters}
-          currentSeason={currentSeason}
-          seriesPoster={poster}
-        />
-      )}
-
-      {/* Liste des épisodes de la/les saison(s) affichée(s) */}
-      {seasonsToShow.length > 0 && (
-        <>
-          {seasonsToShow.map((s) => {
-            const detail = seasonDetailsMap.get(s.season);
-            const episodes =
-              detail && detail.episodes?.length > 0
-                ? detail.episodes
-                : fallbackEpisodes(s.episodes);
-            return (
-              <EpisodeGrid
-                key={s.season}
-                seasonNumber={s.season}
-                episodes={episodes}
-                hrefFor={({ season, episode, lang: episodeLang }) =>
-                  hrefFor({
-                    lang: episodeLang ?? sp.lang ?? undefined,
-                    season,
-                    episode,
-                  })
-                }
-                lang={sp.lang ?? null}
-              />
-            );
-          })}
-        </>
-      )}
 
       <p className="mt-8 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 p-3 text-xs text-zinc-400">
         <Play className="h-4 w-4 text-violet-500" />

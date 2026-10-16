@@ -7,7 +7,7 @@ import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
 import { SeasonSelector } from "@/components/SeasonSelector";
-import { EpisodeGrid } from "@/components/EpisodeGrid";
+import { EpisodeList } from "@/components/EpisodeList";
 import { prisma } from "@/lib/prisma";
 import {
   fetchTmdbOverviewByTitle,
@@ -207,15 +207,13 @@ export default async function PartnerSeriesPage({
               </span>
             )}
           </div>
-          {overview && (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
-          )}
           <SeasonSelector
             seasons={seasonsWithPosters}
             currentSeason={currentSeason}
             seriesPoster={poster}
           />
 
+          {/* Liste des épisodes (avant la synopsis) */}
           {seasonsToShow.length > 0 && (
             <>
               {seasonsToShow.map((s) => {
@@ -225,7 +223,7 @@ export default async function PartnerSeriesPage({
                     ? detail.episodes
                     : fallbackEpisodes(s.episodes);
                 return (
-                  <EpisodeGrid
+                  <EpisodeList
                     key={s.season}
                     seasonNumber={s.season}
                     episodes={episodes}
@@ -241,6 +239,10 @@ export default async function PartnerSeriesPage({
                 );
               })}
             </>
+          )}
+
+          {overview && (
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
           )}
 
           <div className="mt-4 flex flex-wrap gap-3">
