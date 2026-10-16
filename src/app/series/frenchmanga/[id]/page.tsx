@@ -125,6 +125,9 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
     return `/series/frenchmanga/${id}${qs ? `?${qs}` : ""}`;
   };
 
+  // Liste unique des épisodes disponibles, triée par numéro.
+  const episodeNumbers = getUniqueEpisodeNumbers(detail?.streams ?? []);
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <Link
@@ -184,6 +187,25 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
         </div>
       </div>
 
+      {/* Liste des épisodes */}
+      {episodeNumbers.length > 0 && (
+        <section className="mt-12 border-t border-white/10 pt-8">
+          <h2 className="text-xl font-bold text-white mb-6">Épisodes</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {episodeNumbers.map((epNum) => (
+              <Link
+                key={epNum}
+                href={hrefFor({ episode: epNum, lang: sp.lang ?? "vf" })}
+                className="group flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/60 px-3 py-3 text-xs transition-all hover:border-white/30 hover:bg-zinc-800"
+              >
+                <Play className="h-4 w-4 text-zinc-500 group-hover:text-violet-400" />
+                <span className="font-medium text-zinc-200 leading-none">Ép. {epNum}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       <p className="mt-8 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 p-3 text-xs text-zinc-400">
         <Play className="h-4 w-4 text-violet-500" />
         Plusieurs sources sont proposées quand elles sont disponibles. La disponibilité et les
@@ -191,4 +213,15 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
       </p>
     </div>
   );
+}
+
+/**
+ * Extrait les numéros d'épisode uniques depuis un tableau de streams, triés par ordre croissant.
+ */
+function getUniqueEpisodeNumbers(streams: { episode: number }[]): number[] {
+  const seen = new Set<number>();
+  for (const s of streams) {
+    if (s.episode > 0) seen.add(s.episode);
+  }
+  return Array.from(seen).sort((a, b) => a - b);
 }

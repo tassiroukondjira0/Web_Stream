@@ -40,7 +40,17 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
   const episode =
     selection.episode && episodes.includes(selection.episode) ? selection.episode : episodes[0];
 
-  const episodeSources = seasonSources.filter((s) => s.episode === episode);
+  let episodeSources = seasonSources.filter((s) => s.episode === episode);
+  // Inclure aussi les sources fournisseur (plates) pour le même (lang, épisode)
+  // quel que soit le numéro de saison (alignement TMDB/Vidzy vs fournisseur).
+  const flatProvider = langSources.filter(
+    (s) => s.host.startsWith("ext:") && s.episode === episode,
+  );
+  for (const p of flatProvider) {
+    if (!episodeSources.find((es) => es.host === p.host)) {
+      episodeSources = [...episodeSources, p];
+    }
+  }
   const selected = episodeSources.find((s) => s.host === selection.host) ?? episodeSources[0];
 
   const isMovie = seasons.length === 1 && episodes.length === 1;

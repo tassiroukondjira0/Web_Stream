@@ -171,6 +171,38 @@ export default async function PartnerSeriesPage({
         </div>
       </div>
 
+      {/* Liste des saisons et épisodes */}
+      {playback?.seasons && playback.seasons.length > 0 && (
+        <section className="mt-12 border-t border-white/10 pt-8">
+          <h2 className="text-xl font-bold text-white mb-6">Saisons & épisodes</h2>
+          {playback.seasons.map((season) => (
+            <div key={season.season} className="mb-8">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                Saison {season.season}
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                {season.episodes.map((epNum) => (
+                  <Link
+                    key={epNum}
+                    href={hrefFor({
+                      season: season.season,
+                      episode: epNum,
+                      lang: sp.lang ?? "vf",
+                    })}
+                    className="group flex flex-col items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/60 px-3 py-3 text-xs transition-all hover:border-white/30 hover:bg-zinc-800"
+                  >
+                    <Play className="h-4 w-4 text-zinc-500 group-hover:text-violet-400" />
+                    <span className="font-medium text-zinc-200 leading-none">
+                      S{season.season}E{epNum}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
       <p className="mt-8 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 p-3 text-xs text-zinc-400">
         <Play className="h-4 w-4 text-violet-500" />
         Plusieurs sources sont proposées quand elles sont disponibles. La disponibilité et les
