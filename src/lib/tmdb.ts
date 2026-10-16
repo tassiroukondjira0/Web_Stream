@@ -202,7 +202,38 @@ export interface TmdbSeason {
   id: number;
   season_number: number;
   name: string;
+  poster_path: string | null;
   episodes: TmdbEpisode[];
+}
+
+/**
+ * Récupère l'affiche (poster) de plusieurs saisons d'une série TMDB en parallèle.
+ * Retourne un map seasonNumber → URL d'affiche complète (ou null si indisponible).
+ */
+export async function fetchTvSeasonsPosters(
+  seriesId: number,
+  seasonNumbers: number[],
+): Promise<Map<number, string | null>> {
+  if (!hasTmdbCredentials() || seasonNumbers.length === 0) {
+    return new Map();
+  }
+  const results = await Promise.allSettled(
+    seasonNumbers.map((n) => fetchTvSeason(seriesId, n)),
+  );
+  const map = new Map<number, string | null>();
+  results.forEach((result, i) => {
+    const seasonNumber = seasonNumbers[i];
+    if (result.status === "fulfilled") {
+      const s = result.value as TmdbSeason;
+      map.set(
+        seasonNumber,
+        s.poster_path ? `${TMDB_IMG}/w300${s.poster_path}` : null,
+      );
+    } else {
+      map.set(seasonNumber, null);
+    }
+  });
+  return map;
 }
 
 /** Détails d'une série tels que renvoyés par /tv/{id} (champs utiles). */

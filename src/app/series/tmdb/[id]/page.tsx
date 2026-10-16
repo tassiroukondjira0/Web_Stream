@@ -6,8 +6,9 @@ import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
+import { SeasonSelector } from "@/components/SeasonSelector";
 import { prisma } from "@/lib/prisma";
-import { fetchTmdbOverviewById } from "@/lib/tmdb";
+import { fetchTmdbOverviewById, fetchTvSeasonsPosters } from "@/lib/tmdb";
 import { resolvePlaybackByTmdbId } from "@/lib/vidzy";
 import { vidzySources } from "@/lib/player-sources";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
@@ -88,6 +89,21 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
+  const currentSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+
+  // Affiches de saison depuis TMDB (fallback silencieux si pas de credentials)
+  const seasonPosters = playback?.tmdbId
+    ? await fetchTvSeasonsPosters(
+        playback.tmdbId,
+        playback.seasons.map((s) => s.season),
+      ).catch(() => new Map())
+    : new Map();
+
+  const seasonsWithPosters = (playback?.seasons ?? []).map((s) => ({
+    ...s,
+    posterUrl: seasonPosters.get(s.season) ?? null,
+  }));
+
   const hrefFor = ({
     lang,
     season,
@@ -160,17 +176,26 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
         </div>
       </div>
 
-      {/* Liste des saisons et épisodes */}
+      {/* Sélecteur de saisons (grille avec couvertures) */}
+      {playback?.seasons && playback.seasons.length > 0 && (
+        <SeasonSelector
+          seasons={seasonsWithPosters}
+          currentSeason={currentSeason}
+          seriesPoster={poster}
+        />
+      )}
+
+      {/* Liste des épisodes */}
       {playback?.seasons && playback.seasons.length > 0 && (
         <section className="mt-12 border-t border-white/10 pt-8">
-          <h2 className="text-xl font-bold text-white mb-6">Saisons & épisodes</h2>
-          {playback.seasons.map((season) => (
-            <div key={season.season} className="mb-8">
-              <h3 className="text-lg font-semibold text-white mb-4">
-                Saison {season.season}
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-                {season.episodes.map((epNum) => (
+          <h2 className="text-xl font-bold text-white mb-6">
+            {currentSeason === null ? "Saisons & épisodes" : `Saison ${currentSeason}`}
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+            {playback.seasons
+              .filter((s) => currentSeason === null || s.season === currentSeason)
+              .flatMap((season) =>
+                season.episodes.map((epNum) => (
                   <Link
                     key={epNum}
                     href={hrefFor({
@@ -185,10 +210,9 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
                       S{season.season}E{epNum}
                     </span>
                   </Link>
-                ))}
-              </div>
-            </div>
-          ))}
+                ))
+              )}
+          </div>
         </section>
       )}
 

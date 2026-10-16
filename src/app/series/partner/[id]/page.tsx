@@ -8,7 +8,7 @@ import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
 import { SeasonSelector } from "@/components/SeasonSelector";
 import { prisma } from "@/lib/prisma";
-import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
+import { fetchTmdbOverviewByTitle, fetchTvSeasonsPosters } from "@/lib/tmdb";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
 import { providerSources, vidzySources } from "@/lib/player-sources";
 import {
@@ -102,6 +102,19 @@ export default async function PartnerSeriesPage({
 
   const currentSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
 
+  // Affiches de saison depuis TMDB (fallback silencieux si pas de credentials)
+  const seasonPosters = playback?.tmdbId
+    ? await fetchTvSeasonsPosters(
+        playback.tmdbId,
+        playback.seasons.map((s) => s.season),
+      ).catch(() => new Map())
+    : new Map();
+
+  const seasonsWithPosters = (playback?.seasons ?? []).map((s) => ({
+    ...s,
+    posterUrl: seasonPosters.get(s.season) ?? null,
+  }));
+
   const hrefFor = ({
     lang,
     season,
@@ -166,7 +179,11 @@ export default async function PartnerSeriesPage({
           {overview && (
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
           )}
-          <SeasonSelector seasons={playback?.seasons ?? []} currentSeason={currentSeason} />
+          <SeasonSelector
+            seasons={seasonsWithPosters}
+            currentSeason={currentSeason}
+            seriesPoster={poster}
+          />
           <div className="mt-4 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`partner-series-${id}`} />
             <WishlistButton mediaSlug={`partner-series-${id}`} />
