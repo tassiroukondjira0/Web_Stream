@@ -16,11 +16,138 @@ import { prisma } from "@/lib/prisma";
 
 export type PremiumPlan = "MONTHLY" | "YEARLY";
 
+/** Code pays ISO 3166-1 alpha-2 supportés pour le filtrage des moyens de paiement. */
+export type CountryCode = "SN" | "CI" | "CM" | "NE" | "ML" | "BF" | "TG" | "BJ";
+
+/** Moyen de paiement proposable sur le site avant redirection vers PayDunya. */
+export type PaymentMethod = "CARD" | "WAVE" | "ORANGE_MONEY" | "FREE_MONEY" | "MTN_MONEY";
+
 /** Tarifs du Pass Premium (montants en unités mineures XOF, exposant 0). */
 export const PREMIUM_PLANS: Record<PremiumPlan, { amount: number; label: string; months: number }> = {
   MONTHLY: { amount: 2500, label: "Abonnement Mensuel", months: 1 },
   YEARLY: { amount: 25000, label: "Abonnement Annuel", months: 12 },
 };
+
+/**
+ * Canaux PayDunya par pays.
+ *
+ * Ces codes correspondent aux identifiants de canaux attendus par l'API PayDunya
+ * (paramètre `channels` de création de facture). Ils doivent être cohérents avec
+ * les moyens activés sur le compte marchand PayDunya et avec la valeur de
+ * `PAYDUNYA_CHANNELS` le cas échéant.
+ *
+ * Sources : https://developers.paydunya.com/doc/EN/http_json (checkout-invoice/create)
+ *
+ * @remarks Quand `channels` est omis ou vide, PayDunya affiche tous les moyens activés du compte.
+ */
+export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMethod, string[]>> = {
+  SN: { // Sénégal (XOF)
+    CARD: ["card"],
+    WAVE: ["wave-senegal"],
+    ORANGE_MONEY: ["orange-money-senegal"],
+    FREE_MONEY: ["free-money"],
+    MTN_MONEY: ["mtn-money-senegal"],
+  },
+  CI: { // Côte d'Ivoire (XOF)
+    CARD: ["card"],
+    WAVE: ["wave-ci"],
+    ORANGE_MONEY: ["orange-money-ci"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-ci"],
+  },
+  CM: { // Cameroun (XAF)
+    CARD: ["card"],
+    WAVE: [],
+    ORANGE_MONEY: ["orange-money-cm"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-cm"],
+  },
+  NE: { // Niger (XOF)
+    CARD: ["card"],
+    WAVE: [],
+    ORANGE_MONEY: ["orange-money-ne"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-ne"],
+  },
+  ML: { // Mali (XOF)
+    CARD: ["card"],
+    WAVE: [],
+    ORANGE_MONEY: ["orange-money-ml"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-ml"],
+  },
+  BF: { // Burkina Faso (XOF)
+    CARD: ["card"],
+    WAVE: [],
+    ORANGE_MONEY: ["orange-money-bf"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-bf"],
+  },
+  TG: { // Togo (XOF)
+    CARD: ["card"],
+    WAVE: [],
+    ORANGE_MONEY: ["orange-money-tg"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-tg"],
+  },
+  BJ: { // Bénin (XOF)
+    CARD: ["card"],
+    WAVE: [],
+    ORANGE_MONEY: ["orange-money-bj"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-bj"],
+  },
+};
+
+/** Libellé d'affichage pour chaque moyen de paiement. */
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  CARD: "Carte bancaire (Visa / Mastercard)",
+  WAVE: "Wave (Mobile Money)",
+  ORANGE_MONEY: "Orange Money",
+  FREE_MONEY: "Free Money",
+  MTN_MONEY: "MTN Money",
+};
+
+/** Libellé d'affichage pour chaque pays supporté. */
+export const COUNTRY_LABELS: Record<CountryCode, string> = {
+  SN: "Sénégal",
+  CI: "Côte d'Ivoire",
+  CM: "Cameroun",
+  NE: "Niger",
+  ML: "Mali",
+  BF: "Burkina Faso",
+  TG: "Togo",
+  BJ: "Bénin",
+};
+
+/**
+ * Retourne les canaux PayDunya à passer à la facture pour un pays et un moyen donnés.
+ *
+ * - Si `method` est "CARD", on force uniquement le canal carte.
+ * - Si `method` est un Mobile Money, on force uniquement ce canal.
+ * - Retourne un tableau vide si le moyen n'est pas disponible dans ce pays
+ *   (l'UI doit alors empêcher ce choix).
+ *
+ * @param country Code pays ISO 3166-1 alpha-2.
+ * @param method Moyen de paiement choisi par l'utilisateur (optionnel : undefined = tous les moyens du pays).
+ */
+export function getChannelsForSelection(country: CountryCode, method?: PaymentMethod): string[] {
+  const byMethod = PAYMENT_CHANNELS_BY_COUNTRY[country];
+  if (!byMethod) return [];
+
+  if (!method) {
+    // Tous les moyens disponibles pour ce pays (dédupliqués).
+    return [...new Set(Object.values(byMethod).flat())];
+  }
+
+  const channels = byMethod[method];
+  return channels ? [...channels] : [];
+}
+
+/** Détermine si un pays utilise le franc CFA (XOF) ou le franc CFA BEAC (XAF). */
+export function getCurrencyForCountry(country: CountryCode): string {
+  return country === "CM" ? "XAF" : "XOF";
+}
 
 export function isPremiumPlan(value: unknown): value is PremiumPlan {
   return value === "MONTHLY" || value === "YEARLY";
@@ -101,6 +228,8 @@ export interface CreateInvoiceInput {
   callbackUrl: string;
   customData?: Record<string, unknown>;
   customer?: { name?: string; email?: string; phone?: string };
+  /** Canaux PayDunya à forcer sur la facture (vide/omis = tous les moyens activés du compte). */
+  channels?: string[];
 }
 
 export interface PaydunyaInvoice {
@@ -128,7 +257,7 @@ function resolveInvoiceUrl(data: Record<string, unknown>, token: string): string
  * L'utilisateur est ensuite redirigé vers `invoice.url` pour payer.
  */
 export async function createPremiumInvoice(input: CreateInvoiceInput): Promise<PaydunyaInvoice> {
-  const channels = getPaydunyaChannels();
+  const channels = input.channels ?? getPaydunyaChannels();
 
   const body = {
     invoice: {

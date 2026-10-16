@@ -2,7 +2,17 @@ import { NextResponse } from "next/server";
 import { PaymentStatus } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { getAppUrl } from "@/lib/env";
-import { createPremiumInvoice, getPaymentCurrency, isPremiumPlan, PREMIUM_PLANS } from "@/lib/payments";
+import {
+  createPremiumInvoice,
+  getChannelsForSelection,
+  getCurrencyForCountry,
+  getPaymentCurrency,
+  isPremiumPlan,
+  PAYMENT_CHANNELS_BY_COUNTRY,
+  PREMIUM_PLANS,
+  type CountryCode,
+  type PaymentMethod,
+} from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -21,14 +31,31 @@ export async function POST(request: Request) {
 
     const body = await request.json().catch(() => null);
     const plan = body?.plan;
+    const country = body?.country;
+    const paymentMethod = body?.paymentMethod;
 
     if (!isPremiumPlan(plan)) {
       return NextResponse.json({ error: "Formule d'abonnement invalide." }, { status: 400 });
     }
 
+    // Validation optionnelle du pays : si fourni, doit être un code supporté.
+    const countryCode = country ? (country as CountryCode) : undefined;
+    if (countryCode && !(countryCode in PAYMENT_CHANNELS_BY_COUNTRY)) {
+      return NextResponse.json({ error: "Pays non supporté pour le paiement." }, { status: 400 });
+    }
+
     const { amount, label } = PREMIUM_PLANS[plan];
-    const currency = getPaymentCurrency();
+    const currency = countryCode ? getCurrencyForCountry(countryCode) : getPaymentCurrency();
     const appUrl = getAppUrl();
+
+    // Canaux PayDunya à forcer sur la facture selon le pays et le moyen choisi.
+    // Quand aucun moyen n'est précisé, tous les canaux disponibles pour le pays sont transmis.
+    const channels =
+      countryCode && paymentMethod
+        ? getChannelsForSelection(countryCode, paymentMethod as PaymentMethod)
+        : countryCode
+          ? getChannelsForSelection(countryCode)
+          : undefined;
 
     const invoice = await createPremiumInvoice({
       amount,
@@ -36,7 +63,8 @@ export async function POST(request: Request) {
       returnUrl: `${appUrl}/premium/success`,
       cancelUrl: `${appUrl}/premium/cancel`,
       callbackUrl: `${appUrl}/api/payment/webhook`,
-      customData: { userId: user.id, plan },
+      customData: { userId: user.id, plan, country: countryCode, paymentMethod },
+      channels,
       customer: {
         name: user.name || undefined,
         email: user.email,
@@ -54,11 +82,18 @@ export async function POST(request: Request) {
         currency,
         status: PaymentStatus.PENDING,
         plan,
-        rawPayload: { token: invoice.token, plan, provider: "PAYDUNYA" },
+        rawPayload: {
+          token: invoice.token,
+          plan,
+          provider: "PAYDUNYA",
+          country: countryCode,
+          paymentMethod,
+          channels,
+        },
       },
     });
 
-    return NextResponse.json({ url: invoice.url, sessionId: invoice.token, provider: "PAYDUNYA" });
+    return NextResponse.json({ url: invoice.url, sessionId: invoice.token, provider: "PAYDUNYA", country: countryCode, paymentMethod });
   } catch (error) {
     console.error("Erreur initiation paiement PayDunya :", error);
     return NextResponse.json(
