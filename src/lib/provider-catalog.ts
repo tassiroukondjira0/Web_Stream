@@ -47,6 +47,8 @@ export interface AssetFilters {
   theme?: string | null;
   /** Année de sortie (exacte). */
   releaseYear?: number | null;
+  /** Slug de plateforme (netflix, prime-video, disney…). */
+  platform?: string | null;
 }
 
 function toItem(a: {
@@ -154,10 +156,22 @@ async function listAssets(
       contentType,
       isPublished: true,
       isDuplicate: false,
-      ...(filters.categorySlug ? { categorySlug: filters.categorySlug } : {}),
+      // Drame inclut les K-Drama : une série coréenne est taguée « k-drama »
+      // (voir modules/providers/tmdb/tmdb.sync) mais reste un drame.
+      ...(filters.categorySlug
+        ? {
+            categorySlug:
+              filters.categorySlug === "drame"
+                ? { in: ["drame", "k-drama"] }
+                : filters.categorySlug,
+          }
+        : {}),
       ...(filters.language ? { language: filters.language } : {}),
       ...(filters.theme ? { theme: filters.theme } : {}),
       ...(filters.releaseYear ? { releaseYear: filters.releaseYear } : {}),
+      // Plateformes stockées en liste encadrée (« ,netflix,disney, ») :
+      // on cherche « ,slug, » pour éviter les correspondances partielles.
+      ...(filters.platform ? { platforms: { contains: `,${filters.platform},` } } : {}),
     } as const;
     const [totalItems, rows] = await Promise.all([
       prisma.providerAsset.count({ where }),
@@ -489,4 +503,17 @@ export const CATALOG_THEMES = [
   { value: "romance", label: "Romance" },
   { value: "policier", label: "Policier / Thriller" },
   { value: "dessin-anime", label: "Dessin animé" },
+] as const;
+
+/**
+ * Plateformes de diffusion disponibles pour le filtre. Les slugs sont ceux
+ * stockés dans `ProviderAsset.platforms` (liste encadrée par des virgules) et
+ * correspondent aux clés de `TMDB_WATCH_PROVIDER_IDS` (lib/tmdb.ts).
+ */
+export const CATALOG_PLATFORMS = [
+  { value: "netflix", label: "Netflix" },
+  { value: "prime-video", label: "Prime Video" },
+  { value: "disney", label: "Disney+" },
+  { value: "paramount", label: "Paramount+" },
+  { value: "apple-tv", label: "Apple TV+" },
 ] as const;

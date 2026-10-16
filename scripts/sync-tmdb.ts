@@ -53,6 +53,7 @@ async function main(): Promise<void> {
   console.log(`  Assets upsertés  : ${report.upserted}`);
   console.log(`  Assets purgés    : ${report.pruned}`);
   console.log(`  Doublons masqués : ${report.duplicatesHidden}`);
+  console.log(`  Séries taguées K-Drama : ${report.kdramaTagged}`);
   console.log(`  Durée            : ${(report.durationMs / 1000).toFixed(1)} s`);
 }
 

@@ -2,17 +2,24 @@
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useCallback, useMemo } from "react";
-import { CATALOG_LANGUAGES, CATALOG_THEMES } from "@/lib/provider-catalog";
+import {
+  CATALOG_LANGUAGES,
+  CATALOG_PLATFORMS,
+  CATALOG_THEMES,
+} from "@/lib/provider-catalog";
 import { type Category, getAllCategories } from "@/lib/categories";
 
 interface AdvancedFilterProps {
   availableYears?: number[];
   label?: string;
+  /** Afficher le filtre « Plateforme » (masqué là où les titres ne sont pas tagués). */
+  showPlatforms?: boolean;
 }
 
 export function AdvancedFilter({
   availableYears = [],
   label = "Filtres",
+  showPlatforms = true,
 }: AdvancedFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -21,13 +28,15 @@ export function AdvancedFilter({
   const categories: Category[] = useMemo(() => getAllCategories(), []);
   const langs = CATALOG_LANGUAGES;
   const themes = CATALOG_THEMES;
+  const platforms = CATALOG_PLATFORMS;
 
   const cat = searchParams.get("categorie") ?? "";
   const lang = searchParams.get("language") ?? "";
   const theme = searchParams.get("theme") ?? "";
   const year = searchParams.get("year") ?? "";
+  const platform = searchParams.get("plateforme") ?? "";
 
-  const hasActive = Boolean(cat || lang || theme || year);
+  const hasActive = Boolean(cat || lang || theme || year || platform);
 
   const setFilter = useCallback(
     (key: string, value: string) => {
@@ -63,7 +72,11 @@ export function AdvancedFilter({
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div
+        className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${
+          showPlatforms ? "lg:grid-cols-5" : "lg:grid-cols-4"
+        }`}
+      >
         {/* Genre — menu déroulant */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
@@ -121,6 +134,27 @@ export function AdvancedFilter({
           </select>
         </div>
 
+        {/* Plateforme — menu déroulant */}
+        {showPlatforms && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+              Plateforme
+            </label>
+            <select
+              value={platform}
+              onChange={(e) => setFilter("plateforme", e.target.value)}
+              className="rounded-xl border border-white/10 bg-zinc-900/50 px-3 py-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-colors cursor-pointer"
+            >
+              <option value="">Toutes les plateformes</option>
+              {platforms.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Année — menu déroulant */}
         <div className="flex flex-col gap-1.5">
           <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
@@ -162,6 +196,11 @@ export function AdvancedFilter({
           </span>
         )}
         {year && <span className="bg-zinc-800/50 rounded px-2 py-1">Année : {year}</span>}
+        {platform && showPlatforms && (
+          <span className="bg-zinc-800/50 rounded px-2 py-1">
+            Plateforme : {platforms.find((p) => p.value === platform)?.label ?? platform}
+          </span>
+        )}
       </div>
     </section>
   );

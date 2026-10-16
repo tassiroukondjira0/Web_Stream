@@ -1,0 +1,31 @@
+{
+  "migration": "20261016_add_provider_asset_platforms",
+  "databaseProvider": "postgresql",
+  "datamodel": "prisma/schema.prisma",
+  "steps": [
+    {
+      "addColumn": {
+        "model": "ProviderAsset",
+        "name": "platforms",
+        "type": "String",
+        "isUnique": false,
+        "isGenerated": false,
+        "hasDefaultValue": false,
+        "defaultValue": null,
+        "autoIncrement": false
+      }
+    },
+    {
+      "createIndex": {
+        "model": "ProviderAsset",
+        "name": "provider_assets_provider_contentType_platforms_idx",
+        "columns": ["provider", "contentType", "platforms"],
+        "type": "Btree"
+      }
+    }
+  ],
+  "rolledBack": false,
+  "startedAt": "2026-10-16T12:00:00Z",
+  "finishedAt": null,
+  "applied": false
+}

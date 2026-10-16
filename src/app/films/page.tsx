@@ -22,11 +22,12 @@ interface FilmsPageProps {
     language?: string;
     theme?: string;
     year?: string;
+    plateforme?: string;
   }>;
 }
 
 async function FilmsContent({ searchParams }: FilmsPageProps) {
-  const { page, categorie, language, theme, year } = await searchParams;
+  const { page, categorie, language, theme, year, plateforme } = await searchParams;
 
   const partnerPage = Math.max(1, parseInt(page || "1", 10) || 1);
   const releaseYear = year ? Number.parseInt(year, 10) : undefined;
@@ -36,6 +37,7 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
     language: language ?? undefined,
     theme: theme ?? undefined,
     releaseYear,
+    platform: plateforme ?? undefined,
   });
 
   // Années disponibles pour le filtre (extraites des items de la page courante)
@@ -98,8 +100,8 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
               <Link
                 href={
                   partnerPage - 1 > 1
-                    ? `/films?page=${partnerPage - 1}${buildQueryString({ categorie, language, theme, year })}`
-                    : `/films${buildQueryString({ categorie, language, theme, year })}`
+                    ? `/films?page=${partnerPage - 1}${buildQueryString({ categorie, language, theme, year, plateforme })}`
+                    : `/films${buildQueryString({ categorie, language, theme, year, plateforme })}`
                 }
                 className="rounded-lg bg-zinc-800 border border-white/10 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700"
               >
@@ -111,7 +113,7 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
             </span>
             {partnerPage < partner.totalPages && (
               <Link
-                href={`/films?page=${partnerPage + 1}${buildQueryString({ categorie, language, theme, year })}`}
+                href={`/films?page=${partnerPage + 1}${buildQueryString({ categorie, language, theme, year, plateforme })}`}
                 className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500"
               >
                 Suivant →
@@ -129,12 +131,14 @@ function buildQueryString(params: {
   language?: string | null;
   theme?: string | null;
   year?: string | null;
+  plateforme?: string | null;
 }): string {
   const qs = new URLSearchParams();
   if (params.categorie) qs.set("categorie", params.categorie);
   if (params.language) qs.set("language", params.language);
   if (params.theme) qs.set("theme", params.theme);
   if (params.year) qs.set("year", params.year);
+  if (params.plateforme) qs.set("plateforme", params.plateforme);
   return qs.toString() ? `?${qs.toString()}` : "";
 }
 

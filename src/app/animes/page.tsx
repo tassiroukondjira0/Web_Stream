@@ -60,7 +60,7 @@ async function AnimesContent({ searchParams }: AnimesPageProps) {
         </div>
       </div>
 
-      <AdvancedFilter availableYears={availableYears} label="Filtres" />
+      <AdvancedFilter availableYears={availableYears} label="Filtres" showPlatforms={false} />
 
       {partner.items.length === 0 ? (
         <div className="py-24 text-center">

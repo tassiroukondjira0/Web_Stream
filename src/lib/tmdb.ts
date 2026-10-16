@@ -57,6 +57,36 @@ export const TMDB_GENRES: Record<number, { name: string; slug: string }> = {
   37: { name: "Western", slug: "western" },
 };
 
+/**
+ * Identifiants TMDB des plateformes de diffusion (« watch providers »),
+ * vérifiés via `/watch/providers/{movie,tv}` (les identifiants sont identiques
+ * pour les films et les séries). Slugs alignés sur CATALOG_PLATFORMS
+ * (lib/provider-catalog.ts) et le filtre « Plateforme » de l'interface.
+ */
+export const TMDB_WATCH_PROVIDER_IDS: Record<string, number[]> = {
+  netflix: [8, 175, 1796], // Netflix, Netflix Kids, Netflix (avec pubs)
+  "prime-video": [9, 119, 2100], // Amazon Prime Video (variantes)
+  disney: [122, 337], // Disney+ / Disney Plus
+  paramount: [531, 2303, 2304, 2616], // Paramount+ (toutes formules)
+  "apple-tv": [350], // Apple TV+
+};
+
+/** Région utilisée pour la disponibilité des plateformes (TMDB `watch_region`). */
+export const TMDB_WATCH_REGION = "FR";
+
+/**
+ * Récupère une page de `/discover/movie` ou `/discover/tv` avec des filtres
+ * arbitraires (`with_watch_providers`, `with_origin_country`, `with_genres`…).
+ * Voir https://developer.themoviedb.org/reference/discover-movie
+ */
+export function fetchTmdbDiscover(
+  path: "/discover/movie" | "/discover/tv",
+  params: Record<string, string>,
+  page = 1,
+): Promise<TmdbPopularResponse> {
+  return tmdbFetch<TmdbPopularResponse>(path, { ...params, page: String(page) });
+}
+
 /** Construit les en-têtes / paramètres d'authentification TMDB. */
 function buildTmdbRequest(path: string, params: Record<string, string> = {}): { url: string; headers: Record<string, string> } {
   const token = process.env.TMDB_API_TOKEN; // v4 (Bearer)

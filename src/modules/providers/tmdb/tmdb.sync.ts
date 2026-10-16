@@ -42,6 +42,21 @@ export const DEFAULT_SOURCES: TmdbListSource[] = [
   { path: "/tv/on_the_air", kind: "tv" },
 ];
 
+/**
+ * Séries dramatiques coréennes : alimente le filtre genre « K-Drama ».
+ * TMDB n'expose pas de genre « k-drama » : on combine l'origine coréenne
+ * (`with_origin_country=KR`) et le genre Drame (`with_genres=18`). Liste
+ * distincte des sources classées, ajoutée en fin pour ne pas décaler le rang
+ * de tendance.
+ */
+const KDramaSource: TmdbListSource = {
+  path: "/discover/tv?with_origin_country=KR&with_genres=18&sort_by=popularity.desc",
+  kind: "tv",
+};
+
+/** Taille des lots du tag « k-drama » (updateMany par identifiants). */
+const KDrama_TAG_CHUNK = 500;
+
 export interface TmdbSyncOptions {
   /** Nombre de pages rapportées par liste (1..MAX_PAGES). */
   pages?: number;
@@ -51,6 +66,8 @@ export interface TmdbSyncOptions {
   sources?: TmdbListSource[];
   /** Ne pas recalculer les doublons FRENCHSTREAM (défaut : false). */
   skipDedupe?: boolean;
+  /** Ne pas rapporter ni taguer les séries dramatiques coréennes. */
+  skipKDrama?: boolean;
 }
 
 export interface TmdbSyncReport {
@@ -62,6 +79,8 @@ export interface TmdbSyncReport {
   pruned: number;
   /** Titres FRENCHSTREAM masqués comme doublons TMDB (après recalcul). */
   duplicatesHidden: number;
+  /** Séries coréennes taguées « k-drama » (après synchro). */
+  kdramaTagged: number;
   durationMs: number;
 }
 
@@ -80,6 +99,29 @@ async function fetchSource(source: TmdbListSource, pages: number): Promise<TmdbC
   return results.flat();
 }
 
+/** Force le tag « k-drama » sur les séries coréennes remontées par discover.
+ *
+ * Étape POST-upsert obligatoire : les listes populaires ré-attribuent le genre
+ * (COALESCE « nouvelle valeur gagne »), on réapplique donc le tag à chaque
+ * synchro pour qu'il ne bascule jamais vers « drame ». */
+async function tagKdramaSeries(externalIds: string[]): Promise<number> {
+  if (externalIds.length === 0) return 0;
+  let tagged = 0;
+  for (let i = 0; i < externalIds.length; i += KDrama_TAG_CHUNK) {
+    const batch = externalIds.slice(i, i + KDrama_TAG_CHUNK);
+    const res = await prisma.providerAsset.updateMany({
+      where: {
+        provider: TMDB_PROVIDER,
+        contentType: "SERIES",
+        externalId: { in: batch },
+      },
+      data: { categorySlug: "k-drama" },
+    });
+    tagged += res.count;
+  }
+  return tagged;
+}
+
 /** Exécute une synchro incrémentale du catalogue TMDB et retourne le rapport. */
 export async function syncTmdbCatalog(options: TmdbSyncOptions = {}): Promise<TmdbSyncReport> {
   const startedAt = Date.now();
@@ -89,6 +131,12 @@ export async function syncTmdbCatalog(options: TmdbSyncOptions = {}): Promise<Tm
   const sources = options.sources ?? DEFAULT_SOURCES;
 
   const perSource = await Promise.all(sources.map((source) => fetchSource(source, pages)));
+
+  // Séries dramatiques coréennes (filtre genre « K-Drama ») : rapportées en
+  // fin de liste pour préserver le rang de tendance des sources classées.
+  const kdramaItems =
+    options.skipKDrama === true ? [] : await fetchSource(KDramaSource, pages);
+  if (kdramaItems.length > 0) perSource.push(kdramaItems);
 
   // Déduplication par (type, id) en préservant l'ordre de découverte, puis
   // attribution d'un rang de tendance par type (1 = plus tendance).
@@ -130,6 +178,7 @@ export async function syncTmdbCatalog(options: TmdbSyncOptions = {}): Promise<Tm
 
   let pruned = 0;
   let duplicatesHidden = 0;
+  let kdramaTagged = 0;
   if (!dryRun) {
     const cutoff = new Date(Date.now() - PRUNE_AFTER_DAYS * 24 * 60 * 60 * 1000);
     const stale = await prisma.providerAsset.findMany({
@@ -147,6 +196,10 @@ export async function syncTmdbCatalog(options: TmdbSyncOptions = {}): Promise<Tm
     if (!skipDedupe) {
       duplicatesHidden = (await dedupeAgainstTmdb()).hidden;
     }
+
+    // Tag « k-drama » réappliqué APRÈS l'upsert (voir tagKdramaSeries) :
+    // les séries coréennes doivent rester trouvables sous le genre K-Drama.
+    kdramaTagged = await tagKdramaSeries(kdramaItems.map((item) => item.externalId));
 
     await prisma.providerSyncRun.create({
       data: {
@@ -168,6 +221,7 @@ export async function syncTmdbCatalog(options: TmdbSyncOptions = {}): Promise<Tm
     upserted,
     pruned,
     duplicatesHidden,
+    kdramaTagged,
     durationMs: Date.now() - startedAt,
   };
 }

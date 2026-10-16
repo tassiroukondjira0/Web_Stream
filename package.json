@@ -16,6 +16,7 @@
     "catalog:sync": "tsx scripts/sync-partner.ts",
     "mangas:sync": "tsx scripts/sync-frenchmanga.ts",
     "tmdb:sync": "tsx scripts/sync-tmdb.ts",
+    "platform:sync": "tsx scripts/sync-platforms.ts",
     "tmdb:dedupe": "tsx scripts/dedupe-tmdb.ts",
     "partner:sync": "tsx scripts/sync-partner.ts",
     "vercel:env": "powershell -ExecutionPolicy Bypass -File ./scripts/vercel-env.ps1",

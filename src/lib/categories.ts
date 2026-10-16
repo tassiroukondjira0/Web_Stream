@@ -15,6 +15,7 @@ export const CATEGORIES: Category[] = [
   { slug: "animation", name: "Animation" },
   { slug: "comedie", name: "Comédie" },
   { slug: "drame", name: "Drame" },
+  { slug: "k-drama", name: "K-Drama" },
   { slug: "horreur", name: "Horreur" },
   { slug: "science-fiction", name: "Science-Fiction" },
   { slug: "fantastique", name: "Fantastique" },

@@ -31,11 +31,13 @@ export interface BulkProviderAsset {
   language?: string | null;
   /** Thème (optionnel). */
   theme?: string | null;
+  /** Plateformes encadrées par des virgules (ex: ",netflix,") — optionnel. */
+  platforms?: string | null;
   /** Renseigné uniquement à l'insertion (jamais écrasé sur conflit). */
   trendingRank: number;
 }
 
-/** Taille d'un lot : 14 colonnes/ligne, marge confortable sous la limite PG. */
+/** Taille d'un lot : 15 colonnes/ligne, marge confortable sous la limite PG. */
 const DEFAULT_CHUNK = 200;
 
 function chunkArray<T>(arr: T[], size: number): T[][] {
@@ -55,7 +57,7 @@ export async function bulkUpsertProviderAssets(
   for (const batch of chunkArray(rows, chunkSize)) {
     const params: unknown[] = [];
     const tuples = batch.map((row, i) => {
-      const b = i * 14;
+      const b = i * 15;
       params.push(
         randomUUID(),
         row.provider,
@@ -69,13 +71,14 @@ export async function bulkUpsertProviderAssets(
         row.categorySlug ?? null,
         row.language ?? null,
         row.theme ?? null,
+        row.platforms ?? null,
         row.trendingRank,
         now,
       );
-      return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}::"ProviderContentType", $${b + 5}, $${b + 6}, $${b + 7}, $${b + 8}, $${b + 9}, $${b + 10}, $${b + 11}, $${b + 12}, $${b + 13}, $${b + 14})`;
+      return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}::"ProviderContentType", $${b + 5}, $${b + 6}, $${b + 7}, $${b + 8}, $${b + 9}, $${b + 10}, $${b + 11}, $${b + 12}, $${b + 13}, $${b + 14}, $${b + 15})`;
     });
 
-    const sql = `INSERT INTO provider_assets (id, provider, "externalId", "contentType", title, "releaseYear", "posterUrl", "totalEpisodes", "sourceType", "categorySlug", "language", "theme", "trendingRank", "lastSeenAt") VALUES ${tuples.join(", ")} ON CONFLICT (provider, "externalId", "contentType") DO UPDATE SET title = EXCLUDED.title, "releaseYear" = COALESCE(EXCLUDED."releaseYear", provider_assets."releaseYear"), "posterUrl" = COALESCE(EXCLUDED."posterUrl", provider_assets."posterUrl"), "totalEpisodes" = COALESCE(EXCLUDED."totalEpisodes", provider_assets."totalEpisodes"), "sourceType" = EXCLUDED."sourceType", "categorySlug" = COALESCE(EXCLUDED."categorySlug", provider_assets."categorySlug"), "language" = COALESCE(EXCLUDED."language", provider_assets."language"), "theme" = COALESCE(EXCLUDED."theme", provider_assets."theme"), "lastSeenAt" = EXCLUDED."lastSeenAt"`;
+    const sql = `INSERT INTO provider_assets (id, provider, "externalId", "contentType", title, "releaseYear", "posterUrl", "totalEpisodes", "sourceType", "categorySlug", "language", "theme", "platforms", "trendingRank", "lastSeenAt") VALUES ${tuples.join(", ")} ON CONFLICT (provider, "externalId", "contentType") DO UPDATE SET title = EXCLUDED.title, "releaseYear" = COALESCE(EXCLUDED."releaseYear", provider_assets."releaseYear"), "posterUrl" = COALESCE(EXCLUDED."posterUrl", provider_assets."posterUrl"), "totalEpisodes" = COALESCE(EXCLUDED."totalEpisodes", provider_assets."totalEpisodes"), "sourceType" = EXCLUDED."sourceType", "categorySlug" = COALESCE(EXCLUDED."categorySlug", provider_assets."categorySlug"), "language" = COALESCE(EXCLUDED."language", provider_assets."language"), "theme" = COALESCE(EXCLUDED."theme", provider_assets."theme"), "platforms" = COALESCE(EXCLUDED."platforms", provider_assets."platforms"), "lastSeenAt" = EXCLUDED."lastSeenAt"`;
 
     await prisma.$executeRawUnsafe(sql, ...params);
     processed += batch.length;

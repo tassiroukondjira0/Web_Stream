@@ -301,6 +301,10 @@ model ProviderAsset {
   language      String?
   /// Thème / ambiance (ex: comédie, drame, action, sf…).
   theme         String?
+  /// Plateformes de diffusion (slugs encadrés par des virgules, ex :
+  /// ",netflix,disney,"). Alimente le filtre « Plateforme » du catalogue.
+  /// Écrit par la synchro des plateformes (modules/providers/tmdb/platform.sync).
+  platforms     String?
   /// Rang dans l'ordre « popular » du fournisseur (1 = plus tendance). Alimente la
   /// section « À la une ». Rafraîchi à chaque synchro de l'ordre popular.
   trendingRank  Int?
@@ -322,6 +326,7 @@ model ProviderAsset {
   @@index([provider, contentType, trendingRank])
   @@index([provider, isPublished])
   @@index([provider, contentType, categorySlug])
+  @@index([provider, contentType, platforms])
   @@index([provider, contentType, releaseYear])
   @@index([provider, contentType, isDuplicate])
   @@map("provider_assets")
