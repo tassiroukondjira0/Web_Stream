@@ -50,43 +50,6 @@ export function SeasonSelector({
         Saison
       </label>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
-        {/* Carte "Toutes les saisons" */}
-        <button
-          onClick={() => selectSeason(null)}
-          aria-pressed={currentSeason === null}
-          className={`relative group rounded-xl border overflow-hidden transition-all ${
-            currentSeason === null
-              ? "border-violet-500 bg-violet-500/10"
-              : "border-white/10 bg-zinc-900/50 hover:border-white/30"
-          }`}
-        >
-          <div className="aspect-[3/4] bg-zinc-800/40 relative overflow-hidden">
-            {seriesPoster ? (
-              <img
-                src={seriesPoster}
-                alt="Toutes les saisons"
-                className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center bg-gradient-to-b from-zinc-800/80 to-zinc-900 text-xs text-zinc-500">
-                Aucune affiche
-              </div>
-            )}
-            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Play className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          </div>
-          <div className="mt-2 px-2 text-center">
-            <span className="block text-xs font-medium text-zinc-200">
-              Toutes les saisons
-            </span>
-            <span className="block text-[10px] text-zinc-500">
-              {seasons.reduce((n, s) => n + s.episodes.length, 0)} épisode{seasons.reduce((n, s) => n + s.episodes.length, 0) > 1 ? "s" : ""}
-            </span>
-          </div>
-        </button>
-
         {seasons.map((s) => {
           const poster = s.posterUrl ?? seriesPoster ?? null;
           return (
