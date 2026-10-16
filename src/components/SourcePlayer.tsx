@@ -39,6 +39,12 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
   const episode =
     selection.episode && episodes.includes(selection.episode) ? selection.episode : episodes[0];
 
+  const currentEpisodeIndex = episodes.indexOf(episode);
+  const nextEpisode =
+    currentEpisodeIndex >= 0 && currentEpisodeIndex < episodes.length - 1
+      ? episodes[currentEpisodeIndex + 1]
+      : null;
+
   let episodeSources = seasonSources.filter((s) => s.episode === episode);
   // Inclure aussi les sources fournisseur (plates) pour le même (lang, épisode)
   // quel que soit le numéro de saison (alignement TMDB/Vidzy vs fournisseur).
@@ -56,17 +62,28 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
 
   return (
     <div className="mt-4">
-      <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
+      <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black relative">
         {selected ? (
-          <iframe
-            key={selected.url}
-            src={selected.url}
-            title={title}
-            className="h-full w-full"
-            allowFullScreen
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            referrerPolicy="no-referrer"
-          />
+          <>
+            <iframe
+              key={selected.url}
+              src={selected.url}
+              title={title}
+              className="h-full w-full"
+              allowFullScreen
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+              referrerPolicy="no-referrer"
+            />
+            {nextEpisode && !isMovie && (
+              <Link
+                href={hrefFor({ lang, season, episode: nextEpisode, host: null })}
+                className="absolute bottom-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-violet-600/90 text-white text-sm font-semibold shadow-xl backdrop-blur-sm transition-transform hover:bg-violet-600 hover:scale-105"
+                aria-label={`Épisode ${nextEpisode}`}
+              >
+                {nextEpisode}
+              </Link>
+            )}
+          </>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-zinc-400">
             Flux indisponible.
