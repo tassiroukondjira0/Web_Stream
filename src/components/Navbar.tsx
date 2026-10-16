@@ -22,7 +22,8 @@ export function Navbar() {
 
   // Ferme le menu burger à chaque navigation + verrouille le scroll quand ouvert.
   useEffect(() => {
-    setMenuOpen(false);
+    const id = setTimeout(() => setMenuOpen(false), 0);
+    return () => clearTimeout(id);
   }, [pathname]);
 
   useEffect(() => {

@@ -84,11 +84,12 @@ export default function PaymentStatus({ sessionId }: { sessionId: string | null 
   }, [verify]);
 
   useEffect(() => {
-    timerRef.current = setTimeout(() => verifyRef.current(), 0);
+    const id = setTimeout(() => verifyRef.current(), 0);
     return () => {
+      clearTimeout(id);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [sessionId]);
+  }, []);
 
   return (
     <div className="mx-auto max-w-lg px-4 py-20 text-center sm:px-6">

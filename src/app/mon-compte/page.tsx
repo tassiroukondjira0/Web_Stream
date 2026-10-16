@@ -32,7 +32,7 @@ export default function AccountPage() {
   const [listsLoading, setListsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    fetch("/api/auth/me", { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
@@ -50,8 +50,12 @@ export default function AccountPage() {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      fetch("/api/bookmarks").then((r) => (r.ok ? r.json() : { bookmarks: [] })),
-      fetch("/api/wishlist").then((r) => (r.ok ? r.json() : { wishlist: [] })),
+      fetch("/api/bookmarks", {
+        credentials: "include",
+      }).then((r) => (r.ok ? r.json() : { bookmarks: [] })),
+      fetch("/api/wishlist", {
+        credentials: "include",
+      }).then((r) => (r.ok ? r.json() : { wishlist: [] })),
     ])
       .then(([b, w]) => {
         setBookmarks(Array.isArray(b.bookmarks) ? b.bookmarks : []);
@@ -65,7 +69,10 @@ export default function AccountPage() {
   }, [user]);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
     router.push("/");
     router.refresh();
   };

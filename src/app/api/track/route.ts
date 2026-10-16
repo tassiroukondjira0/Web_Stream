@@ -17,6 +17,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, skipped: true });
     }
 
+    // La base de données n'est pas configurée : on ignore le tracking silencieusement
+    // plutôt que de faire planter la requête (ex. Render sans DATABASE_URL).
+    if (process.env.DATABASE_READY !== "true") {
+      return NextResponse.json({ success: true, skipped: true, reason: "db_not_ready" });
+    }
+
     const user = await getCurrentUser().catch(() => null);
     const since = new Date(Date.now() - 30_000);
     const recent = await prisma.pageView

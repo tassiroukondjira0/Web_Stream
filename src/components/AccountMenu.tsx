@@ -19,7 +19,7 @@ export function AccountMenu() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    fetch("/api/auth/me", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setUser(data?.user ?? null))
       .catch(() => setUser(null));
@@ -36,7 +36,10 @@ export function AccountMenu() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
     setUser(null);
     setOpen(false);
     router.push("/");
