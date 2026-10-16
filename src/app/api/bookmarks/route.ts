@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 /**
  * Favoris persistés en base (table `bookmarks`).
  * Le slug identifie le titre, qu'il soit local (Media.slug) ou partenaire
- * externe (`frenchstream-series-…`, `frenchmanga-anime-…`, …) — aucune FK vers
+ * externe (`partner-series-…`, `frenchmanga-anime-…`, …) — aucune FK vers
  * Media pour ne pas exclure le catalogue externe.
  */
 

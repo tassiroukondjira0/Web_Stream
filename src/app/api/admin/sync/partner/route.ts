@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { FRENCHSTREAM_PROVIDER } from "@/modules/providers/frenchstream/frenchstream.client";
-import { syncFrenchStreamCatalog } from "@/modules/providers/frenchstream/frenchstream.sync";
+import { PARTNER_PROVIDER } from "@/modules/providers/partner/partner.client";
+import { syncPartnerCatalog } from "@/modules/providers/partner/partner.sync";
 
 /**
- * Synchro incrémentale du catalogue partenaire (FrenchStream).
+ * Synchro incrémentale du catalogue partenaire.
  *
  * - GET  : état du catalogue (compteurs films/séries + historique des synchros).
  * - POST : lance une synchro (nombre de pages films/séries paramétrable).
@@ -29,15 +29,15 @@ export async function GET() {
 
   try {
     const [total, movies, series, runs] = await Promise.all([
-      prisma.providerAsset.count({ where: { provider: FRENCHSTREAM_PROVIDER } }),
+      prisma.providerAsset.count({ where: { provider: PARTNER_PROVIDER } }),
       prisma.providerAsset.count({
-        where: { provider: FRENCHSTREAM_PROVIDER, contentType: "MOVIE" },
+        where: { provider: PARTNER_PROVIDER, contentType: "MOVIE" },
       }),
       prisma.providerAsset.count({
-        where: { provider: FRENCHSTREAM_PROVIDER, contentType: "SERIES" },
+        where: { provider: PARTNER_PROVIDER, contentType: "SERIES" },
       }),
       prisma.providerSyncRun.findMany({
-        where: { provider: FRENCHSTREAM_PROVIDER },
+        where: { provider: PARTNER_PROVIDER },
         orderBy: { startedAt: "desc" },
         take: 8,
       }),
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const report = await syncFrenchStreamCatalog({ filmPages: pages, seriesPages: pages });
+    const report = await syncPartnerCatalog({ filmPages: pages, seriesPages: pages });
     return NextResponse.json({
       success: true,
       message: `Synchro terminée : ${report.fetchedMovies} films et ${report.fetchedSeries} séries récupérés, ${report.upserted} titres en base (${report.pruned} obsolètes retirés).`,

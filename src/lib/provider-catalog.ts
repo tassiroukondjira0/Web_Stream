@@ -1,25 +1,29 @@
 ﻿import { prisma } from "./prisma";
 
 /**
- * Lecture du catalogue externe synchronisÃ© (CDC Â§4.7 : grilles/listes depuis
- * la base â€” rapide, paginable. L'API partenaire reste rÃ©servÃ©e Ã  la fiche et Ã 
- * la lecture, donnÃ©es volatiles).
+ * Lecture du catalogue externe synchronisé (CDC §4.7 : grilles/listes depuis
+ * la base — rapide, paginable. L'API partenaire reste réservée à la fiche et à
+ * la lecture, données volatiles).
  *
- * ProviderAsset â‰  Media : jamais mÃ©langÃ©s (Â§4.6).
+ * ProviderAsset ≠ Media : jamais mélangés (§4.6).
  */
+
+import { CATEGORIES, getCategoryBySlug } from "./categories";
 
 export interface ProviderCatalogItem {
   id: string;
   externalId: string;
-  /** Fournisseur d'origine (Â« FRENCHSTREAM Â», Â« FRENCHMANGA Â») â€” dÃ©termine le lecteur. */
+  /** Fournisseur d'origine (« PARTNER », « FRENCHMANGA ») — détermine le lecteur. */
   provider: string;
   contentType: "MOVIE" | "SERIES" | "ANIME";
-  /** Forme de lecture rÃ©elle chez le fournisseur ("movie" ou "tv"). */
+  /** Forme de lecture réelle chez le fournisseur ("movie" ou "tv"). */
   sourceType: "movie" | "tv" | null;
   title: string;
   releaseYear: number | null;
   posterUrl: string | null;
   totalEpisodes: number | null;
+  /** Slug de catégorie optionnel pour le filtrage (genre). */
+  categorySlug?: string;
 }
 
 export interface ProviderCatalogPage {
@@ -40,44 +44,43 @@ function toItem(a: {
   posterUrl: string | null;
   totalEpisodes: number | null;
   isPublished?: boolean;
+  categorySlug?: string;
 }): ProviderCatalogItem {
   return {
     id: a.externalId,
     externalId: a.externalId,
-    provider: a.provider ?? "FRENCHSTREAM",
+    provider: a.provider ?? "PARTNER",
     contentType: a.contentType,
     sourceType: a.sourceType === "tv" ? "tv" : a.sourceType === "movie" ? "movie" : null,
     title: a.title,
     releaseYear: a.releaseYear,
     posterUrl: a.posterUrl,
     totalEpisodes: a.totalEpisodes,
+    categorySlug: a.categorySlug ?? undefined,
   };
 }
 
-/** Fournisseur FrenchStream (films + sÃ©ries). */
-const FRENCHSTREAM_PROVIDER = "FRENCHSTREAM";
+/** Fournisseur partenaire (films + séries). Valeur stockée en base. */
+const PARTNER_PROVIDER = "FRENCHSTREAM";
 
 /** Fournisseur French-Manga (animés). */
 const FRENCHMANGA_PROVIDER = "FRENCHMANGA";
 
 /**
  * Route de fiche/lecture d'un asset partenaire. Chaque fournisseur a son
- * lecteur : French-Manga et FrenchStream â†’ fiches dÃ©diÃ©es. Les animÃ©s peuvent
- * Ãªtre des films OU des sÃ©ries : on se fie Ã  `sourceType`.
+ * lecteur : French-Manga et Partenaire → fiches dédiées. Les animés peuvent
+ * être des films OU des séries : on se fie à `sourceType`.
  */
 export function providerItemHref(
   item: Pick<ProviderCatalogItem, "contentType" | "sourceType" | "externalId"> &
     Partial<Pick<ProviderCatalogItem, "provider">>,
 ): string {
-  if (item.provider === FRENCHSTREAM_PROVIDER) {
+  if (item.provider === PARTNER_PROVIDER) {
     return item.contentType === "SERIES"
-      ? `/series/frenchstream/${item.externalId}`
-      : `/films/frenchstream/${item.externalId}`;
+      ? `/series/partner/${item.externalId}`
+      : `/films/partner/${item.externalId}`;
   }
-  // FrenchManga (animés) : lecteur dédié `/series/frenchmanga/`. Router vers la
-  // page FrenchStream ferait échouer `/ep-data.php` (IDs inconnus) → message
-  // « indisponible » à tort. La page FrenchManga lit l'API JSON du site ; un
-  // film d'animation n'est qu'un flux unique (épisode 1), géré de la même façon.
+  // FrenchManga (animés) : lecteur dédié `/series/frenchmanga/`.
   return `/series/frenchmanga/${item.externalId}`;
 }
 
@@ -97,19 +100,23 @@ async function listAssets(
   contentType: "MOVIE" | "SERIES" | "ANIME",
   page: number,
   pageSize: number,
-  providers: string[] = [FRENCHSTREAM_PROVIDER],
+  providers: string[] = [PARTNER_PROVIDER],
 ): Promise<ProviderCatalogPage> {
   const safePage = Math.max(1, Math.floor(page) || 1);
   const safeSize = Math.min(60, Math.max(1, Math.floor(pageSize) || 24));
 
-  // Base pas prÃªte (build) â†’ page vide, pas d'erreur (CDC Â§11).
+  // Base pas prête (build) → page vide, pas d'erreur (CDC §11).
   if (process.env.DATABASE_READY !== "true") {
     return { items: [], page: safePage, pageSize: safeSize, totalItems: 0, totalPages: 0 };
   }
 
   try {
-    // Seuls les titres publiÃ©s par l'admin apparaissent dans la grille.
-    const where = { provider: { in: providers }, contentType, isPublished: true } as const;
+    // Seuls les titres publiés par l'admin apparaissent dans la grille.
+    const where = {
+      provider: { in: providers },
+      contentType,
+      isPublished: true,
+    } as const;
     const [totalItems, rows] = await Promise.all([
       prisma.providerAsset.count({ where }),
       prisma.providerAsset.findMany({
@@ -138,38 +145,42 @@ async function listAssets(
   }
 }
 
-/** Films du catalogue partenaire â€” French-Stream uniquement. */
+/** Films du catalogue partenaire. */
 export function getPartnerMovies(page = 1, pageSize = 24): Promise<ProviderCatalogPage> {
-  return listAssets("MOVIE", page, pageSize, [FRENCHSTREAM_PROVIDER]);
+  return listAssets("MOVIE", page, pageSize, [PARTNER_PROVIDER]);
 }
 
-/** SÃ©ries du catalogue partenaire â€” French-Stream uniquement. */
+/** Séries du catalogue partenaire. */
 export function getPartnerSeries(page = 1, pageSize = 24): Promise<ProviderCatalogPage> {
-  return listAssets("SERIES", page, pageSize, [FRENCHSTREAM_PROVIDER]);
+  return listAssets("SERIES", page, pageSize, [PARTNER_PROVIDER]);
 }
 
-/** Films & sÃ©ries FrenchStream â€” mis en avant sur l'accueil.
- *  FrenchStream fournit une affiche pour la quasi-totalitÃ© de ses titres.
- */
-export function getFrenchStreamMovies(page = 1, pageSize = 24): Promise<ProviderCatalogPage> {
-  return listAssets("MOVIE", page, pageSize, [FRENCHSTREAM_PROVIDER]);
-}
-
-export function getFrenchStreamSeries(page = 1, pageSize = 24): Promise<ProviderCatalogPage> {
-  return listAssets("SERIES", page, pageSize, [FRENCHSTREAM_PROVIDER]);
-}
-/**
- * Animés / mangas du catalogue partenaire — French-Manga uniquement.
- * (Le type `ANIME` n'est utilisé que par ce fournisseur.)
- */
+/** Animés / mangas du catalogue partenaire — French-Manga uniquement. */
 export function getPartnerAnimes(page = 1, pageSize = 24): Promise<ProviderCatalogPage> {
   return listAssets("ANIME", page, pageSize, [FRENCHMANGA_PROVIDER]);
 }
 
 /**
- * Derniers ajouts au catalogue (tous types : films, series, animes), tries du
- * plus recemment synchronise au plus ancien. Alimente la page « Nouveautes ».
- * Seuls les titres publies par l'admin sont retournes.
+ * Filtre une liste d'items par slug de catégorie (filtrage côté client,
+ * car la colonne `categorySlug` n'est pas encore stockée en base pour les
+ * assets partenaires). Retourne tous les items si le slug est inconnu/vide.
+ */
+export function filterByCategory(
+  items: ProviderCatalogItem[],
+  categorySlug: string | null | undefined,
+): ProviderCatalogItem[] {
+  if (!categorySlug) return items;
+  const cat = getCategoryBySlug(categorySlug);
+  if (!cat) return items;
+  // Les assets partenaires n'ont pas encore de catégorie stockée :
+  // on retourne tous les items (le filtre UI est prêt pour une future DB).
+  return items;
+}
+
+/**
+ * Derniers ajouts au catalogue (tous types : films, séries, animes), triés du
+ * plus récemment synchronisé au plus ancien. Alimente la page « Nouveautés ».
+ * Seuls les titres publiés par l'admin sont retournés.
  */
 export async function getLatestPartnerAssets(limit = 60): Promise<ProviderCatalogItem[]> {
   if (process.env.DATABASE_READY !== "true") return [];
@@ -177,7 +188,7 @@ export async function getLatestPartnerAssets(limit = 60): Promise<ProviderCatalo
   try {
     const rows = await prisma.providerAsset.findMany({
       where: {
-        provider: { in: [FRENCHMANGA_PROVIDER, FRENCHSTREAM_PROVIDER] },
+        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER] },
         isPublished: true,
       },
       orderBy: { lastSeenAt: "desc" },
@@ -192,19 +203,17 @@ export async function getLatestPartnerAssets(limit = 60): Promise<ProviderCatalo
   }
 }
 
-
-
 /**
- * Films les plus tendance â€” dans l'ordre Â« popular Â» du fournisseur (rang
- * stockÃ© lors de la synchro). ComplÃ¨te avec les derniers films synchronisÃ©s
- * si le classement popular est incomplet (avant premiÃ¨re synchro).
+ * Films les plus tendance — dans l'ordre « popular » du fournisseur (rang
+ * stocké lors de la synchro). Complète avec les derniers films synchronisés
+ * si le classement popular est incomplet (avant première synchro).
  */
 export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCatalogItem[]> {
   if (process.env.DATABASE_READY !== "true") return [];
   const take = Math.min(60, Math.max(1, limit));
   try {
     const trending = await prisma.providerAsset.findMany({
-      where: { provider: FRENCHSTREAM_PROVIDER, contentType: "MOVIE", isPublished: true, trendingRank: { not: null } },
+      where: { provider: PARTNER_PROVIDER, contentType: "MOVIE", isPublished: true, trendingRank: { not: null } },
       orderBy: { trendingRank: "asc" },
       take,
       select: ASSET_SELECT,
@@ -215,11 +224,11 @@ export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCata
     );
     if (items.length < take) {
       const fill = await prisma.providerAsset.findMany({
-        where: { provider: FRENCHSTREAM_PROVIDER, contentType: "MOVIE", isPublished: true, externalId: { notIn: [...seen] } },
-      orderBy: [{ lastSeenAt: "desc" }, { id: "asc" }],
-      take,
-      select: ASSET_SELECT,
-    });
+        where: { provider: PARTNER_PROVIDER, contentType: "MOVIE", isPublished: true, externalId: { notIn: [...seen] } },
+        orderBy: [{ lastSeenAt: "desc" }, { id: "asc" }],
+        take,
+        select: ASSET_SELECT,
+      });
       items = items.concat(
         fill.map((r) => toItem({ ...r, contentType: r.contentType as "MOVIE" | "SERIES" | "ANIME" })),
       );
@@ -231,27 +240,27 @@ export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCata
 }
 
 /* ------------------------------------------------------------------ */
-/* Â« Ã€ la une Â» â€” sÃ©lection rotative par pÃ©riode                        */
+/* « À la une » — sélection rotative par période                      */
 /* ------------------------------------------------------------------ */
 
 /**
- * DurÃ©e d'une pÃ©riode Ã©ditoriale (2 semaines). La sÃ©lection Â« Ã  la une Â»
- * change automatiquement au dÃ©but de chaque pÃ©riode, sans cron ni tÃ¢che de
- * fond : c'est une fonction PURE de la date courante (Â§4.7).
+ * Durée d'une période éditoriale (2 semaines). La sélection « À la une »
+ * change automatiquement au début de chaque période, sans cron ni tâche de
+ * fond : c'est une fonction PURE de la date courante (§4.7).
  */
 export const FEATURED_PERIOD_DAYS = 14;
 
 /**
- * Index de pÃ©riode courante (0, 1, 2, â€¦), stable pendant 14 jours puis
- * incrÃ©mentÃ©. Sert de graine dÃ©terministe Ã  la rotation Â« Ã  la une Â».
+ * Index de période courante (0, 1, 2, …), stable pendant 14 jours puis
+ * incrémenté. Sert de graine déterministe à la rotation « À la une ».
  */
 export function getFeaturedPeriodIndex(now: Date = new Date()): number {
   const MS_PER_PERIOD = FEATURED_PERIOD_DAYS * 24 * 60 * 60 * 1000;
-  // Ancre arbitraire fixe (Ã©poque) â†’ pÃ©riodes calendaires stables.
+  // Ancre arbitraire fixe (époque) → périodes calendaires stables.
   return Math.floor(now.getTime() / MS_PER_PERIOD);
 }
 
-/** PRNG dÃ©terministe (mulberry32) â€” mÃªme graine â‡’ mÃªme sÃ©quence. */
+/** PRNG déterministe (mulberry32) — même graine → même séquence. */
 function seededRandom(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
@@ -264,8 +273,8 @@ function seededRandom(seed: number): () => number {
 }
 
 /**
- * MÃ©lange dÃ©terministe d'une copie du tableau (Fisher-Yates semÃ©). Ne mute
- * pas l'entrÃ©e. Deux appels avec le mÃªme `seed` donnent le mÃªme ordre.
+ * Mélange déterministe d'une copie du tableau (Fisher-Yates semé). Ne mute
+ * pas l'entrée. Deux appels avec le même `seed` donnent le même ordre.
  */
 export function seededShuffle<T>(items: T[], seed: number): T[] {
   const rand = seededRandom(seed);
@@ -288,24 +297,23 @@ type FeaturedItem = {
 
 export interface FeaturedSelection {
   items: FeaturedItem[];
-  /** Date (ISO) du prochain renouvellement de la sÃ©lection. */
+  /** Date (ISO) du prochain renouvellement de la sélection. */
   renewalAt: string;
-  /** LibellÃ© lisible du prochain renouvellement (fr-FR). */
+  /** Libellé lisible du prochain renouvellement (fr-FR). */
   renewalLabel: string;
-  /** Index de pÃ©riode Ã©ditoriale courant. */
   period: number;
 }
 
 /**
- * SÃ©lection Â« Ã  la une Â» : les films les plus tendance (ordre Â« popular Â» du
- * fournisseur), mÃ©langÃ©s de faÃ§on dÃ©terministe selon la pÃ©riode courante pour
+ * Sélection « À la une » : les films les plus tendance (ordre « popular » du
+ * fournisseur), mélangés de façon déterministe selon la période courante pour
  * renouveler la vitrine. Change automatiquement toutes les FEATURED_PERIOD_DAYS
  * (2 semaines).
  *
- * Tout le calcul temporel est fait ICI (hors composant) : la sÃ©lection est
- * dÃ©terministe pour une pÃ©riode donnÃ©e, et le composant n'appelle jamais
- * `Date.now()` (rÃ¨gle de puretÃ© React sous Cache Components). Chaque entrÃ©e
- * porte l'URL de fiche adaptÃ©e Ã  son type.
+ * Tout le calcul temporel est fait ICI (hors composant) : la sélection est
+ * déterministe pour une période donnée, et le composant n'appelle jamais
+ * `Date.now()` (règle de pureté React sous Cache Components). Chaque entrée
+ * porte l'URL de fiche adaptée à son type.
  */
 export async function getFeaturedPartner(
   limit = 12,
@@ -315,8 +323,8 @@ export async function getFeaturedPartner(
   if (process.env.DATABASE_READY !== "true") return empty;
 
   const period = getFeaturedPeriodIndex(now);
-  // Graine dÃ©pendant de la pÃ©riode : l'ordre de la vitrine se renouvelle Ã 
-  // chaque pÃ©riode sans changer les donnÃ©es (rotation dÃ©terministe).
+  // Graine dépendant de la période : l'ordre de la vitrine se renouvelle à
+  // chaque période sans changer les données (rotation déterministe).
   const seed = (period * 2654435761 + hashString("trending")) >>> 0;
 
   const periodMs = FEATURED_PERIOD_DAYS * 24 * 60 * 60 * 1000;
@@ -327,8 +335,8 @@ export async function getFeaturedPartner(
   });
 
   try {
-    // Pool plus large que la vitrine â†’ la composition varie aussi d'une pÃ©riode
-    // Ã  l'autre tout en restant dominÃ©e par les meilleures tendances.
+    // Pool plus large que la vitrine → la composition varie aussi d'une
+    // période à l'autre tout en restant dominée par les meilleures tendances.
     const pool = await getTrendingPartnerMovies(60);
     const items: FeaturedItem[] = seededShuffle(pool, seed)
       .slice(0, Math.max(1, limit))
@@ -351,7 +359,7 @@ export async function getFeaturedPartner(
   }
 }
 
-/** Hachage de chaÃ®ne stable (FNV-1a 32 bits) â†’ graine entiÃ¨re. */
+/** Hachage de chaîne stable (FNV-1a 32 bits) → graine entière. */
 function hashString(s: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
@@ -361,7 +369,7 @@ function hashString(s: string): number {
   return h >>> 0;
 }
 
-/** Recherche locale sur les assets synchronisÃ©s (films + sÃ©ries). */
+/** Recherche locale sur les assets synchronisés (films + séries). */
 export async function searchPartnerAssets(
   query: string,
   limit = 24,
@@ -373,11 +381,11 @@ export async function searchPartnerAssets(
   try {
     const rows = await prisma.providerAsset.findMany({
       where: {
-        provider: { in: [FRENCHMANGA_PROVIDER, FRENCHSTREAM_PROVIDER] },
-        // Films, sÃ©ries, animÃ©s et mangas : la recherche locale couvre tout le
-        // catalogue synchronisÃ© (chaque fournisseur a son lecteur).
+        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER] },
+        // Films, séries, animés et mangas : la recherche locale couvre tout le
+        // catalogue synchronisé (chaque fournisseur a son lecteur).
         contentType: { in: ["MOVIE", "SERIES", "ANIME"] },
-        // Seuls les titres publiÃ©s par l'admin sont trouvables.
+        // Seuls les titres publiés par l'admin sont trouvables.
         isPublished: true,
         title: { contains: q, mode: "insensitive" },
       },
@@ -391,4 +399,19 @@ export async function searchPartnerAssets(
   } catch {
     return [];
   }
+}
+
+/**
+ * Retourne la liste de toutes les catégories disponibles pour le filtrage.
+ */
+export function getAllCatalogCategories(): { slug: string; name: string }[] {
+  return CATEGORIES;
+}
+
+/**
+ * Résout un slug de catégorie vers son objet { slug, name }.
+ * Retourne undefined si le slug est inconnu.
+ */
+export function resolveCategorySlug(slug: string): { slug: string; name: string } | undefined {
+  return getCategoryBySlug(slug);
 }

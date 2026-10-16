@@ -1,18 +1,18 @@
 /**
- * Synchronisation du catalogue FrenchStream (films + séries) → PostgreSQL.
+ * Synchronisation du catalogue partenaire (films + séries) → PostgreSQL.
  *
  * Optimisée pour de gros volumes : pages récupérées en parallèle (borné) et
  * upserts groupés par lots dans une transaction (moins d'allers-retours DB).
  * Upserts idempotents, purge des assets disparus depuis N jours, journal
  * d'exécution (ProviderSyncRun).
  *
- * Usage : npm run frenchstream:sync [-- --film-pages=200 --series-pages=200] [-- --dry-run]
+ * Usage : npm run partner:sync [-- --film-pages=200 --series-pages=200] [-- --dry-run]
  */
 
 import { prisma } from "@/lib/prisma";
 import { bulkUpsertProviderAssets } from "../bulk-upsert";
-import { FRENCHSTREAM_PROVIDER, fetchCatalogPage } from "./frenchstream.client";
-import type { FrenchStreamItem } from "./frenchstream.types";
+import { PARTNER_PROVIDER, fetchPartnerCatalogPage } from "./partner.client";
+import type { PartnerItem } from "./partner.types";
 
 const DEFAULT_PAGES = 5;
 const MAX_PAGES = 3500; // garde-fou : couvre tout le catalogue (films ~1410, séries ~2815)
@@ -20,13 +20,13 @@ const PRUNE_AFTER_DAYS = 30;
 /** Pages téléchargées simultanément (anti-bot + vitesse). */
 const FETCH_CONCURRENCY = 8;
 
-export interface FrenchStreamSyncOptions {
+export interface PartnerSyncOptions {
   filmPages?: number;
   seriesPages?: number;
   dryRun?: boolean;
 }
 
-export interface FrenchStreamSyncReport {
+export interface PartnerSyncReport {
   provider: string;
   filmPages: number;
   seriesPages: number;
@@ -39,7 +39,7 @@ export interface FrenchStreamSyncReport {
 }
 
 interface UpsertRow {
-  item: FrenchStreamItem;
+  item: PartnerItem;
   contentType: "MOVIE" | "SERIES";
   sourceType: "movie" | "tv";
 }
@@ -48,24 +48,24 @@ interface UpsertRow {
 async function fetchPages(
   kind: "films" | "series",
   pages: number,
-): Promise<FrenchStreamItem[]> {
+): Promise<PartnerItem[]> {
   if (pages <= 0) return [];
-  const results: FrenchStreamItem[][] = new Array(pages);
+  const results: PartnerItem[][] = new Array(pages);
   let next = 1;
   async function worker(): Promise<void> {
     for (;;) {
       const page = next++;
       if (page > pages) return;
-      results[page - 1] = await fetchCatalogPage(kind, page);
+      results[page - 1] = await fetchPartnerCatalogPage(kind, page);
     }
   }
   await Promise.all(Array.from({ length: Math.min(FETCH_CONCURRENCY, pages) }, worker));
   return results.flat();
 }
 
-export async function syncFrenchStreamCatalog(
-  options: FrenchStreamSyncOptions = {},
-): Promise<FrenchStreamSyncReport> {
+export async function syncPartnerCatalog(
+  options: PartnerSyncOptions = {},
+): Promise<PartnerSyncReport> {
   const startedAt = Date.now();
   const filmPages = Math.min(Math.max(options.filmPages ?? DEFAULT_PAGES, 0), MAX_PAGES);
   const seriesPages = Math.min(Math.max(options.seriesPages ?? DEFAULT_PAGES, 0), MAX_PAGES);
@@ -83,7 +83,7 @@ export async function syncFrenchStreamCatalog(
 
   const toBulk = (rows: UpsertRow[], startRank: number) =>
     rows.map((row, i) => ({
-      provider: FRENCHSTREAM_PROVIDER,
+      provider: PARTNER_PROVIDER,
       externalId: row.item.externalId,
       contentType: row.contentType,
       title: row.item.title,
@@ -105,7 +105,7 @@ export async function syncFrenchStreamCatalog(
   if (!dryRun) {
     const cutoff = new Date(Date.now() - PRUNE_AFTER_DAYS * 24 * 60 * 60 * 1000);
     const stale = await prisma.providerAsset.findMany({
-      where: { provider: FRENCHSTREAM_PROVIDER, lastSeenAt: { lt: cutoff } },
+      where: { provider: PARTNER_PROVIDER, lastSeenAt: { lt: cutoff } },
       select: { id: true },
     });
     if (stale.length > 0) {
@@ -117,7 +117,7 @@ export async function syncFrenchStreamCatalog(
 
     await prisma.providerSyncRun.create({
       data: {
-        provider: FRENCHSTREAM_PROVIDER,
+        provider: PARTNER_PROVIDER,
         status: upserted > 0 ? "SUCCESS" : filmPages + seriesPages > 0 ? "PARTIAL" : "FAILED",
         pagesFetched: filmPages + seriesPages,
         assetsUpserted: upserted,
@@ -128,7 +128,7 @@ export async function syncFrenchStreamCatalog(
   }
 
   return {
-    provider: FRENCHSTREAM_PROVIDER,
+    provider: PARTNER_PROVIDER,
     filmPages,
     seriesPages,
     dryRun,

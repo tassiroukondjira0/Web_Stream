@@ -1,13 +1,13 @@
-/**
- * CLI de synchronisation du catalogue FrenchStream (films + séries).
+﻿/**
+ * CLI de synchronisation du catalogue partenaire (films + sÃ©ries).
  *
- *   npm run frenchstream:sync                              # 5 pages films + 5 séries
- *   npm run frenchstream:sync -- --film-pages=20 --series-pages=20
- *   npm run frenchstream:sync -- --dry-run
+ *   npm run partner:sync                              # 5 pages films + 5 sÃ©ries
+ *   npm run partner:sync -- --film-pages=20 --series-pages=20
+ *   npm run partner:sync -- --dry-run
  */
 
 import { readFileSync } from "node:fs";
-import { syncFrenchStreamCatalog } from "../src/modules/providers/frenchstream/frenchstream.sync";
+import { syncPartnerCatalog } from "../src/modules/providers/partner/partner.sync";
 
 function loadEnv(): void {
   try {
@@ -39,20 +39,21 @@ async function main(): Promise<void> {
   loadEnv();
   const options = parseArgs(process.argv.slice(2));
 
-  console.log("🔄 Synchro catalogue FrenchStream (films + séries)…");
-  const report = await syncFrenchStreamCatalog(options);
+  console.log("ðŸ”„ Synchro catalogue partenaire (films + sÃ©ries)â€¦");
+  const report = await syncPartnerCatalog(options);
 
-  console.log(`\n${report.dryRun ? "🧪 Simulation (aucune écriture)" : "✅ Synchro terminée"}`);
+  console.log(`\n${report.dryRun ? "ðŸ§ª Simulation (aucune Ã©criture)" : "âœ… Synchro terminÃ©e"}`);
   console.log(`  Pages films     : ${report.filmPages}`);
-  console.log(`  Pages séries    : ${report.seriesPages}`);
-  console.log(`  Films rapportés : ${report.fetchedMovies}`);
-  console.log(`  Séries rapportées: ${report.fetchedSeries}`);
-  console.log(`  Assets upsertés : ${report.upserted}`);
-  console.log(`  Assets purgés   : ${report.pruned}`);
-  console.log(`  Durée           : ${(report.durationMs / 1000).toFixed(1)} s`);
+  console.log(`  Pages sÃ©ries    : ${report.seriesPages}`);
+  console.log(`  Films rapportÃ©s : ${report.fetchedMovies}`);
+  console.log(`  SÃ©ries rapportÃ©es: ${report.fetchedSeries}`);
+  console.log(`  Assets upsertÃ©s : ${report.upserted}`);
+  console.log(`  Assets purgÃ©s   : ${report.pruned}`);
+  console.log(`  DurÃ©e           : ${(report.durationMs / 1000).toFixed(1)} s`);
 }
 
 main().catch((e) => {
-  console.error("❌ Échec de la synchro :", e instanceof Error ? e.message : e);
+  console.error("âŒ Ã‰chec de la synchro :", e instanceof Error ? e.message : e);
   process.exitCode = 1;
 });
+

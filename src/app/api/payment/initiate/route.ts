@@ -50,12 +50,17 @@ export async function POST(request: Request) {
 
     // Canaux PayDunya à forcer sur la facture selon le pays et le moyen choisi.
     // Quand aucun moyen n'est précisé, tous les canaux disponibles pour le pays sont transmis.
-    const channels =
+    let channels =
       countryCode && paymentMethod
         ? getChannelsForSelection(countryCode, paymentMethod as PaymentMethod)
         : countryCode
           ? getChannelsForSelection(countryCode)
           : undefined;
+
+    // Ne jamais envoyer un tableau vide à PayDunya (cela pourrait faire échouer la création).
+    if (channels?.length === 0) {
+      channels = undefined;
+    }
 
     const invoice = await createPremiumInvoice({
       amount,

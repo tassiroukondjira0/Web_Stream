@@ -57,7 +57,7 @@ export default function AdminDashboardPage() {
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState("");
 
-  // Synchro catalogue partenaire (FrenchStream)
+  // Synchro catalogue partenaire
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [syncPages, setSyncPages] = useState(2);
   const [syncing, setSyncing] = useState(false);
@@ -109,7 +109,7 @@ export default function AdminDashboardPage() {
       });
 
     // Historique synchro + compteurs d'assets (non bloquant).
-    fetch("/api/admin/sync/frenchstream")
+    fetch("/api/admin/sync/partner")
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.success) setSyncStatus({ assets: data.assets, runs: data.runs });
@@ -281,13 +281,13 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleSyncFrenchStream = async (e: React.FormEvent) => {
+  const handleSyncPartner = async (e: React.FormEvent) => {
     e.preventDefault();
     setSyncing(true);
     setSyncMessage("");
 
     try {
-      const res = await fetch("/api/admin/sync/frenchstream", {
+      const res = await fetch("/api/admin/sync/partner", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pages: syncPages }),
@@ -405,13 +405,13 @@ export default function AdminDashboardPage() {
         <TrafficCharts />
       </div>
 
-      {/* Catalogue partenaire (FrenchStream) — synchro incrémentale */}
+      {/* Catalogue partenaire — synchro incrémentale */}
       <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40">
         <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2">
               <Database className="h-4 w-4 text-purple-400" />
-              Catalogue partenaire (FrenchStream)
+              Catalogue partenaire
             </h2>
             <p className="mt-1 text-[11px] text-zinc-500">
               {syncStatus
@@ -419,7 +419,7 @@ export default function AdminDashboardPage() {
                 : "Chargement de l'état du catalogue partenaire..."}
             </p>
           </div>
-          <form onSubmit={handleSyncFrenchStream} className="flex flex-wrap items-center gap-2 text-xs">
+          <form onSubmit={handleSyncPartner} className="flex flex-wrap items-center gap-2 text-xs">
             <label className="text-zinc-400">
               Pages
               <input
@@ -624,8 +624,7 @@ export default function AdminDashboardPage() {
               className="rounded-xl border border-white/10 bg-black/50 p-2 text-xs text-white"
             >
               <option value="">Tous les fournisseurs</option>
-              <option value="FrenchStream">FrenchStream</option>
-              <option value="FRENCHSTREAM">FrenchStream</option>
+              <option value="PARTNER">Partenaire</option>
               <option value="FRENCHMANGA">French-Manga</option>
             </select>
           </div>

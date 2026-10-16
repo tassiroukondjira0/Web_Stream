@@ -7,24 +7,29 @@ import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { prisma } from "@/lib/prisma";
 import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
-import { fetchFicheMeta, fetchMovieEmbed, fetchSeriesDetail } from "@/modules/providers/frenchstream/frenchstream.client";
+import {
+  fetchFicheMeta,
+  fetchMovieEmbed,
+  fetchSeriesDetail,
+  PARTNER_PROVIDER,
+} from "@/modules/providers/partner/partner.client";
 
 /**
- * Fiche & lecteur d'un film FrenchStream. Le film n'a qu'un seul flux
+ * Fiche & lecteur d'un film partenaire. Le film n'a qu'un seul flux
  * (embed iframe), extrait de la fiche source (`data-url`).
  */
 
-interface FrenchStreamMoviePageProps {
+interface PartnerMoviePageProps {
   params: Promise<{ id: string }>;
 }
 
 export const instant = false;
 
-export async function generateMetadata({ params }: FrenchStreamMoviePageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PartnerMoviePageProps): Promise<Metadata> {
   const { id } = await params;
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: "FRENCHSTREAM", externalId: id, contentType: "MOVIE" },
+      where: { provider: PARTNER_PROVIDER, externalId: id, contentType: "MOVIE" },
       select: { title: true },
     })
     .catch(() => null);
@@ -37,13 +42,13 @@ export async function generateMetadata({ params }: FrenchStreamMoviePageProps): 
   };
 }
 
-export default async function FrenchStreamMoviePage({ params }: FrenchStreamMoviePageProps) {
+export default async function PartnerMoviePage({ params }: PartnerMoviePageProps) {
   await connection();
   const { id } = await params;
 
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: "FRENCHSTREAM", externalId: id, contentType: "MOVIE" },
+      where: { provider: PARTNER_PROVIDER, externalId: id, contentType: "MOVIE" },
       select: { title: true, posterUrl: true, releaseYear: true },
     })
     .catch(() => null);
@@ -64,7 +69,7 @@ export default async function FrenchStreamMoviePage({ params }: FrenchStreamMovi
 
   // Repli cross-type : si aucun embed film n'est exposé (player chargé en AJAX
   // côté fournisseur), le titre est peut-être une série mal classée. On tente
-  // alors /ep-data.php et on lit son premier flux disponible.
+  // alors l'API épisode et on lit son premier flux disponible.
   let embedUrl = movieEmbed;
   if (!embedUrl) {
     const detail = await fetchSeriesDetail(id).catch(() => null);
@@ -109,7 +114,9 @@ export default async function FrenchStreamMoviePage({ params }: FrenchStreamMovi
           />
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-extrabold text-white sm:text-2xl lg:text-3xl">{asset?.title ?? "Film"}</h1>
+          <h1 className="text-xl font-extrabold text-white sm:text-2xl lg:text-3xl">
+            {asset?.title ?? "Film"}
+          </h1>
           {(year || runtime) && (
             <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
               {year && <span>{year}</span>}
@@ -122,8 +129,8 @@ export default async function FrenchStreamMoviePage({ params }: FrenchStreamMovi
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{synopsis}</p>
           )}
           <div className="mt-4 flex flex-wrap gap-3">
-            <BookmarkButton mediaSlug={`frenchstream-movie-${id}`} />
-            <WishlistButton mediaSlug={`frenchstream-movie-${id}`} />
+            <BookmarkButton mediaSlug={`partner-movie-${id}`} />
+            <WishlistButton mediaSlug={`partner-movie-${id}`} />
             <ShareButton title={asset?.title ?? "Film"} />
           </div>
         </div>
@@ -131,7 +138,7 @@ export default async function FrenchStreamMoviePage({ params }: FrenchStreamMovi
 
       <p className="mt-8 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 p-3 text-xs text-zinc-400">
         <Play className="h-4 w-4 text-violet-500" />
-        Source externe FrenchStream. La disponibilité et les droits de diffusion relèvent du
+        Source externe partenaire. La disponibilité et les droits de diffusion relèvent du
         fournisseur.
       </p>
     </div>

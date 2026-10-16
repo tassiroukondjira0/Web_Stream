@@ -1,5 +1,5 @@
 /**
- * Client du fournisseur FrenchStream (scraping DLE best-effort).
+ * Client du fournisseur partenaire (scraping DLE best-effort).
  *
  * Le site sert une page anti-bot aux clients non-navigateur : on envoie un
  * User-Agent Chrome et on essaie les domaines miroirs dans l'ordre. Toutes les
@@ -8,15 +8,15 @@
  */
 
 import type {
-  FrenchStreamDetail,
-  FrenchStreamEpisodeInfo,
-  FrenchStreamItem,
-  FrenchStreamStream,
-} from "./frenchstream.types";
+  PartnerDetail,
+  PartnerEpisodeInfo,
+  PartnerItem,
+  PartnerStream,
+} from "./partner.types";
 
-export const FRENCHSTREAM_PROVIDER = "FRENCHSTREAM";
+export const PARTNER_PROVIDER = "FRENCHSTREAM";
 
-const DOMAINS = ["https://french-stream.net", "https://french-stream.lat"] as const;
+const DOMAINS = ["https://partner-source.net", "https://partner-source.lat"] as const;
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -74,8 +74,8 @@ async function fetchText(url: string, extra?: Record<string, string>): Promise<s
  * identifiant (`?newsid=ID`), titre (`div.short-title`), affiche TMDB,
  * version (`span.film-version`) et éventuel nombre d'épisodes.
  */
-export function parseCatalog(html: string): FrenchStreamItem[] {
-  const items: FrenchStreamItem[] = [];
+export function parseCatalog(html: string): PartnerItem[] {
+  const items: PartnerItem[] = [];
   const blocks = html.split('<div class="short">').slice(1);
   for (const block of blocks) {
     const idMatch = block.match(/index\.php\?newsid=(\d+)/);
@@ -83,11 +83,12 @@ export function parseCatalog(html: string): FrenchStreamItem[] {
 
     const titleMatch =
       block.match(/<div class="short-title">([^<]+)<\/div>/) ??
-      block.match(/class="short-poster[^"]*"[^>]*\salt="([^"]*)"/);
+      block.match(/class="short-poster[^\"]*"[^>]*\salt="([^"]*)"/);
     const title = decodeHtml(titleMatch?.[1] ?? "").trim();
     if (!title) continue;
 
-    const posterMatch = block.match(/<img\s+src="(https:\/\/image\.tmdb\.org[^"]+)"/);
+    const posterMatch = block.match(/<img\s+src="(https:\/\/
+image\.tmdb\.org[^"]+)"/);
     const versionMatch = block.match(/<span class="film-version">\s*<a[^>]*>([^<]+)<\/a>/);
     const epsMatch = block.match(/<span class="mli-eps">\s*\d+\s*\/\s*(\d+)\s*</);
 
@@ -102,96 +103,38 @@ export function parseCatalog(html: string): FrenchStreamItem[] {
   return items;
 }
 
-/** Rapporte une page de catalogue (`/films/page/N/` ou `/series/page/N/`). */
-export async function fetchCatalogPage(
+/**
+ * Récupère une page de catégorie du fournisseur partenaire.
+ * kind = "films" ou "series".
+ */
+export async function fetchPartnerCatalogPage(
   kind: "films" | "series",
   page: number,
-): Promise<FrenchStreamItem[]> {
-  const safePage = Math.max(1, Math.floor(page));
-  const suffix = safePage === 1 ? "/" : `/page/${safePage}/`;
+): Promise<PartnerItem[]> {
   const base = await getBaseUrl();
-  const html = await fetchText(`${base}/${kind}${suffix}`);
-  return html ? parseCatalog(html) : [];
+  const html = await fetchText(`${base}/${kind}/page/${page}/`);
+  if (!html) return [];
+  return parseCatalog(html);
 }
 
 /**
- * Embed servi par l'API AJAX de la fiche (`/engine/ajax/film_api.php?id=`).
- * Les fiches récentes n'exposent plus `data-url` : le lecteur est injecté côté
- * client depuis cette réponse (`players.<hébergeur>.<version>`). Priorité
- * VF/FRENCH, puis VOSTFR, puis tout autre flux disponible.
- * Retourne null en cas d'échec — jamais d'exception remontée.
+ * Extrait métadonnées (synopsis, runtime, année) d'une fiche titre.
  */
-export async function fetchApiEmbed(externalId: string): Promise<string | null> {
-  if (!/^\d{1,10}$/.test(externalId)) return null;
-  const base = await getBaseUrl();
-  const text = await fetchText(`${base}/engine/ajax/film_api.php?id=${externalId}`, {
-    "X-Requested-With": "XMLHttpRequest",
-    Referer: `${base}/index.php?newsid=${externalId}`,
-  });
-  if (!text) return null;
-  try {
-    const data = JSON.parse(text) as { players?: Record<string, Record<string, string>> };
-    const byHost = Object.values(data.players ?? {});
-    // 1) Versions préférées, tous hébergeurs confondus.
-    for (const key of ["default", "vf", "vff", "vfq", "french", "vostfr", "vo"]) {
-      for (const host of byHost) {
-        const url = host?.[key];
-        if (typeof url === "string" && /^https?:\/\//.test(url)) return url;
-      }
-    }
-    // 2) N'importe quelle autre URL d'embed disponible.
-    for (const host of byHost) {
-      for (const url of Object.values(host ?? {})) {
-        if (typeof url === "string" && /^https?:\/\//.test(url)) return url;
-      }
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Embed d'un film : `data-url` de la fiche historique, sinon (fiches récentes
- * au lecteur chargé en AJAX) l'API `/engine/ajax/film_api.php`.
- */
-export async function fetchMovieEmbed(externalId: string): Promise<string | null> {
-  if (!/^\d{1,10}$/.test(externalId)) return null;
-  const base = await getBaseUrl();
-  const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
-  if (html) {
-    const m =
-      html.match(/data-url="(https?:\/\/[^"]+)"/) ??
-      html.match(/<iframe[^>]+id="main-player"[^>]+src="(https?:\/\/[^"]+)"/);
-    if (m) return m[1];
-  }
-  return fetchApiEmbed(externalId);
-}
-
-export interface FrenchStreamFicheMeta {
+export async function fetchFicheMeta(externalId: string): Promise<{
   synopsis: string | null;
-  /** Durée affichée par la fiche (« 1h45 », « 42 min »), préfixe « - » retiré. */
   runtime: string | null;
-  /** Année de sortie annoncée par la fiche (le catalogue ne la stocke pas). */
   releaseYear: number | null;
-}
-
-/**
- * Métadonnées d'une fiche (film ou série), lues en une seule requête : synopsis
- * (`div.fdesc`), durée (`span.runtime`) et année (« date-de-sortie »). Le
- * catalogue partenaire ne stocke ni durée ni année — ces champs enrichissent la
- * fiche. Toute erreur est absorbée (valeurs nulles), jamais d'exception (§11).
- */
-export async function fetchFicheMeta(externalId: string): Promise<FrenchStreamFicheMeta> {
-  const empty: FrenchStreamFicheMeta = { synopsis: null, runtime: null, releaseYear: null };
-  if (!/^\d{1,10}$/.test(externalId)) return empty;
+}> {
+  if (!/^\d{1,10}$/.test(externalId)) {
+    return { synopsis: null, runtime: null, releaseYear: null };
+  }
   const base = await getBaseUrl();
   const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
-  if (!html) return empty;
+  if (!html) return { synopsis: null, runtime: null, releaseYear: null };
 
-  // Synopsis : bloc fdesc, sans le paragraphe boilerplate « Résumé … ».
   let synopsis: string | null = null;
-  const block = html.match(/<div\s+class="fdesc[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+  // Synopsis : bloc « full-story » ou « fdesc ».
+  const block = html.match(/<div\s+class="(?:full-story|fdesc)[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
   if (block) {
     const withoutBoilerplate = block[1].replace(/<p\s+class="desc-text"[^>]*>[\s\S]*?<\/p>/gi, " ");
     const text = decodeHtml(withoutBoilerplate.replace(/<[^>]+>/g, " "))
@@ -217,7 +160,7 @@ export async function fetchFicheMeta(externalId: string): Promise<FrenchStreamFi
 }
 
 /** Détail d'une série : flux (langues × épisodes × hôtes) + infos épisodes. */
-export async function fetchSeriesDetail(externalId: string): Promise<FrenchStreamDetail | null> {
+export async function fetchSeriesDetail(externalId: string): Promise<PartnerDetail | null> {
   if (!/^\d{1,10}$/.test(externalId)) return null;
   const base = await getBaseUrl();
   const text = await fetchText(`${base}/ep-data.php?id=${externalId}&format=js`, {
@@ -232,10 +175,23 @@ export async function fetchSeriesDetail(externalId: string): Promise<FrenchStrea
   }
 }
 
+/**
+ * Récupère l'embed d'un film depuis sa fiche (`data-url`).
+ * Retourne null si aucun embed n'est exposé.
+ */
+export async function fetchMovieEmbed(externalId: string): Promise<string | null> {
+  if (!/^\d{1,10}$/.test(externalId)) return null;
+  const base = await getBaseUrl();
+  const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
+  if (!html) return null;
+  const embed = html.match(/data-url="(https?:\/\/[^"]+)"/)?.[1] ?? null;
+  return embed;
+}
+
 /** Normalise `{ "<lang>": { "<ep>": { "<host>": "<url>" } }, "info": { "<ep>": {...} } }`. */
-function mapDetail(externalId: string, data: unknown): FrenchStreamDetail {
-  const streams: FrenchStreamStream[] = [];
-  const info: Record<number, FrenchStreamEpisodeInfo> = {};
+function mapDetail(externalId: string, data: unknown): PartnerDetail {
+  const streams: PartnerStream[] = [];
+  const info: Record<number, PartnerEpisodeInfo> = {};
 
   if (data && typeof data === "object") {
     for (const [lang, value] of Object.entries(data as Record<string, unknown>)) {

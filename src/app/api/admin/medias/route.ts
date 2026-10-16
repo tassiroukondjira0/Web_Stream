@@ -63,7 +63,7 @@ export async function GET() {
 
       const items = medias.map(dbMediaToItem);
 
-      // Total des titres partenaires (FrenchStream, FrenchManga) — agrégé pour
+      // Total des titres partenaires (Partenaire, FrenchManga) — agrégé pour
       // la carte du dashboard. Inclut publiés et masqués.
       let partnerTotal = 0;
       try {

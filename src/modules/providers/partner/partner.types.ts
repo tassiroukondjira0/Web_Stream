@@ -1,11 +1,11 @@
 /**
- * Types du fournisseur FrenchStream (french-stream.net).
+ * Types du fournisseur partenaire (catalogue externe).
  *
  * Films : un seul lecteur (embed) exposé sur la fiche (`data-url`).
- * Séries : épisodes × langues × hôtes via `/ep-data.php?id=`.
+ * Séries : épisodes × langues × hôtes via l'API JSON du fournisseur.
  */
 
-export interface FrenchStreamItem {
+export interface PartnerItem {
   externalId: string;
   title: string;
   posterUrl: string | null;
@@ -15,7 +15,7 @@ export interface FrenchStreamItem {
   totalEpisodes: number | null;
 }
 
-export interface FrenchStreamStream {
+export interface PartnerStream {
   /** Langue normalisée : « vf », « vostfr », « vo ». */
   lang: string;
   episode: number;
@@ -25,15 +25,15 @@ export interface FrenchStreamStream {
   url: string;
 }
 
-export interface FrenchStreamEpisodeInfo {
+export interface PartnerEpisodeInfo {
   title: string | null;
   synopsis: string | null;
   poster: string | null;
 }
 
-export interface FrenchStreamDetail {
+export interface PartnerDetail {
   externalId: string;
-  streams: FrenchStreamStream[];
+  streams: PartnerStream[];
   /** Métadonnées par numéro d'épisode. */
-  info: Record<number, FrenchStreamEpisodeInfo>;
+  info: Record<number, PartnerEpisodeInfo>;
 }

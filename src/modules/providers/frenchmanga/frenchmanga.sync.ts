@@ -1,7 +1,7 @@
 /**
  * Synchronisation du catalogue mangas French-Manga → PostgreSQL.
  *
- * Même principe que la synchro FrenchStream (§4.7) : synchro incrémentale
+ * Même principe que la synchro partenaire (§4.7) : synchro incrémentale
  * bornée (jamais tout le catalogue — ~2000 titres), upserts idempotents,
  * purge des assets disparus depuis N jours, et journal d'exécution
  * (ProviderSyncRun).

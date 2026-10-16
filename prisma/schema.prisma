@@ -284,7 +284,7 @@ enum ProviderSyncStatus {
 /// Un titre du catalogue d'un fournisseur externe (métadonnées seulement).
 model ProviderAsset {
   id            String               @id @default(cuid())
-  provider                          String // "FRENCHSTREAM" — générique pour tout futur fournisseur
+  provider                          String // "PARTNER" — générique pour tout futur fournisseur
   externalId                        String // TMDB/IMDb ; nom pour les animés (pas d'id exposé)
   contentType   ProviderContentType
   title                             String

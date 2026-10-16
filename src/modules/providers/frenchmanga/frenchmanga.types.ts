@@ -1,8 +1,7 @@
 /**
- * Types du fournisseur French-Manga (site DLE `french-manga.net`, la source
- * mangas référencée par french-stream). Contenu synchronisé en base
- * (ProviderAsset, provider « FRENCHMANGA », contentType ANIME) ; la fiche et
- * la lecture interrogent l'API JSON du site à la demande.
+ * Types du fournisseur French-Manga (site DLE `french-manga.net`). Contenu
+ * synchronisé en base (ProviderAsset, provider « FRENCHMANGA », contentType
+ * ANIME) ; la fiche et la lecture interrogent l'API JSON du site à la demande.
  */
 
 /** Élément du catalogue (une vignette `.short` de la catégorie mangas). */

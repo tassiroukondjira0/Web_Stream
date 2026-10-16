@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { getPartnerMovies, providerItemHref } from "@/lib/provider-catalog";
+import {
+  getPartnerMovies,
+  providerItemHref,
+  filterByCategory,
+  getAllCatalogCategories,
+} from "@/lib/provider-catalog";
 import { ProviderPosterCard } from "@/components/ProviderPosterCard";
+import { CategoryFilter } from "@/components/CategoryFilter";
 import { Film } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -12,16 +18,22 @@ export const metadata: Metadata = {
 };
 
 interface FilmsPageProps {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; categorie?: string }>;
 }
 
 async function FilmsContent({ searchParams }: FilmsPageProps) {
-  const { page } = await searchParams;
+  const { page, categorie } = await searchParams;
 
   // Catalogue partenaire — lu depuis la base synchronisée (CDC §4.7 :
   // grilles depuis ProviderAsset, pagination côté serveur).
   const partnerPage = Math.max(1, parseInt(page || "1", 10) || 1);
   const partner = await getPartnerMovies(partnerPage, 24);
+
+  // Filtrage par catégorie côté client (filtre UI prêt pour une future DB
+  // où la colonne categorySlug sera stockée sur les assets partenaires).
+  const categories = getAllCatalogCategories();
+  const activeCategory = categorie ? categories.find((c) => c.slug === categorie) : null;
+  const filteredItems = activeCategory ? filterByCategory(partner.items, categorie) : partner.items;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -35,10 +47,15 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
         </p>
       </div>
 
+      {/* Filtre par catégorie */}
+      <CategoryFilter currentSlug={categorie ?? null} label="Catégorie" />
+
       {/* Grille de résultats */}
       <section className="mt-8">
         <div className="flex items-baseline justify-between border-b border-white/10 pb-4">
-          <h2 className="text-xl font-bold text-white">Films du catalogue</h2>
+          <h2 className="text-xl font-bold text-white">
+            Films du catalogue{activeCategory ? ` — ${activeCategory.name}` : ""}
+          </h2>
           {partner.totalItems > 0 && (
             <span className="text-xs text-zinc-500">
               {partner.totalItems} titres — page {partner.page} / {partner.totalPages}
@@ -46,19 +63,21 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
           )}
         </div>
 
-        {partner.items.length === 0 ? (
+        {filteredItems.length === 0 ? (
           <div className="py-24 text-center">
             <Film className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
-            <h3 className="text-lg font-medium text-white">Aucun film disponible</h3>
+            <h3 className="text-lg font-medium text-white">
+              Aucun film disponible
+            </h3>
             <p className="text-sm text-zinc-400 mt-1">
               Le catalogue est en cours de mise à jour. Revenez bientôt.
             </p>
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-5">
-            {partner.items.map((item) => (
+            {filteredItems.map((item) => (
               <ProviderPosterCard
-                key={`fs-${item.contentType}-${item.externalId}`}
+                key={`partner-${item.contentType}-${item.externalId}`}
                 href={providerItemHref(item)}
                 posterUrl={item.posterUrl}
                 title={item.title}
@@ -73,7 +92,13 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
           <div className="mt-8 flex items-center justify-center gap-2">
             {partnerPage > 1 && (
               <Link
-                href={partnerPage - 1 > 1 ? `/films?page=${partnerPage - 1}` : "/films"}
+                href={
+                  partnerPage - 1 > 1
+                    ? `/films?page=${partnerPage - 1}${categorie ? `&categorie=${categorie}` : ""}`
+                    : categorie
+                    ? `/films?categorie=${categorie}`
+                    : "/films"
+                }
                 className="rounded-lg bg-zinc-800 border border-white/10 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700"
               >
                 ← Précédent
@@ -84,7 +109,7 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
             </span>
             {partnerPage < partner.totalPages && (
               <Link
-                href={`/films?page=${partnerPage + 1}`}
+                href={`/films?page=${partnerPage + 1}${categorie ? `&categorie=${categorie}` : ""}`}
                 className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500"
               >
                 Suivant →

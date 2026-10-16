@@ -13,9 +13,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset-users": "tsx scripts/reset-users.ts",
     "db:studio": "prisma studio",
-    "catalog:sync": "tsx scripts/sync-frenchstream.ts",
+    "catalog:sync": "tsx scripts/sync-partner.ts",
     "mangas:sync": "tsx scripts/sync-frenchmanga.ts",
-    "frenchstream:sync": "tsx scripts/sync-frenchstream.ts",
+    "partner:sync": "tsx scripts/sync-partner.ts",
     "vercel:env": "powershell -ExecutionPolicy Bypass -File ./scripts/vercel-env.ps1",
     "vercel:pull": "vercel env pull .env.local --environment=production",
     "deploy": "vercel --prod"

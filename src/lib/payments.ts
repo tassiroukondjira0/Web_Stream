@@ -257,7 +257,7 @@ function resolveInvoiceUrl(data: Record<string, unknown>, token: string): string
  * L'utilisateur est ensuite redirigé vers `invoice.url` pour payer.
  */
 export async function createPremiumInvoice(input: CreateInvoiceInput): Promise<PaydunyaInvoice> {
-  const channels = input.channels ?? getPaydunyaChannels();
+  const channels = input.channels?.length > 0 ? input.channels : getPaydunyaChannels();
 
   const body = {
     invoice: {

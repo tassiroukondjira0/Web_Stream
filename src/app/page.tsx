@@ -6,8 +6,8 @@ import { NewsletterBanner } from "@/components/NewsletterBanner";
 import {
   getPartnerAnimes,
   getFeaturedPartner,
-  getFrenchStreamMovies,
-  getFrenchStreamSeries,
+  getPartnerMovies,
+  getPartnerSeries,
   providerItemHref,
   FEATURED_PERIOD_DAYS,
 } from "@/lib/provider-catalog";
@@ -106,8 +106,8 @@ export default function HomePage() {
  */
 async function RecentSection() {
   const [movies, series] = await Promise.all([
-    getFrenchStreamMovies(1, RECENT_LIMIT),
-    getFrenchStreamSeries(1, RECENT_LIMIT),
+    getPartnerMovies(1, RECENT_LIMIT),
+    getPartnerSeries(1, RECENT_LIMIT),
   ]);
 
   const hasMovies = movies.items.length > 0;
