@@ -185,16 +185,19 @@ export function tmdbToMediaDraft(
 
 // ─── Séries : détails, saisons et épisodes ──────────────────────────────────
 
-/** Épisode tel que renvoyé par /tv/{id}/season/{n} (champs utiles). */
+/** Épisode tel que renvoyé par /tv/{id}/season/{n} (champs utiles).
+ * Quand TMDB n'est pas configuré, un épisode de fallback peut ne fournir que
+ * episode_number et name.
+ */
 export interface TmdbEpisode {
-  id: number;
+  id?: number;
   episode_number: number;
-  season_number: number;
+  season_number?: number;
   name: string;
-  overview: string;
-  air_date: string | null;
-  still_path: string | null;
-  runtime: number | null;
+  overview?: string | null;
+  air_date?: string | null;
+  still_path?: string | null;
+  runtime?: number | null;
 }
 
 /** Saison telle que renvoyée par /tv/{id}/season/{n} (champs utiles). */

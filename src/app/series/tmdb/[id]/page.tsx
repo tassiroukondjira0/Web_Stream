@@ -116,6 +116,8 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
     : (playback?.seasons ?? []).filter((s) => s.season === currentSeason);
 
   // Récupère les détails de chaque saison depuis TMDB (nom, description, affiche par épisode).
+  // Quand TMDB n'est pas configuré ou qu'une saison est introuvable, on génère des
+  // épisodes basiques à partir des numéros fournis par Vidzy.
   const seasonDetailsMap = new Map<number, TmdbSeason | null>();
   if (playback?.tmdbId && seasonsToShow.length > 0) {
     await Promise.all(
@@ -126,6 +128,14 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
       }),
     );
   }
+
+  const fallbackEpisodes = (seasonNumbers: number[]) =>
+    seasonNumbers.map((epNum) => ({
+      episode_number: epNum,
+      name: `Épisode ${epNum}`,
+      overview: null,
+      still_path: null,
+    }));
 
   const hrefFor = ({
     lang,
@@ -213,7 +223,10 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
         <>
           {seasonsToShow.map((s) => {
             const detail = seasonDetailsMap.get(s.season);
-            const episodes = detail?.episodes ?? [];
+            const episodes =
+              detail && detail.episodes?.length > 0
+                ? detail.episodes
+                : fallbackEpisodes(s.episodes);
             return (
               <EpisodeGrid
                 key={s.season}

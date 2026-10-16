@@ -138,6 +138,14 @@ export default async function PartnerSeriesPage({
     );
   }
 
+  const fallbackEpisodes = (seasonNumbers: number[]) =>
+    seasonNumbers.map((epNum) => ({
+      episode_number: epNum,
+      name: `Épisode ${epNum}`,
+      overview: null,
+      still_path: null,
+    }));
+
   const hrefFor = ({
     lang,
     season,
@@ -212,7 +220,10 @@ export default async function PartnerSeriesPage({
             <>
               {seasonsToShow.map((s) => {
                 const detail = seasonDetailsMap.get(s.season);
-                const episodes = detail?.episodes ?? [];
+                const episodes =
+                  detail && detail.episodes?.length > 0
+                    ? detail.episodes
+                    : fallbackEpisodes(s.episodes);
                 return (
                   <EpisodeGrid
                     key={s.season}
