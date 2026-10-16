@@ -5,22 +5,25 @@ import { ChevronLeft, Film, Play } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
+import { SourcePlayer } from "@/components/SourcePlayer";
 import { prisma } from "@/lib/prisma";
 import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
+import { resolveCatalogPlayback } from "@/lib/vidzy";
+import { providerSources, vidzySources } from "@/lib/player-sources";
 import {
-  fetchFicheMeta,
   fetchMovieEmbed,
-  fetchSeriesDetail,
   PARTNER_PROVIDER,
 } from "@/modules/providers/partner/partner.client";
 
 /**
- * Fiche & lecteur d'un film partenaire. Le film n'a qu'un seul flux
- * (embed iframe), extrait de la fiche source (`data-url`).
+ * Fiche & lecteur d'un film partenaire. Le lecteur est multi-sources : notre
+ * flux Vidzy (résolu par identifiant TMDB) complété, quand il est exposé, par
+ * l'embed brut du fournisseur. L'utilisateur choisit sa source.
  */
 
 interface PartnerMoviePageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ lang?: string; host?: string }>;
 }
 
 export const instant = false;
@@ -42,9 +45,10 @@ export async function generateMetadata({ params }: PartnerMoviePageProps): Promi
   };
 }
 
-export default async function PartnerMoviePage({ params }: PartnerMoviePageProps) {
+export default async function PartnerMoviePage({ params, searchParams }: PartnerMoviePageProps) {
   await connection();
   const { id } = await params;
+  const sp = await searchParams;
 
   const asset = await prisma.providerAsset
     .findFirst({
@@ -53,28 +57,33 @@ export default async function PartnerMoviePage({ params }: PartnerMoviePageProps
     })
     .catch(() => null);
 
-  const [movieEmbed, overview, fiche] = await Promise.all([
-    fetchMovieEmbed(id),
-    fetchTmdbOverviewByTitle(asset?.title ?? ""),
-    fetchFicheMeta(id),
+  const title = asset?.title ?? "Film";
+
+  // Synopsis TMDB + lecture Vidzy (identifiant TMDB résolu depuis le titre) +
+  // embed brut du fournisseur (best-effort).
+  const [overview, playback, providerEmbed] = await Promise.all([
+    fetchTmdbOverviewByTitle(title),
+    resolveCatalogPlayback(title, "MOVIE", asset?.releaseYear ?? null),
+    fetchMovieEmbed(id).catch(() => null),
   ]);
 
-  // Synopsis : TMDB d'abord (FR soigné), sinon la fiche du fournisseur.
-  const synopsis = overview ?? fiche.synopsis;
+  const sources = [
+    ...(playback?.available ? vidzySources(playback) : []),
+    ...(providerEmbed
+      ? providerSources([{ lang: "vf", episode: 1, host: "partner", url: providerEmbed }])
+      : []),
+  ];
 
-  // Métadonnées de la fiche : le catalogue partenaire ne stocke pas la durée ni
-  // toujours l'année — on complète depuis la fiche source.
-  const year = asset?.releaseYear ?? fiche.releaseYear;
-  const runtime = fiche.runtime;
+  const poster = asset?.posterUrl ?? playback?.poster ?? null;
+  const year = asset?.releaseYear ?? playback?.year ?? null;
 
-  // Repli cross-type : si aucun embed film n'est exposé (player chargé en AJAX
-  // côté fournisseur), le titre est peut-être une série mal classée. On tente
-  // alors l'API épisode et on lit son premier flux disponible.
-  let embedUrl = movieEmbed;
-  if (!embedUrl) {
-    const detail = await fetchSeriesDetail(id).catch(() => null);
-    embedUrl = detail?.streams?.[0]?.url ?? null;
-  }
+  const hrefFor = ({ lang, host }: { lang?: string | null; host?: string | null }) => {
+    const query = new URLSearchParams();
+    if (lang) query.set("lang", lang);
+    if (host) query.set("host", host);
+    const qs = query.toString();
+    return `/films/partner/${id}${qs ? `?${qs}` : ""}`;
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -86,60 +95,51 @@ export default async function PartnerMoviePage({ params }: PartnerMoviePageProps
         Catalogue films
       </Link>
 
-      <div className="mt-4 aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
-        {embedUrl ? (
-          <iframe
-            src={embedUrl}
-            title={asset?.title ?? "Lecteur"}
-            className="h-full w-full"
-            allowFullScreen
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-zinc-400">
-            <Film className="h-10 w-10 text-zinc-600" />
-            Flux indisponible pour ce film.
-          </div>
-        )}
-      </div>
+      {sources.length > 0 ? (
+        <SourcePlayer
+          sources={sources}
+          hrefFor={hrefFor}
+          selection={{ lang: sp.lang, host: sp.host, season: 1, episode: 1 }}
+          title={title}
+        />
+      ) : (
+        <div className="mt-4 flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black text-sm text-zinc-400">
+          <Film className="h-10 w-10 text-zinc-600" />
+          Flux indisponible pour ce film.
+        </div>
+      )}
 
       <div className="mt-8 flex gap-5">
-        {asset?.posterUrl && (
+        {poster && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={asset.posterUrl}
-            alt={asset.title ?? ""}
+            src={poster}
+            alt={title}
             className="hidden h-48 w-32 shrink-0 rounded-xl object-cover sm:block"
           />
         )}
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-extrabold text-white sm:text-2xl lg:text-3xl">
-            {asset?.title ?? "Film"}
-          </h1>
-          {(year || runtime) && (
+          <h1 className="text-xl font-extrabold text-white sm:text-2xl lg:text-3xl">{title}</h1>
+          {year && (
             <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
-              {year && <span>{year}</span>}
-              {runtime && (
-                <span className={year ? "border-l border-white/10 pl-3" : ""}>{runtime}</span>
-              )}
+              <span>{year}</span>
             </div>
           )}
-          {synopsis && (
-            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{synopsis}</p>
+          {overview && (
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
           )}
           <div className="mt-4 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`partner-movie-${id}`} />
             <WishlistButton mediaSlug={`partner-movie-${id}`} />
-            <ShareButton title={asset?.title ?? "Film"} />
+            <ShareButton title={title} />
           </div>
         </div>
       </div>
 
       <p className="mt-8 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 p-3 text-xs text-zinc-400">
         <Play className="h-4 w-4 text-violet-500" />
-        Source externe partenaire. La disponibilité et les droits de diffusion relèvent du
-        fournisseur.
+        Plusieurs sources sont proposées quand elles sont disponibles. La disponibilité et les
+        droits de diffusion relèvent des fournisseurs.
       </p>
     </div>
   );

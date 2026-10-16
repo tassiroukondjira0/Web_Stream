@@ -238,6 +238,8 @@ interface TmdbSearchItem {
   name?: string;
   overview: string;
   poster_path: string | null;
+  release_date?: string;
+  first_air_date?: string;
   vote_count: number;
   popularity: number;
 }
@@ -257,7 +259,76 @@ function stripTitleSuffix(title: string): string {
     .replace(/\s*\(?\bsaison\s*\d+\b\)?.*$/i, "")
     .replace(/\s*[-–—]\s*(vf|vostfr|vo|truefrench|french|multi)\b.*$/i, "")
     .replace(/\s*[-–—]\s*(hd|fhd|4k|1080p|720p)\b.*$/i, "")
+    .replace(/\s*[(\[]((?:19|20)\d{2})[)\]]\s*$/i, "")
+    .replace(/\s+\b(?:19|20)\d{2}\s*$/i, "")
     .trim();
+}
+
+/**
+ * Année extraite d'un titre de fournisseur : priorité à l'année entre
+ * parenthèses (« Siren (2018) »), sinon une année finale détachée
+ * (« Siren 2018 »). Sert à désambiguïser la recherche TMDB.
+ */
+function yearFromTitle(title: string): number | null {
+  const parenthesized = title.match(/[(\[]((?:19|20)\d{2})[)\]]/);
+  if (parenthesized) return Number.parseInt(parenthesized[1], 10);
+  const trailing = title.match(/\b((?:19|20)\d{2})\s*$/);
+  return trailing ? Number.parseInt(trailing[1], 10) : null;
+}
+
+/** Correspondance TMDB (identifiant + type) résolue par titre. */
+export interface TmdbMatch {
+  id: number;
+  mediaType: "movie" | "tv";
+  title: string;
+  year: number | null;
+}
+
+function matchYear(item: TmdbSearchItem): number | null {
+  const raw = item.release_date || item.first_air_date || "";
+  return raw ? Number.parseInt(raw.slice(0, 4), 10) || null : null;
+}
+
+/**
+ * Résout l'identifiant TMDB d'un titre du catalogue externe (films, séries,
+ * animés). La recherche `/search/multi` est filtrée sur le type attendu et,
+ * quand une année est connue (catalogue ou titre), le résultat correspondant à
+ * cette année est préféré.
+ *
+ * Retourne null si TMDB n'est pas configuré, si rien ne correspond ou en cas
+ * d'erreur — jamais d'exception remontée (CDC §11).
+ */
+export async function resolveTmdbMatch(
+  title: string,
+  kind: "movie" | "tv",
+  year?: number | null,
+): Promise<TmdbMatch | null> {
+  if (!hasTmdbCredentials()) return null;
+  const cleaned = stripTitleSuffix(title);
+  if (cleaned.length < 2) return null;
+
+  const hintedYear = year ?? yearFromTitle(title);
+  try {
+    const data = await tmdbFetch<TmdbSearchResponse>("/search/multi", {
+      query: cleaned,
+      include_adult: "false",
+    });
+    const candidates = (data.results ?? []).filter((r) => r.media_type === kind);
+    if (candidates.length === 0) return null;
+
+    const preferred =
+      (hintedYear ? candidates.find((c) => matchYear(c) === hintedYear) : undefined) ??
+      candidates[0];
+
+    return {
+      id: preferred.id,
+      mediaType: kind,
+      title: (preferred.title ?? preferred.name ?? cleaned).trim(),
+      year: matchYear(preferred),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**

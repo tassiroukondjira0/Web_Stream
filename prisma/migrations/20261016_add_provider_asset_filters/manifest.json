@@ -1,0 +1,63 @@
+{
+  "migration": "20261016_add_provider_asset_filters",
+  "databaseProvider": "postgresql",
+  "datamodel": "prisma/schema.prisma",
+  "steps": [
+    {
+      "addColumn": {
+        "model": "ProviderAsset",
+        "name": "categorySlug",
+        "type": "String",
+        "isUnique": false,
+        "isGenerated": false,
+        "hasDefaultValue": false,
+        "defaultValue": null,
+        "autoIncrement": false
+      }
+    },
+    {
+      "addColumn": {
+        "model": "ProviderAsset",
+        "name": "language",
+        "type": "String",
+        "isUnique": false,
+        "isGenerated": false,
+        "hasDefaultValue": false,
+        "defaultValue": null,
+        "autoIncrement": false
+      }
+    },
+    {
+      "addColumn": {
+        "model": "ProviderAsset",
+        "name": "theme",
+        "type": "String",
+        "isUnique": false,
+        "isGenerated": false,
+        "hasDefaultValue": false,
+        "defaultValue": null,
+        "autoIncrement": false
+      }
+    },
+    {
+      "createIndex": {
+        "model": "ProviderAsset",
+        "name": "provider_assets_provider_contentType_categorySlug_idx",
+        "columns": ["provider", "contentType", "categorySlug"],
+        "type": "Btree"
+      }
+    },
+    {
+      "createIndex": {
+        "model": "ProviderAsset",
+        "name": "provider_assets_provider_contentType_releaseYear_idx",
+        "columns": ["provider", "contentType", "releaseYear"],
+        "type": "Btree"
+      }
+    }
+  ],
+  "rolledBack": false,
+  "startedAt": "2026-10-16T04:00:00Z",
+  "finishedAt": null,
+  "applied": false
+}

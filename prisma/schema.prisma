@@ -295,6 +295,12 @@ model ProviderAsset {
   /// Indispensable pour les animés (un même catalogue mélange films et séries)
   /// et pour router vers le bon lecteur (/films vs /series).
   sourceType    String?
+  /// Slug de catégorie / genre pour le filtrage (ex: action, aventure, horreur…).
+  categorySlug  String?
+  /// Langue de diffusion (ex: VF, VOSTFR, VO).
+  language      String?
+  /// Thème / ambiance (ex: comédie, drame, action, sf…).
+  theme         String?
   /// Rang dans l'ordre « popular » du fournisseur (1 = plus tendance). Alimente la
   /// section « À la une ». Rafraîchi à chaque synchro de l'ordre popular.
   trendingRank  Int?
@@ -310,6 +316,8 @@ model ProviderAsset {
   @@index([provider, contentType, lastSeenAt])
   @@index([provider, contentType, trendingRank])
   @@index([provider, isPublished])
+  @@index([provider, contentType, categorySlug])
+  @@index([provider, contentType, releaseYear])
   @@map("provider_assets")
 }
 

@@ -22,8 +22,12 @@ export interface ProviderCatalogItem {
   releaseYear: number | null;
   posterUrl: string | null;
   totalEpisodes: number | null;
-  /** Slug de catégorie optionnel pour le filtrage (genre). */
+  /** Slug de catégorie / genre pour le filtrage. */
   categorySlug?: string;
+  /** Langue de diffusion (VF, VOSTFR, VO…). */
+  language?: string;
+  /** Thème / ambiance. */
+  theme?: string;
 }
 
 export interface ProviderCatalogPage {
@@ -32,6 +36,17 @@ export interface ProviderCatalogPage {
   pageSize: number;
   totalItems: number;
   totalPages: number;
+}
+
+export interface AssetFilters {
+  /** Slug de catégorie/genre. */
+  categorySlug?: string | null;
+  /** Langue de diffusion. */
+  language?: string | null;
+  /** Thème. */
+  theme?: string | null;
+  /** Année de sortie (exacte). */
+  releaseYear?: number | null;
 }
 
 function toItem(a: {
@@ -44,7 +59,9 @@ function toItem(a: {
   posterUrl: string | null;
   totalEpisodes: number | null;
   isPublished?: boolean;
-  categorySlug?: string;
+  categorySlug?: string | null;
+  language?: string | null;
+  theme?: string | null;
 }): ProviderCatalogItem {
   return {
     id: a.externalId,
@@ -57,6 +74,8 @@ function toItem(a: {
     posterUrl: a.posterUrl,
     totalEpisodes: a.totalEpisodes,
     categorySlug: a.categorySlug ?? undefined,
+    language: a.language ?? undefined,
+    theme: a.theme ?? undefined,
   };
 }
 
@@ -94,6 +113,9 @@ const ASSET_SELECT = {
   posterUrl: true,
   totalEpisodes: true,
   isPublished: true,
+  categorySlug: true,
+  language: true,
+  theme: true,
 } as const;
 
 async function listAssets(
@@ -101,6 +123,7 @@ async function listAssets(
   page: number,
   pageSize: number,
   providers: string[] = [PARTNER_PROVIDER],
+  filters: AssetFilters = {},
 ): Promise<ProviderCatalogPage> {
   const safePage = Math.max(1, Math.floor(page) || 1);
   const safeSize = Math.min(60, Math.max(1, Math.floor(pageSize) || 24));
@@ -111,11 +134,14 @@ async function listAssets(
   }
 
   try {
-    // Seuls les titres publiés par l'admin apparaissent dans la grille.
     const where = {
       provider: { in: providers },
       contentType,
       isPublished: true,
+      ...(filters.categorySlug ? { categorySlug: filters.categorySlug } : {}),
+      ...(filters.language ? { language: filters.language } : {}),
+      ...(filters.theme ? { theme: filters.theme } : {}),
+      ...(filters.releaseYear ? { releaseYear: filters.releaseYear } : {}),
     } as const;
     const [totalItems, rows] = await Promise.all([
       prisma.providerAsset.count({ where }),
@@ -133,6 +159,9 @@ async function listAssets(
         toItem({
           ...r,
           contentType: r.contentType as "MOVIE" | "SERIES" | "ANIME",
+          categorySlug: (r as any).categorySlug ?? undefined,
+          language: (r as any).language ?? undefined,
+          theme: (r as any).theme ?? undefined,
         }),
       ),
       page: safePage,
@@ -146,35 +175,30 @@ async function listAssets(
 }
 
 /** Films du catalogue partenaire. */
-export function getPartnerMovies(page = 1, pageSize = 24): Promise<ProviderCatalogPage> {
-  return listAssets("MOVIE", page, pageSize, [PARTNER_PROVIDER]);
+export function getPartnerMovies(
+  page = 1,
+  pageSize = 24,
+  filters: AssetFilters = {},
+): Promise<ProviderCatalogPage> {
+  return listAssets("MOVIE", page, pageSize, [PARTNER_PROVIDER], filters);
 }
 
 /** Séries du catalogue partenaire. */
-export function getPartnerSeries(page = 1, pageSize = 24): Promise<ProviderCatalogPage> {
-  return listAssets("SERIES", page, pageSize, [PARTNER_PROVIDER]);
+export function getPartnerSeries(
+  page = 1,
+  pageSize = 24,
+  filters: AssetFilters = {},
+): Promise<ProviderCatalogPage> {
+  return listAssets("SERIES", page, pageSize, [PARTNER_PROVIDER], filters);
 }
 
 /** Animés / mangas du catalogue partenaire — French-Manga uniquement. */
-export function getPartnerAnimes(page = 1, pageSize = 24): Promise<ProviderCatalogPage> {
-  return listAssets("ANIME", page, pageSize, [FRENCHMANGA_PROVIDER]);
-}
-
-/**
- * Filtre une liste d'items par slug de catégorie (filtrage côté client,
- * car la colonne `categorySlug` n'est pas encore stockée en base pour les
- * assets partenaires). Retourne tous les items si le slug est inconnu/vide.
- */
-export function filterByCategory(
-  items: ProviderCatalogItem[],
-  categorySlug: string | null | undefined,
-): ProviderCatalogItem[] {
-  if (!categorySlug) return items;
-  const cat = getCategoryBySlug(categorySlug);
-  if (!cat) return items;
-  // Les assets partenaires n'ont pas encore de catégorie stockée :
-  // on retourne tous les items (le filtre UI est prêt pour une future DB).
-  return items;
+export function getPartnerAnimes(
+  page = 1,
+  pageSize = 24,
+  filters: AssetFilters = {},
+): Promise<ProviderCatalogPage> {
+  return listAssets("ANIME", page, pageSize, [FRENCHMANGA_PROVIDER], filters);
 }
 
 /**
@@ -335,8 +359,6 @@ export async function getFeaturedPartner(
   });
 
   try {
-    // Pool plus large que la vitrine → la composition varie aussi d'une
-    // période à l'autre tout en restant dominée par les meilleures tendances.
     const pool = await getTrendingPartnerMovies(60);
     const items: FeaturedItem[] = seededShuffle(pool, seed)
       .slice(0, Math.max(1, limit))
@@ -382,10 +404,7 @@ export async function searchPartnerAssets(
     const rows = await prisma.providerAsset.findMany({
       where: {
         provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER] },
-        // Films, séries, animés et mangas : la recherche locale couvre tout le
-        // catalogue synchronisé (chaque fournisseur a son lecteur).
         contentType: { in: ["MOVIE", "SERIES", "ANIME"] },
-        // Seuls les titres publiés par l'admin sont trouvables.
         isPublished: true,
         title: { contains: q, mode: "insensitive" },
       },
@@ -415,3 +434,27 @@ export function getAllCatalogCategories(): { slug: string; name: string }[] {
 export function resolveCategorySlug(slug: string): { slug: string; name: string } | undefined {
   return getCategoryBySlug(slug);
 }
+
+/**
+ * Langues disponibles pour le filtre.
+ */
+export const CATALOG_LANGUAGES = [
+  { value: "vf", label: "VF" },
+  { value: "vostfr", label: "VOSTFR" },
+  { value: "vo", label: "VO" },
+] as const;
+
+/**
+ * Thèmes disponibles pour le filtre.
+ */
+export const CATALOG_THEMES = [
+  { value: "action", label: "Action" },
+  { value: "drame", label: "Drame" },
+  { value: "comedie", label: "Comédie" },
+  { value: "horreur", label: "Horreur" },
+  { value: "science-fiction", label: "Science-Fiction" },
+  { value: "fantastique", label: "Fantastique" },
+  { value: "romance", label: "Romance" },
+  { value: "policier", label: "Policier / Thriller" },
+  { value: "dessin-anime", label: "Dessin animé" },
+] as const;

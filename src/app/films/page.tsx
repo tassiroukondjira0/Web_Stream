@@ -4,11 +4,9 @@ import Link from "next/link";
 import {
   getPartnerMovies,
   providerItemHref,
-  filterByCategory,
-  getAllCatalogCategories,
 } from "@/lib/provider-catalog";
 import { ProviderPosterCard } from "@/components/ProviderPosterCard";
-import { CategoryFilter } from "@/components/CategoryFilter";
+import { AdvancedFilter } from "@/components/AdvancedFilter";
 import { Film } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -18,26 +16,42 @@ export const metadata: Metadata = {
 };
 
 interface FilmsPageProps {
-  searchParams: Promise<{ page?: string; categorie?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    categorie?: string;
+    language?: string;
+    theme?: string;
+    year?: string;
+  }>;
 }
 
 async function FilmsContent({ searchParams }: FilmsPageProps) {
-  const { page, categorie } = await searchParams;
+  const { page, categorie, language, theme, year } = await searchParams;
 
-  // Catalogue partenaire — lu depuis la base synchronisée (CDC §4.7 :
-  // grilles depuis ProviderAsset, pagination côté serveur).
   const partnerPage = Math.max(1, parseInt(page || "1", 10) || 1);
-  const partner = await getPartnerMovies(partnerPage, 24);
+  const releaseYear = year ? Number.parseInt(year, 10) : undefined;
 
-  // Filtrage par catégorie côté client (filtre UI prêt pour une future DB
-  // où la colonne categorySlug sera stockée sur les assets partenaires).
-  const categories = getAllCatalogCategories();
-  const activeCategory = categorie ? categories.find((c) => c.slug === categorie) : null;
-  const filteredItems = activeCategory ? filterByCategory(partner.items, categorie) : partner.items;
+  const partner = await getPartnerMovies(partnerPage, 24, {
+    categorySlug: categorie ?? undefined,
+    language: language ?? undefined,
+    theme: theme ?? undefined,
+    releaseYear,
+  });
+
+  // Années disponibles pour le filtre (extraites des items de la page courante)
+  const availableYears = partner.items
+    .map((i) => i.releaseYear)
+    .filter((y): y is number => Boolean(y));
+
+  const activeFilters = {
+    categorie: categorie ?? null,
+    language: language ?? null,
+    theme: theme ?? null,
+    year: year ?? null,
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* En-tête */}
       <div className="border-b border-white/10 pb-6">
         <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
           Catalogue des Films
@@ -47,14 +61,16 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
         </p>
       </div>
 
-      {/* Filtre par catégorie */}
-      <CategoryFilter currentSlug={categorie ?? null} label="Catégorie" />
+      <AdvancedFilter
+        current={activeFilters}
+        availableYears={availableYears}
+        label="Filtres"
+      />
 
-      {/* Grille de résultats */}
       <section className="mt-8">
         <div className="flex items-baseline justify-between border-b border-white/10 pb-4">
           <h2 className="text-xl font-bold text-white">
-            Films du catalogue{activeCategory ? ` — ${activeCategory.name}` : ""}
+            Films du catalogue
           </h2>
           {partner.totalItems > 0 && (
             <span className="text-xs text-zinc-500">
@@ -63,7 +79,7 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
           )}
         </div>
 
-        {filteredItems.length === 0 ? (
+        {partner.items.length === 0 ? (
           <div className="py-24 text-center">
             <Film className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
             <h3 className="text-lg font-medium text-white">
@@ -75,7 +91,7 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-5">
-            {filteredItems.map((item) => (
+            {partner.items.map((item) => (
               <ProviderPosterCard
                 key={`partner-${item.contentType}-${item.externalId}`}
                 href={providerItemHref(item)}
@@ -87,17 +103,14 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
           </div>
         )}
 
-        {/* Pagination côté serveur */}
         {partner.totalPages > 1 && (
           <div className="mt-8 flex items-center justify-center gap-2">
             {partnerPage > 1 && (
               <Link
                 href={
                   partnerPage - 1 > 1
-                    ? `/films?page=${partnerPage - 1}${categorie ? `&categorie=${categorie}` : ""}`
-                    : categorie
-                    ? `/films?categorie=${categorie}`
-                    : "/films"
+                    ? `/films?page=${partnerPage - 1}${buildQueryString({ categorie, language, theme, year })}`
+                    : `/films${buildQueryString({ categorie, language, theme, year })}`
                 }
                 className="rounded-lg bg-zinc-800 border border-white/10 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700"
               >
@@ -109,7 +122,7 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
             </span>
             {partnerPage < partner.totalPages && (
               <Link
-                href={`/films?page=${partnerPage + 1}${categorie ? `&categorie=${categorie}` : ""}`}
+                href={`/films?page=${partnerPage + 1}${buildQueryString({ categorie, language, theme, year })}`}
                 className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500"
               >
                 Suivant →
@@ -122,12 +135,26 @@ async function FilmsContent({ searchParams }: FilmsPageProps) {
   );
 }
 
+function buildQueryString(params: {
+  categorie?: string | null;
+  language?: string | null;
+  theme?: string | null;
+  year?: string | null;
+}): string {
+  const qs = new URLSearchParams();
+  if (params.categorie) qs.set("categorie", params.categorie);
+  if (params.language) qs.set("language", params.language);
+  if (params.theme) qs.set("theme", params.theme);
+  if (params.year) qs.set("year", params.year);
+  return qs.toString() ? `?${qs.toString()}` : "";
+}
+
 export default function FilmsCatalogPage({ searchParams }: FilmsPageProps) {
   return (
     <Suspense
       fallback={
         <div className="mx-auto max-w-7xl px-4 py-16 text-center text-sm text-zinc-400">
-          Chargement du catalogue...
+          Chargement du catalogue…
         </div>
       }
     >

@@ -87,8 +87,7 @@ export function parseCatalog(html: string): PartnerItem[] {
     const title = decodeHtml(titleMatch?.[1] ?? "").trim();
     if (!title) continue;
 
-    const posterMatch = block.match(/<img\s+src="(https:\/\/
-image\.tmdb\.org[^"]+)"/);
+    const posterMatch = block.match(/<img\s+src="(https:\/\/image\.tmdb\.org[^"]+)"/);
     const versionMatch = block.match(/<span class="film-version">\s*<a[^>]*>([^<]+)<\/a>/);
     const epsMatch = block.match(/<span class="mli-eps">\s*\d+\s*\/\s*(\d+)\s*</);
 

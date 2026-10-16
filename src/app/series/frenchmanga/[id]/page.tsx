@@ -5,28 +5,34 @@ import { ChevronLeft, Film, Play } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
+import { SourcePlayer } from "@/components/SourcePlayer";
 import { prisma } from "@/lib/prisma";
 import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
-import { fetchMangaDetail, fetchMangaMeta } from "@/modules/providers/frenchmanga/frenchmanga.client";
+import { resolveCatalogPlayback } from "@/lib/vidzy";
+import { providerSources, vidzySources } from "@/lib/player-sources";
+import {
+  fetchMangaDetail,
+  fetchMangaMeta,
+} from "@/modules/providers/frenchmanga/frenchmanga.client";
 
 /**
  * Fiche & lecteur d'un manga du catalogue French-Manga.
  *
- * Les flux sont des iframes d'hébergeurs (vidzy, luvid…), récupérés à la
- * demande via l'API JSON du site. La sélection langue/épisode/hôte se fait
- * par navigation serveur (?lang=vostfr&ep=1&host=vidzy) — aucune dépendance
- * client pour le cœur de la navigation.
+ * Le lecteur est multi-sources : le flux Vidzy (identifiant TMDB résolu depuis
+ * le titre) est fusionné avec les iframes du fournisseur (vidzy.live, luluvido…)
+ * récupérés via son API JSON. L'utilisateur choisit langue / saison / épisode /
+ * hébergeur.
  */
 
 interface FrenchMangaPageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ lang?: string; ep?: string; host?: string }>;
+  searchParams: Promise<{ lang?: string; season?: string; ep?: string; host?: string }>;
 }
 
 // Données vivantes (site externe) : jamais prérendu, toujours à la demande.
 export const instant = false;
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+export async function generateMetadata({ params }: FrenchMangaPageProps): Promise<Metadata> {
   const { id } = await params;
   const asset = await prisma.providerAsset
     .findFirst({
@@ -55,26 +61,25 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
     })
     .catch(() => null);
 
-  const [detail, overview, fiche] = await Promise.all([
-    fetchMangaDetail(id),
-    fetchTmdbOverviewByTitle(asset?.title ?? ""),
+  const titleBase = asset?.title ?? "Manga";
+
+  // Synopsis + lecture Vidzy + détail fournisseur (hosts).
+  const [overview, playback, detail, fiche] = await Promise.all([
+    fetchTmdbOverviewByTitle(titleBase),
+    resolveCatalogPlayback(titleBase, "ANIME", asset?.releaseYear ?? null),
+    fetchMangaDetail(id).catch(() => null),
     fetchMangaMeta(id),
   ]);
 
-  const title = asset?.title ?? detail?.title ?? "Manga";
-  // Synopsis : TMDB d'abord (FR soigné), sinon la fiche du fournisseur.
+  const fullTitle = asset?.title ?? detail?.title ?? titleBase;
   const synopsis = overview ?? fiche.synopsis;
-  // Année : catalogue, sinon fiche source.
-  const year = asset?.releaseYear ?? fiche.releaseYear;
-  const streams = detail?.streams.filter((s) => s.url) ?? [];
-  // Nombre d'épisodes : décompte réel des flux, complété par le catalogue
-  // (mli-eps) quand celui-ci en annonce davantage.
-  const totalEpisodes = Math.max(
-    new Set(streams.map((s) => s.episode)).size,
-    asset?.totalEpisodes ?? 0,
-  );
 
-  if (streams.length === 0) {
+  const sources = [
+    ...(playback?.available ? vidzySources(playback) : []),
+    ...(detail ? providerSources(detail.streams, 1) : []),
+  ];
+
+  if (sources.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-24 text-center">
         <Film className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
@@ -92,19 +97,33 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
     );
   }
 
-  // Langues disponibles, épisodes de la langue choisie, hôtes de l'épisode.
-  const langs = unique(streams.map((s) => s.lang));
-  const lang = langs.includes(sp.lang ?? "") ? (sp.lang as string) : langs[0];
-  const episodes = unique(
-    streams.filter((s) => s.lang === lang).map((s) => s.episode),
-  ).sort((a, b) => a - b);
-  const episode = episodes.includes(Number.parseInt(sp.ep ?? "", 10))
-    ? Number.parseInt(sp.ep as string, 10)
-    : episodes[0];
-  const hosts = streams.filter((s) => s.lang === lang && s.episode === episode);
-  const selected = hosts.find((s) => s.host === sp.host) ?? hosts[0];
+  const poster = asset?.posterUrl ?? playback?.poster ?? null;
+  const year = asset?.releaseYear ?? fiche.releaseYear ?? playback?.year ?? null;
+  const totalEpisodes = Math.max(
+    asset?.totalEpisodes ?? 0,
+    detail?.streams ? new Set(detail.streams.map((s) => s.episode)).size : 0,
+    playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
+  );
 
-  const base = `/series/frenchmanga/${id}`;
+  const hrefFor = ({
+    lang,
+    season,
+    episode,
+    host,
+  }: {
+    lang?: string | null;
+    season?: number | null;
+    episode?: number | null;
+    host?: string | null;
+  }) => {
+    const query = new URLSearchParams();
+    if (lang) query.set("lang", lang);
+    if (season) query.set("season", String(season));
+    if (episode) query.set("ep", String(episode));
+    if (host) query.set("host", host);
+    const qs = query.toString();
+    return `/series/frenchmanga/${id}${qs ? `?${qs}` : ""}`;
+  };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
@@ -116,116 +135,29 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
         Catalogue animés & mangas
       </Link>
 
-      <div className="mt-4 aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black">
-        {selected ? (
-          <iframe
-            key={selected.url}
-            src={selected.url}
-            title={`${title} — ${lang.toUpperCase()} ép.${episode} (${selected.host})`}
-            className="h-full w-full"
-            allowFullScreen
-            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-zinc-400">
-            Flux introuvable.
-          </div>
-        )}
-      </div>
-
-      {/* Sélecteurs : langue, épisode, hôte */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        {langs.map((l) => (
-          <Link
-            key={l}
-            href={`${base}?lang=${encodeURIComponent(l)}`}
-            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold uppercase transition-colors ${
-              l === lang
-                ? "border-violet-500 bg-violet-600 text-white"
-                : "border-white/10 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
-            }`}
-          >
-            {l}
-          </Link>
-        ))}
-      </div>
-
-      {episodes.length > 1 && (
-        <section aria-label="Liste des épisodes" className="mt-6">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">
-            Épisodes · {lang.toUpperCase()} ({episodes.length})
-          </h2>
-          <ol className="mt-3 max-h-96 space-y-2 overflow-y-auto pr-1">
-            {episodes.map((e) => {
-              const isActive = e === episode;
-              return (
-                <li key={e}>
-                  <Link
-                    href={`${base}?lang=${encodeURIComponent(lang)}&ep=${e}`}
-                    aria-current={isActive ? "true" : undefined}
-                    className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${
-                      isActive
-                        ? "border-violet-500 bg-violet-600/20"
-                        : "border-white/10 bg-zinc-900 hover:border-zinc-600 hover:bg-zinc-800"
-                    }`}
-                  >
-                    <span
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-extrabold ${
-                        isActive ? "bg-violet-600 text-white" : "bg-zinc-800 text-zinc-200"
-                      }`}
-                    >
-                      {e}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold text-white">
-                        Épisode {e}
-                      </span>
-                    </span>
-                    {isActive ? (
-                      <span className="shrink-0 rounded-full bg-violet-600 px-2.5 py-1 text-[11px] font-bold text-white">
-                        En cours
-                      </span>
-                    ) : (
-                      <Play className="h-4 w-4 shrink-0 text-zinc-500" />
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ol>
-        </section>
-      )}
-
-      {hosts.length > 1 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {hosts.map((h) => (
-            <Link
-              key={h.host}
-              href={`${base}?lang=${encodeURIComponent(lang)}&ep=${episode}&host=${encodeURIComponent(h.host)}`}
-              className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
-                selected && h.host === selected.host
-                  ? "border-zinc-400 bg-zinc-700 text-white"
-                  : "border-white/10 bg-zinc-900 text-zinc-400 hover:bg-zinc-800"
-              }`}
-            >
-              {h.host}
-            </Link>
-          ))}
-        </div>
-      )}
+      <SourcePlayer
+        sources={sources}
+        hrefFor={hrefFor}
+        selection={{
+          lang: sp.lang,
+          season: Number.parseInt(sp.season ?? "", 10) || null,
+          episode: Number.parseInt(sp.ep ?? "", 10) || null,
+          host: sp.host,
+        }}
+        title={fullTitle}
+      />
 
       <div className="mt-8 flex gap-5">
-        {asset?.posterUrl && (
+        {poster && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={asset.posterUrl}
-            alt={title}
+            src={poster}
+            alt={fullTitle}
             className="hidden h-48 w-32 shrink-0 rounded-xl object-cover sm:block"
           />
         )}
         <div>
-          <h1 className="text-2xl font-extrabold text-white sm:text-3xl">{title}</h1>
+          <h1 className="text-2xl font-extrabold text-white sm:text-3xl">{fullTitle}</h1>
           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
             {year && <span>{year}</span>}
             {totalEpisodes > 0 && (
@@ -247,20 +179,16 @@ export default async function FrenchMangaPage({ params, searchParams }: FrenchMa
           <div className="mt-4 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`frenchmanga-anime-${id}`} />
             <WishlistButton mediaSlug={`frenchmanga-anime-${id}`} />
-            <ShareButton title={title} />
+            <ShareButton title={fullTitle} />
           </div>
         </div>
       </div>
 
       <p className="mt-8 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 p-3 text-xs text-zinc-400">
         <Play className="h-4 w-4 text-violet-500" />
-        Source externe French-Manga. La disponibilité et les droits de diffusion relèvent du
-        fournisseur.
+        Plusieurs sources sont proposées quand elles sont disponibles. La disponibilité et les
+        droits de diffusion relèvent des fournisseurs.
       </p>
     </div>
   );
-}
-
-function unique<T>(values: T[]): T[] {
-  return [...new Set(values)];
 }
