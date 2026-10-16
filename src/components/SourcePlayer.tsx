@@ -115,25 +115,6 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
         </div>
       )}
 
-      {/* Saisons. */}
-      {seasons.length > 1 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {seasons.map((s) => (
-            <Link
-              key={s}
-              href={hrefFor({ lang, season: s, episode: 1, host: null })}
-              className={`rounded-lg border px-3 py-1.5 text-xs transition-colors ${
-                s === season
-                  ? "border-zinc-400 bg-zinc-700 text-white"
-                  : "border-white/10 bg-zinc-900 text-zinc-400 hover:bg-zinc-800"
-              }`}
-            >
-              Saison {s}
-            </Link>
-          ))}
-        </div>
-      )}
-
       {/* Épisodes. */}
       {!isMovie && episodes.length > 0 && (
         <section className="mt-6">

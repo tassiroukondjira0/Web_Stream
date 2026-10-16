@@ -7,8 +7,14 @@ import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
 import { SeasonSelector } from "@/components/SeasonSelector";
+import { EpisodeGrid } from "@/components/EpisodeGrid";
 import { prisma } from "@/lib/prisma";
-import { fetchTmdbOverviewById, fetchTvSeasonsPosters } from "@/lib/tmdb";
+import {
+  fetchTmdbOverviewById,
+  fetchTvSeason,
+  fetchTvSeasonsPosters,
+  type TmdbSeason,
+} from "@/lib/tmdb";
 import { resolvePlaybackByTmdbId } from "@/lib/vidzy";
 import { vidzySources } from "@/lib/player-sources";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
@@ -104,6 +110,23 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
     posterUrl: seasonPosters.get(s.season) ?? null,
   }));
 
+  // Détermine quelles saisons afficher (toutes si aucune sélectionnée).
+  const seasonsToShow = currentSeason === null
+    ? playback?.seasons ?? []
+    : (playback?.seasons ?? []).filter((s) => s.season === currentSeason);
+
+  // Récupère les détails de chaque saison depuis TMDB (nom, description, affiche par épisode).
+  const seasonDetailsMap = new Map<number, TmdbSeason | null>();
+  if (playback?.tmdbId && seasonsToShow.length > 0) {
+    await Promise.all(
+      seasonsToShow.map(async (s) => {
+        const detail = await fetchTvSeason(playback.tmdbId, s.season)
+          .catch(() => null);
+        if (detail) seasonDetailsMap.set(s.season, detail);
+      }),
+    );
+  }
+
   const hrefFor = ({
     lang,
     season,
@@ -183,6 +206,31 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
           currentSeason={currentSeason}
           seriesPoster={poster}
         />
+      )}
+
+      {/* Liste des épisodes de la/les saison(s) affichée(s) */}
+      {seasonsToShow.length > 0 && (
+        <>
+          {seasonsToShow.map((s) => {
+            const detail = seasonDetailsMap.get(s.season);
+            const episodes = detail?.episodes ?? [];
+            return (
+              <EpisodeGrid
+                key={s.season}
+                seasonNumber={s.season}
+                episodes={episodes}
+                hrefFor={({ season, episode, lang: episodeLang }) =>
+                  hrefFor({
+                    lang: episodeLang ?? sp.lang ?? undefined,
+                    season,
+                    episode,
+                  })
+                }
+                lang={sp.lang ?? null}
+              />
+            );
+          })}
+        </>
       )}
 
       <p className="mt-8 flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-900 p-3 text-xs text-zinc-400">

@@ -10,7 +10,7 @@
  */
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
-const TMDB_IMG = "https://image.tmdb.org/t/p";
+export const TMDB_IMG = "https://image.tmdb.org/t/p";
 
 /** Élément renvoyé par /movie/popular ou /tv/popular (champs utiles).
  *  Films : title / release_date. Séries : name / first_air_date. */

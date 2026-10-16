@@ -7,8 +7,14 @@ import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
 import { SeasonSelector } from "@/components/SeasonSelector";
+import { EpisodeGrid } from "@/components/EpisodeGrid";
 import { prisma } from "@/lib/prisma";
-import { fetchTmdbOverviewByTitle, fetchTvSeasonsPosters } from "@/lib/tmdb";
+import {
+  fetchTmdbOverviewByTitle,
+  fetchTvSeason,
+  fetchTvSeasonsPosters,
+  type TmdbSeason,
+} from "@/lib/tmdb";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
 import { providerSources, vidzySources } from "@/lib/player-sources";
 import {
@@ -115,6 +121,23 @@ export default async function PartnerSeriesPage({
     posterUrl: seasonPosters.get(s.season) ?? null,
   }));
 
+  // Détermine quelles saisons afficher (toutes si aucune sélectionnée).
+  const seasonsToShow = currentSeason === null
+    ? playback?.seasons ?? []
+    : (playback?.seasons ?? []).filter((s) => s.season === currentSeason);
+
+  // Récupère les détails de chaque saison depuis TMDB (nom, description, affiche par épisode).
+  const seasonDetailsMap = new Map<number, TmdbSeason | null>();
+  if (playback?.tmdbId && seasonsToShow.length > 0) {
+    await Promise.all(
+      seasonsToShow.map(async (s) => {
+        const detail = await fetchTvSeason(playback.tmdbId, s.season)
+          .catch(() => null);
+        if (detail) seasonDetailsMap.set(s.season, detail);
+      }),
+    );
+  }
+
   const hrefFor = ({
     lang,
     season,
@@ -184,6 +207,31 @@ export default async function PartnerSeriesPage({
             currentSeason={currentSeason}
             seriesPoster={poster}
           />
+
+          {seasonsToShow.length > 0 && (
+            <>
+              {seasonsToShow.map((s) => {
+                const detail = seasonDetailsMap.get(s.season);
+                const episodes = detail?.episodes ?? [];
+                return (
+                  <EpisodeGrid
+                    key={s.season}
+                    seasonNumber={s.season}
+                    episodes={episodes}
+                    hrefFor={({ season, episode, lang: episodeLang }) =>
+                      hrefFor({
+                        lang: episodeLang ?? sp.lang ?? undefined,
+                        season,
+                        episode,
+                      })
+                    }
+                    lang={sp.lang ?? null}
+                  />
+                );
+              })}
+            </>
+          )}
+
           <div className="mt-4 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`partner-series-${id}`} />
             <WishlistButton mediaSlug={`partner-series-${id}`} />
