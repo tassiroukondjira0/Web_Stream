@@ -141,6 +141,7 @@ export async function POST(request: Request) {
     // 3. Créer les médias en brouillon (upsert sur le slug, jamais de republication auto).
     let created = 0;
     let updated = 0;
+    let skipped = 0;
     let seasonsImported = 0;
     let episodesImported = 0;
     const usedSlugs = new Set<string>();
@@ -158,22 +159,37 @@ export async function POST(request: Request) {
         .filter(Boolean)
         .map((id) => ({ category: { connect: { id } } }));
 
-      const existing = await prisma.media.findUnique({ where: { slug } });
+      // Anti-doublon : vérifie par slug ET par titre + année (un même titre
+      // peut avoir un slug différent à cause d'une casse ou d'un accent).
+      const existingBySlug = await prisma.media.findUnique({ where: { slug } });
+      const existingByTitleYear = await prisma.media.findFirst({
+        where: {
+          title: draft.title,
+          releaseYear: draft.releaseYear,
+        },
+      });
+
+      const existing = existingBySlug ?? existingByTitleYear;
 
       if (existing) {
-        // Met à jour les métadonnées sans toucher à la vidéo ni à l'état de publication.
-        await prisma.media.update({
-          where: { slug },
-          data: {
-            title: draft.title,
-            synopsis: draft.synopsis,
-            type,
-            releaseYear: draft.releaseYear,
-            posterUrl: draft.posterUrl,
-            backdropUrl: draft.backdropUrl,
-          },
-        });
-        updated++;
+        // Titre déjà présent (même slug ou même titre+année) → on saute.
+        skipped++;
+
+        // Met à jour les métadonnées si le slug diffère (cas d'un doublon détecté par titre+année).
+        if (existingByTitleYear && !existingBySlug) {
+          await prisma.media.update({
+            where: { id: existingByTitleYear.id },
+            data: {
+              slug,
+              title: draft.title,
+              synopsis: draft.synopsis,
+              type,
+              releaseYear: draft.releaseYear,
+              posterUrl: draft.posterUrl,
+              backdropUrl: draft.backdropUrl,
+            },
+          });
+        }
 
         // Complète aussi les saisons si c'est une série et qu'elle n'en a pas encore.
         if (type === "SERIES") {
@@ -184,6 +200,7 @@ export async function POST(request: Request) {
             episodesImported += res.episodes;
           }
         }
+        continue;
       } else {
         const media = await prisma.media.create({
           data: {
@@ -220,10 +237,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Import TMDB terminé : ${created} fiche(s) créée(s), ${updated} mise(s) à jour.${seriesNote} Les fiches sont en brouillon en attente d'une vidéo licenciée.`,
+      message: `Import TMDB terminé : ${created} fiche(s) créée(s), ${updated} mise(s) à jour, ${skipped} doublon(s) ignoré(s).${seriesNote} Les fiches sont en brouillon en attente d'une vidéo licenciée.`,
       stats: {
         created,
         updated,
+        skipped,
         seasons: seasonsImported,
         episodes: episodesImported,
         scanned: allResults.length,

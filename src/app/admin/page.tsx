@@ -61,6 +61,7 @@ export default function AdminDashboardPage() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [syncPages, setSyncPages] = useState(2);
   const [syncing, setSyncing] = useState(false);
+  const [tmdbSyncing, setTmdbSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
 
   // Titres partenaires (ProviderAsset) — publication contrôlée par l'admin
@@ -307,6 +308,32 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleSyncTmdb = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTmdbSyncing(true);
+    setSyncMessage("");
+
+    try {
+      const res = await fetch("/api/admin/sync/tmdb", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pages: syncPages }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSyncMessage(data.message || "Synchro TMDB terminée.");
+        loadData();
+      } else {
+        setSyncMessage(data.message || "Erreur lors de la synchro TMDB.");
+      }
+    } catch {
+      setSyncMessage("Erreur réseau lors de la synchro TMDB.");
+    } finally {
+      setTmdbSyncing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-24 text-center text-sm text-zinc-400">
@@ -438,6 +465,15 @@ export default function AdminDashboardPage() {
             >
               <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
               {syncing ? "Synchro en cours..." : "Lancer la synchro"}
+            </button>
+            <button
+              type="button"
+              onClick={handleSyncTmdb}
+              disabled={tmdbSyncing}
+              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-800 px-4 py-2 font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`h-4 w-4 ${tmdbSyncing ? "animate-spin" : ""}`} />
+              {tmdbSyncing ? "Synchro TMDB…" : "Synchro TMDB"}
             </button>
           </form>
         </div>
@@ -624,8 +660,9 @@ export default function AdminDashboardPage() {
               className="rounded-xl border border-white/10 bg-black/50 p-2 text-xs text-white"
             >
               <option value="">Tous les fournisseurs</option>
-              <option value="PARTNER">Partenaire</option>
+              <option value="FRENCHSTREAM">Partenaire</option>
               <option value="FRENCHMANGA">French-Manga</option>
+              <option value="TMDB">TMDB</option>
             </select>
           </div>
         </div>

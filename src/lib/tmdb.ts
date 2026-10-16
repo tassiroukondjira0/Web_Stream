@@ -101,6 +101,33 @@ export async function fetchPopularTv(page = 1): Promise<TmdbPopularResponse> {
   return tmdbFetch<TmdbPopularResponse>("/tv/popular", { page: String(page) });
 }
 
+/**
+ * Récupère une page d'une liste TMDB quelconque (popular, top_rated,
+ * now_playing, upcoming, on_the_air, trending…). Le chemin doit commencer par
+ * « / » (ex. « /movie/popular »). Utilisé par la synchro du catalogue TMDB.
+ */
+export function fetchTmdbList(path: string, page = 1): Promise<TmdbPopularResponse> {
+  return tmdbFetch<TmdbPopularResponse>(path, { page: String(page) });
+}
+
+/**
+ * Récupère le synopsis FR d'un titre par son identifiant TMDB exact
+ * (`/movie/{id}` ou `/tv/{id}`). Complète `fetchTmdbOverviewByTitle` quand
+ * l'identifiant est déjà connu (catalogue TMDB). Retourne null en cas d'erreur.
+ */
+export async function fetchTmdbOverviewById(
+  tmdbId: number | string,
+  kind: "movie" | "tv",
+): Promise<string | null> {
+  if (!/^\d{1,10}$/.test(String(tmdbId))) return null;
+  try {
+    const data = await tmdbFetch<{ overview: string | null }>(`/${kind}/${tmdbId}`);
+    return data.overview?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 /** Génère un slug URL propre à partir d'un titre (accents retirés). */
 export function slugify(input: string): string {
   return input

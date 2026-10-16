@@ -136,6 +136,30 @@ export interface CatalogPlayback {
 }
 
 /**
+ * Résout la lecture Vidzy d'un titre dont l'identifiant TMDB est DÉJÀ connu
+ * (catalogue importé depuis TMDB, où `externalId` est l'id TMDB). Évite la
+ * résolution par titre, toujours approximative. Retourne null si indisponible.
+ */
+export async function resolvePlaybackByTmdbId(
+  tmdbId: number | string,
+  kind: "movie" | "tv",
+): Promise<CatalogPlayback | null> {
+  const info = await fetchVidzyAvailability(tmdbId);
+  if (!info) return null;
+
+  return {
+    kind: info.detectedType ?? kind,
+    tmdbId: info.tmdbId,
+    available: info.available,
+    title: info.title,
+    year: info.year,
+    poster: info.poster,
+    languages: info.languages,
+    seasons: info.seasons,
+  };
+}
+
+/**
  * Résout la lecture Vidzy d'un titre du catalogue : identifiant TMDB (par titre
  * + année) puis disponibilité. Retourne null si le titre est introuvable.
  */

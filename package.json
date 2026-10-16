@@ -15,6 +15,8 @@
     "db:studio": "prisma studio",
     "catalog:sync": "tsx scripts/sync-partner.ts",
     "mangas:sync": "tsx scripts/sync-frenchmanga.ts",
+    "tmdb:sync": "tsx scripts/sync-tmdb.ts",
+    "tmdb:dedupe": "tsx scripts/dedupe-tmdb.ts",
     "partner:sync": "tsx scripts/sync-partner.ts",
     "vercel:env": "powershell -ExecutionPolicy Bypass -File ./scripts/vercel-env.ps1",
     "vercel:pull": "vercel env pull .env.local --environment=production",

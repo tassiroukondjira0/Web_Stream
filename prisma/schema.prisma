@@ -309,6 +309,11 @@ model ProviderAsset {
   /// La synchro ne l'écrase jamais (l'admin reste maître de la mise en ligne).
   /// Par défaut, un asset importé est publié (comportement historique).
   isPublished   Boolean            @default(true)
+  /// Doublon d'un titre d'un fournisseur prioritaire (ex. un titre FRENCHSTREAM
+  /// déjà présent dans le catalogue TMDB). Masqué des grilles/recherche sans
+  /// toucher au choix de publication de l'admin (`isPublished`). Calculé par la
+  /// déduplication (voir modules/providers/tmdb/dedupe.ts).
+  isDuplicate   Boolean            @default(false)
   firstSeenAt   DateTime             @default(now())
   lastSeenAt    DateTime             @default(now()) // rafraîchi à chaque synchro
 
@@ -318,6 +323,7 @@ model ProviderAsset {
   @@index([provider, isPublished])
   @@index([provider, contentType, categorySlug])
   @@index([provider, contentType, releaseYear])
+  @@index([provider, contentType, isDuplicate])
   @@map("provider_assets")
 }
 

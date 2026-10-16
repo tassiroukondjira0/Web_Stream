@@ -86,6 +86,16 @@ const PARTNER_PROVIDER = "FRENCHSTREAM";
 const FRENCHMANGA_PROVIDER = "FRENCHMANGA";
 
 /**
+ * Fournisseur TMDB (films + séries) — catalogue de métadonnées TMDB lu via
+ * Vidzy. `externalId` y est l'identifiant TMDB (lecture directe, sans
+ * résolution par titre).
+ */
+const TMDB_PROVIDER = "TMDB";
+
+/** Fournisseurs alimentant les grilles films / séries. */
+const MOVIE_SERIES_PROVIDERS = [PARTNER_PROVIDER, TMDB_PROVIDER];
+
+/**
  * Route de fiche/lecture d'un asset partenaire. Chaque fournisseur a son
  * lecteur : French-Manga et Partenaire → fiches dédiées. Les animés peuvent
  * être des films OU des séries : on se fie à `sourceType`.
@@ -94,6 +104,11 @@ export function providerItemHref(
   item: Pick<ProviderCatalogItem, "contentType" | "sourceType" | "externalId"> &
     Partial<Pick<ProviderCatalogItem, "provider">>,
 ): string {
+  if (item.provider === TMDB_PROVIDER) {
+    return item.contentType === "SERIES"
+      ? `/series/tmdb/${item.externalId}`
+      : `/films/tmdb/${item.externalId}`;
+  }
   if (item.provider === PARTNER_PROVIDER) {
     return item.contentType === "SERIES"
       ? `/series/partner/${item.externalId}`
@@ -138,6 +153,7 @@ async function listAssets(
       provider: { in: providers },
       contentType,
       isPublished: true,
+      isDuplicate: false,
       ...(filters.categorySlug ? { categorySlug: filters.categorySlug } : {}),
       ...(filters.language ? { language: filters.language } : {}),
       ...(filters.theme ? { theme: filters.theme } : {}),
@@ -159,9 +175,6 @@ async function listAssets(
         toItem({
           ...r,
           contentType: r.contentType as "MOVIE" | "SERIES" | "ANIME",
-          categorySlug: (r as any).categorySlug ?? undefined,
-          language: (r as any).language ?? undefined,
-          theme: (r as any).theme ?? undefined,
         }),
       ),
       page: safePage,
@@ -174,22 +187,22 @@ async function listAssets(
   }
 }
 
-/** Films du catalogue partenaire. */
+/** Films du catalogue externe (partenaire + TMDB). */
 export function getPartnerMovies(
   page = 1,
   pageSize = 24,
   filters: AssetFilters = {},
 ): Promise<ProviderCatalogPage> {
-  return listAssets("MOVIE", page, pageSize, [PARTNER_PROVIDER], filters);
+  return listAssets("MOVIE", page, pageSize, MOVIE_SERIES_PROVIDERS, filters);
 }
 
-/** Séries du catalogue partenaire. */
+/** Séries du catalogue externe (partenaire + TMDB). */
 export function getPartnerSeries(
   page = 1,
   pageSize = 24,
   filters: AssetFilters = {},
 ): Promise<ProviderCatalogPage> {
-  return listAssets("SERIES", page, pageSize, [PARTNER_PROVIDER], filters);
+  return listAssets("SERIES", page, pageSize, MOVIE_SERIES_PROVIDERS, filters);
 }
 
 /** Animés / mangas du catalogue partenaire — French-Manga uniquement. */
@@ -212,8 +225,9 @@ export async function getLatestPartnerAssets(limit = 60): Promise<ProviderCatalo
   try {
     const rows = await prisma.providerAsset.findMany({
       where: {
-        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER] },
+        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER, TMDB_PROVIDER] },
         isPublished: true,
+        isDuplicate: false,
       },
       orderBy: { lastSeenAt: "desc" },
       take,
@@ -237,18 +251,35 @@ export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCata
   const take = Math.min(60, Math.max(1, limit));
   try {
     const trending = await prisma.providerAsset.findMany({
-      where: { provider: PARTNER_PROVIDER, contentType: "MOVIE", isPublished: true, trendingRank: { not: null } },
+      where: {
+        provider: { in: MOVIE_SERIES_PROVIDERS },
+        contentType: "MOVIE",
+        isPublished: true,
+        isDuplicate: false,
+        trendingRank: { not: null },
+      },
       orderBy: { trendingRank: "asc" },
       take,
       select: ASSET_SELECT,
     });
-    const seen = new Set(trending.map((r) => r.externalId));
     let items = trending.map((r) =>
       toItem({ ...r, contentType: r.contentType as "MOVIE" | "SERIES" | "ANIME" }),
     );
     if (items.length < take) {
+      // Exclut les titres déjà retenus (par couple fournisseur + identifiant,
+      // car deux fournisseurs peuvent partager un même identifiant numérique).
+      const exclude =
+        trending.length > 0
+          ? { NOT: { OR: trending.map((r) => ({ provider: r.provider, externalId: r.externalId })) } }
+          : {};
       const fill = await prisma.providerAsset.findMany({
-        where: { provider: PARTNER_PROVIDER, contentType: "MOVIE", isPublished: true, externalId: { notIn: [...seen] } },
+        where: {
+          provider: { in: MOVIE_SERIES_PROVIDERS },
+          contentType: "MOVIE",
+          isPublished: true,
+          isDuplicate: false,
+          ...exclude,
+        },
         orderBy: [{ lastSeenAt: "desc" }, { id: "asc" }],
         take,
         select: ASSET_SELECT,
@@ -403,9 +434,10 @@ export async function searchPartnerAssets(
   try {
     const rows = await prisma.providerAsset.findMany({
       where: {
-        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER] },
+        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER, TMDB_PROVIDER] },
         contentType: { in: ["MOVIE", "SERIES", "ANIME"] },
         isPublished: true,
+        isDuplicate: false,
         title: { contains: q, mode: "insensitive" },
       },
       orderBy: [{ lastSeenAt: "desc" }, { id: "asc" }],

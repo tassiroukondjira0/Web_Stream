@@ -254,8 +254,7 @@ async function FeaturedSection() {
               À la une
             </h2>
             <p className="text-xs text-zinc-400 sm:text-sm">
-              Les films les plus tendance — renouvelé toutes les{" "}
-              {FEATURED_PERIOD_DAYS} jours (prochaine mise à jour : {renewalLabel})
+              Les films les plus tendance du moment.
             </p>
           </div>
         </div>
