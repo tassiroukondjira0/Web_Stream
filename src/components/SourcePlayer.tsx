@@ -131,43 +131,6 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
           ))}
         </div>
       )}
-
-      {/* Épisodes. */}
-      {!isMovie && episodes.length > 0 && (
-        <section className="mt-6">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-300">
-            Épisodes · {lang.toUpperCase()} ({episodes.length})
-          </h2>
-          <ul className="mt-3 max-h-[420px] overflow-y-auto rounded-xl border border-white/10 bg-zinc-950/30 p-1.5">
-            {episodes.map((ep) => {
-              const isCurrent = ep === episode;
-              return (
-                <li key={ep}>
-                  <Link
-                    href={hrefFor({ lang, season, episode: ep, host: null })}
-                    aria-current={isCurrent ? "true" : undefined}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                      isCurrent
-                        ? "bg-violet-600/30 text-white"
-                        : "text-zinc-300 hover:bg-zinc-800"
-                    }`}
-                  >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-zinc-900/70 text-xs font-semibold">
-                      {ep}
-                    </span>
-                    <span className="flex-1 truncate">
-                      Épisode {ep}
-                    </span>
-                    {isCurrent && (
-                      <span className="text-[11px] font-medium text-violet-300">Actuel</span>
-                    )}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
     </div>
   );
 }

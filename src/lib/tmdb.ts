@@ -257,9 +257,14 @@ export function fetchTvDetails(seriesId: number): Promise<TmdbTvDetails> {
   return tmdbFetch<TmdbTvDetails>(`/tv/${seriesId}`);
 }
 
-/** Récupère une saison précise avec la liste de ses épisodes. */
+/** Récupère une saison précise avec la liste de ses épisodes.
+ * Le `language` accepte une liste TMDB : le français avec repli anglais, car
+ * de nombreux épisodes n'ont pas de synopsis traduit en fr-FR.
+ */
 export function fetchTvSeason(seriesId: number, seasonNumber: number): Promise<TmdbSeason> {
-  return tmdbFetch<TmdbSeason>(`/tv/${seriesId}/season/${seasonNumber}`);
+  return tmdbFetch<TmdbSeason>(`/tv/${seriesId}/season/${seasonNumber}`, {
+    language: "fr-FR,en-US",
+  });
 }
 
 // ─── Enrichissement d'affiches (catalogue partenaire) ───────────────────────

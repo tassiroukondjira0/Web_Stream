@@ -106,7 +106,9 @@ export default async function PartnerSeriesPage({
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
-  const currentSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+  // Saison active : celle demandée par l'URL si elle existe, sinon la première.
+  // Le lecteur applique la même règle, la liste d'épisodes reste donc en phase.
+  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
 
   // Affiches de saison depuis TMDB (fallback silencieux si pas de credentials)
   const seasonPosters = playback?.tmdbId
@@ -116,25 +118,25 @@ export default async function PartnerSeriesPage({
       ).catch(() => new Map())
     : new Map();
 
-  const seasonsWithPosters = (playback?.seasons ?? []).map((s) => ({
+  const allSeasons = playback?.seasons ?? [];
+
+  const seasonsWithPosters = allSeasons.map((s) => ({
     ...s,
     posterUrl: seasonPosters.get(s.season) ?? null,
   }));
 
-  // Détermine quelles saisons afficher (toutes si aucune sélectionnée).
-  const seasonsToShow = currentSeason === null
-    ? playback?.seasons ?? []
-    : (playback?.seasons ?? []).filter((s) => s.season === currentSeason);
+  const activeSeason =
+    requestedSeason !== null && allSeasons.some((s) => s.season === requestedSeason)
+      ? requestedSeason
+      : (allSeasons[0]?.season ?? null);
 
-  // Récupère les détails de chaque saison depuis TMDB (nom, description, affiche par épisode).
-  const seasonDetailsMap = new Map<number, TmdbSeason | null>();
-  if (playback?.tmdbId && seasonsToShow.length > 0) {
-    await Promise.all(
-      seasonsToShow.map(async (s) => {
-        const detail = await fetchTvSeason(playback.tmdbId, s.season)
-          .catch(() => null);
-        if (detail) seasonDetailsMap.set(s.season, detail);
-      }),
+  const seasonToShow = allSeasons.find((s) => s.season === activeSeason) ?? null;
+
+  // Détails de la saison active depuis TMDB (nom, synopsis, image par épisode).
+  let seasonDetail: TmdbSeason | null = null;
+  if (playback?.tmdbId && seasonToShow) {
+    seasonDetail = await fetchTvSeason(playback.tmdbId, seasonToShow.season).catch(
+      () => null,
     );
   }
 
@@ -181,39 +183,31 @@ export default async function PartnerSeriesPage({
         hrefFor={hrefFor}
         selection={{
           lang: sp.lang,
-          season: currentSeason,
+          season: activeSeason,
           episode: Number.parseInt(sp.ep ?? "", 10) || null,
           host: sp.host,
         }}
         title={title}
       />
 
-      {/* Liste des épisodes juste après le lecteur */}
-      {seasonsToShow.length > 0 && (
-        <>
-          {seasonsToShow.map((s) => {
-            const detail = seasonDetailsMap.get(s.season);
-            const episodes =
-              detail && detail.episodes?.length > 0
-                ? detail.episodes
-                : fallbackEpisodes(s.episodes);
-            return (
-              <EpisodeList
-                key={s.season}
-                seasonNumber={s.season}
-                episodes={episodes}
-                hrefFor={({ season, episode, lang: episodeLang }) =>
-                  hrefFor({
-                    lang: episodeLang ?? sp.lang ?? undefined,
-                    season,
-                    episode,
-                  })
-                }
-                lang={sp.lang ?? null}
-              />
-            );
-          })}
-        </>
+      {/* Liste des épisodes de la saison active juste après le lecteur */}
+      {seasonToShow && (
+        <EpisodeList
+          seasonNumber={seasonToShow.season}
+          episodes={
+            seasonDetail && seasonDetail.episodes?.length > 0
+              ? seasonDetail.episodes
+              : fallbackEpisodes(seasonToShow.episodes)
+          }
+          hrefFor={({ season, episode, lang: episodeLang }) =>
+            hrefFor({
+              lang: episodeLang ?? sp.lang ?? undefined,
+              season,
+              episode,
+            })
+          }
+          lang={sp.lang ?? null}
+        />
       )}
 
       <div className="mt-8 flex gap-5">
@@ -243,7 +237,7 @@ export default async function PartnerSeriesPage({
           {/* Sélecteur de saisons (grille avec couvertures) après la synopsis */}
           <SeasonSelector
             seasons={seasonsWithPosters}
-            currentSeason={currentSeason}
+            currentSeason={activeSeason}
             seriesPoster={poster}
           />
 
