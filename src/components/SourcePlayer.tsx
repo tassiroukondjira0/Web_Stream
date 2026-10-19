@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PlayerSelection, PlayerSource } from "@/lib/player-sources";
+import { EmbedFrame } from "@/components/EmbedFrame";
 
 /**
  * Lecteur multi-sources : iframe + sélecteurs langue / saison / épisode /
@@ -66,15 +67,7 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
       <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black relative">
         {selected ? (
           <>
-            <iframe
-              key={selected.url}
-              src={selected.url}
-              title={title}
-              className="h-full w-full"
-              allowFullScreen
-              allow="autoplay; encrypted-media; picture-in-picture"
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
+            <EmbedFrame src={selected.url} title={title} />
             {nextEpisode && !isMovie && (
               <Link
                 href={hrefFor({ lang, season, episode: nextEpisode, host: null })}
