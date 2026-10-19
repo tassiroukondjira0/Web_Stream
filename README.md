@@ -269,10 +269,9 @@ production : le serverless ouvre de nombreuses connexions courtes.
 
 ## Points d'attention
 
-- **Lecture vidéo** : Cloudflare Stream n'est plus utilisé. Les fiches locales
-  acceptent une URL MP4/WebM ou HLS par film et par épisode ; les lecteurs
-  Vidzy et partenaire peuvent aussi être proposés lorsqu'une correspondance
-  partenaire unique est disponible.
+- **Lecture vidéo** : les fiches locales acceptent une URL MP4/WebM ou HLS par
+  film et par épisode ; les lecteurs Vidzy et partenaire sont aussi proposés
+  lorsqu'une correspondance partenaire unique est disponible.
 - **Plan Hobby = usage non commercial.** Vercel impose le plan Pro (20 $/mois)
   dès qu'il y a monétisation. Avec un système d'abonnement (`/premium`,
   webhook de paiement), vérifiez votre éligibilité.
