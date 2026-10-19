@@ -12,7 +12,6 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   /* config options here */
-  partialPrefetching: true,
   turbopack: {
     root: projectRoot,
     rules: {
