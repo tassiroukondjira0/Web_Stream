@@ -1,19 +1,20 @@
 import { notFound } from "next/navigation";
-import { unstable_noStore } from "next/cache";
 import { getMediaBySlug } from "@/lib/catalog";
 import { getCurrentUser } from "@/lib/auth";
 import { generateCloudflareSignedToken, buildPlaybackUrl } from "@/lib/cloudflare-stream";
 
 // Cette page sert de player dans une iframe : elle dépend de données runtime
-// (base de données + session). `unstable_noStore` désactive le cache statique
-// pour cette route sans entrer en conflit avec `cacheComponents: true`.
+// (base de données + session). `revalidate: 0` force le rendu dynamique
+// côté serveur à chaque requête (pas de prerendering statique), compatible
+// avec `cacheComponents: true` dans next.config.ts.
+export const revalidate = 0;
+
 export default async function VideoEmbedPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  unstable_noStore();
   const media = await getMediaBySlug(slug);
 
   if (!media) {
