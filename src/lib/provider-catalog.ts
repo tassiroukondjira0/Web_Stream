@@ -109,7 +109,9 @@ export function providerItemHref(
   // Les animés sont classés dans la section « Animes », pas dans « Séries ».
   if (item.contentType === "ANIME") {
     const provider = (item.provider ?? PARTNER_PROVIDER).toLowerCase();
-    return `/animes/${provider}/${item.externalId}`;
+    // FRENCHSTREAM est servi par la route dédiée `/animes/partner/…`.
+    const segment = provider === "frenchstream" ? "partner" : provider;
+    return `/animes/${segment}/${item.externalId}`;
   }
   if (item.provider === TMDB_PROVIDER) {
     return item.contentType === "SERIES"

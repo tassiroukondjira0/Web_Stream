@@ -31,7 +31,7 @@ const PARTNER_DOMAINS = process.env.PARTNER_DOMAINS
 
 const DOMAINS = (PARTNER_DOMAINS?.length
   ? PARTNER_DOMAINS
-  : ["https://partner-source.net", "https://partner-source.lat"]) as readonly string[];
+  : ["https://french-stream.net"]) as readonly string[];
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -54,8 +54,14 @@ async function getBaseUrl(): Promise<string> {
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       });
       if (res.ok) {
-        cachedBase = domain;
-        return cachedBase;
+        // Une page réelle exposes les vignettes DLE ; un miroir mort ou un
+        // défi anti-bot peut répondre 200 avec un corps vide — on passe alors
+        // au domaine suivant au lieu de le mettre en cache.
+        const body = await res.text();
+        if (body.length > 1000) {
+          cachedBase = domain;
+          return cachedBase;
+        }
       }
     } catch {
       // Domaine injoignable : on tente le suivant.
@@ -177,16 +183,56 @@ export async function fetchFicheMeta(externalId: string): Promise<{
 export async function fetchSeriesDetail(externalId: string): Promise<PartnerDetail | null> {
   if (!/^\d{1,10}$/.test(externalId)) return null;
   const base = await getBaseUrl();
+
+  // 1. API ep-data.php (flux structurés langue × épisode × hôte)
   const text = await fetchText(`${base}/ep-data.php?id=${externalId}&format=js`, {
     "X-Requested-With": "XMLHttpRequest",
     Referer: `${base}/index.php?newsid=${externalId}`,
   });
-  if (!text) return null;
-  try {
-    return mapDetail(externalId, JSON.parse(text));
-  } catch {
-    return null;
+  if (text) {
+    try {
+      const detail = mapDetail(externalId, JSON.parse(text));
+      if (detail.streams.length > 0) return detail;
+    } catch {
+      // JSON invalide : on passe au fallback iframe ci-dessous.
+    }
   }
+
+  // 2. Fallback : extraire directement les iframes de lecteurs vidéo
+  //    depuis la page de détail (ep-data.php est vide sur le site actuel).
+  const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
+  if (!html) return null;
+  const iframes = parseVideoIframes(html);
+  if (iframes.length === 0) return null;
+
+  const streams: PartnerStream[] = iframes.map((iframe) => ({
+    lang: "vf",
+    episode: 1,
+    host: iframe.host,
+    url: iframe.url,
+  }));
+
+  return { externalId, streams, info: {} };
+}
+
+/** Extrait les iframes de lecteurs vidéo (Vidzy, Voe, Uqload…) depuis une page HTML. */
+export function parseVideoIframes(html: string): { host: string; url: string }[] {
+  const iframes: { host: string; url: string }[] = [];
+  const seen = new Set<string>();
+  const pattern = /<iframe[^>]+src\s*=\s*(["'])(.*?)\1[^>]*>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(html)) !== null) {
+    const url = decodeHtml(match[2]).trim();
+    try {
+      const parsed = new URL(url);
+      if ((parsed.protocol !== "http:" && parsed.protocol !== "https:") || seen.has(url)) continue;
+      const videoHosts = ["vidzy", "voe", "uqload", "luluvido", "netu", "stream", "embed", "player"];
+      if (!videoHosts.some((h) => parsed.hostname.includes(h))) continue;
+      seen.add(url);
+      iframes.push({ host: parsed.hostname, url });
+    } catch {}
+  }
+  return iframes;
 }
 
 /** Parse tous les embeds HTTP(S) explicitement exposés dans les attributs data-url. */
