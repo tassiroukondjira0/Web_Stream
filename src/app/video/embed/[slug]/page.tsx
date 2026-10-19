@@ -1,18 +1,19 @@
 import { notFound } from "next/navigation";
+import { unstable_noStore } from "next/cache";
 import { getMediaBySlug } from "@/lib/catalog";
 import { getCurrentUser } from "@/lib/auth";
 import { generateCloudflareSignedToken, buildPlaybackUrl } from "@/lib/cloudflare-stream";
 
 // Cette page sert de player dans une iframe : elle dépend de données runtime
-// (base de données + session), le prerendering statique est donc désactivé.
-export const dynamic = "force-dynamic";
-
+// (base de données + session). `unstable_noStore` désactive le cache statique
+// pour cette route sans entrer en conflit avec `cacheComponents: true`.
 export default async function VideoEmbedPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  unstable_noStore();
   const media = await getMediaBySlug(slug);
 
   if (!media) {
