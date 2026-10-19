@@ -4,10 +4,9 @@ import { getCurrentUser } from "@/lib/auth";
 import { generateCloudflareSignedToken, buildPlaybackUrl } from "@/lib/cloudflare-stream";
 
 // Cette page sert de player dans une iframe : elle dépend de données runtime
-// (base de données + session). `revalidate: 0` force le rendu dynamique
-// côté serveur à chaque requête (pas de prerendering statique), compatible
-// avec `cacheComponents: true` dans next.config.ts.
-export const revalidate = 0;
+// (base de données + session). `dynamic: "force-dynamic"` désactive le
+// prerendering statique pour cette route.
+export const dynamic = "force-dynamic";
 
 export default async function VideoEmbedPage({
   params,
