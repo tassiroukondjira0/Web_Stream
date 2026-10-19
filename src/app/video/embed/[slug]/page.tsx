@@ -3,6 +3,10 @@ import { getMediaBySlug } from "@/lib/catalog";
 import { getCurrentUser } from "@/lib/auth";
 import { generateCloudflareSignedToken, buildPlaybackUrl } from "@/lib/cloudflare-stream";
 
+// Cette page sert de player dans une iframe : elle dépend de données runtime
+// (base de données + session), le prerendering statique est donc désactivé.
+export const dynamic = "force-dynamic";
+
 export default async function VideoEmbedPage({
   params,
 }: {

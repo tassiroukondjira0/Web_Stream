@@ -15,14 +15,15 @@ import { prisma } from "@/lib/prisma";
  *       "durationMinutes": 120,
  *       "posterUrl": "https://...",
  *       "backdropUrl": "https://...",
+ *       "videoUrl": "https://...",
  *       "accessLevel": "FREE" | "PREMIUM",
  *       "categories": ["action", "drame"]
  *     }
  *   ]
  *
  * Format CSV attendu (en-tête + lignes) :
- *   title,synopsis,type,releaseYear,durationMinutes,posterUrl,backdropUrl,accessLevel,categories
- *   "Le Chant de la Forêt","Résumé...",MOVIE,2024,120,https://...,https://...,FREE,action,drame
+ *   title,synopsis,type,releaseYear,durationMinutes,posterUrl,backdropUrl,videoUrl,accessLevel,categories
+ *   "Le Chant de la Forêt","Résumé...",MOVIE,2024,120,https://...,https://...,https://...,FREE,action,drame
  *
  * Anti-doublon : vérifie par titre + année (et par slug s'il est fourni).
  * Les fiches sont créées en brouillon (isPublished: false).
@@ -173,6 +174,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         raw?.durationMinutes != null ? Number.parseInt(String(raw.durationMinutes), 10) || null : null;
       const posterUrl: string | null = raw?.posterUrl ?? null;
       const backdropUrl: string | null = raw?.backdropUrl ?? null;
+      const videoUrl: string | null = raw?.videoUrl ?? null;
       const accessLevel: "FREE" | "PREMIUM" = raw?.accessLevel === "PREMIUM" ? "PREMIUM" : "FREE";
       const categorySlugs: string[] = Array.isArray(raw?.categories)
         ? raw.categories.filter((s: string) => typeof s === "string")
@@ -213,6 +215,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           durationMinutes,
           posterUrl,
           backdropUrl,
+          videoUrl,
           videoStreamId: null,
           isPublished: false, // brouillon : l'admin publiera après ajout de vidéo
           rightsValidUntil: null,
@@ -261,6 +264,7 @@ function parseCsv(text: string): any[] {
       durationMinutes: get("durationMinutes"),
       posterUrl: get("posterUrl"),
       backdropUrl: get("backdropUrl"),
+      videoUrl: get("videoUrl"),
       accessLevel: get("accessLevel"),
       categories,
     });

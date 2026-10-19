@@ -142,6 +142,7 @@ model Media {
   posterUrl        String?
   backdropUrl      String?
   videoStreamId    String?         // Cloudflare Stream UID
+  videoUrl         String?         // URL de lecture directe (fallback partenaire / externe)
   isPublished      Boolean         @default(false)
   rightsValidUntil DateTime?       // Limite légale d'exploitation des droits
   createdAt        DateTime        @default(now())

@@ -214,6 +214,7 @@ export async function POST(request: Request) {
             posterUrl: draft.posterUrl,
             backdropUrl: draft.backdropUrl,
             videoStreamId: null,
+            videoUrl: null,
             isPublished: false, // Brouillon : en attente d'une vidéo licenciée
             rightsValidUntil: null,
             categories: { create: categoryConnections },

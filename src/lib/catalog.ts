@@ -50,6 +50,7 @@ export async function getAllMedias(): Promise<MediaItem[]> {
       posterUrl: m.posterUrl || "",
       backdropUrl: m.backdropUrl || "",
       videoStreamId: m.videoStreamId || "",
+      videoUrl: m.videoUrl || "",
       isPublished: m.isPublished,
       rightsValidUntil: m.rightsValidUntil?.toISOString() || "",
       categories: m.categories.map((c) => ({
