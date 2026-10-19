@@ -45,18 +45,19 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
       ? episodes[currentEpisodeIndex + 1]
       : null;
 
-  let episodeSources = seasonSources.filter((s) => s.episode === episode);
-  // Inclure aussi les sources fournisseur (plates) pour le même (lang, épisode)
-  // quel que soit le numéro de saison (alignement TMDB/Vidzy vs fournisseur).
-  const flatProvider = langSources.filter(
-    (s) => s.host.startsWith("ext:") && s.episode === episode,
+  // Keep alternatives from other language labels visible for the same episode.
+  // Provider feeds often label the same dub differently from Vidzy.
+  const episodeSources = sources.filter(
+    (s) =>
+      s.episode === episode &&
+      (s.season === season || s.host.startsWith("ext:")),
   );
-  for (const p of flatProvider) {
-    if (!episodeSources.find((es) => es.host === p.host)) {
-      episodeSources = [...episodeSources, p];
-    }
-  }
-  const selected = episodeSources.find((s) => s.host === selection.host) ?? episodeSources[0];
+  const selected =
+    episodeSources.find(
+      (s) => s.host === selection.host && s.lang === lang,
+    ) ??
+    episodeSources.find((s) => s.lang === lang) ??
+    episodeSources[0];
 
   const isMovie = seasons.length === 1 && episodes.length === 1;
 
@@ -99,15 +100,15 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
           </span>
           {episodeSources.map((s) => (
             <Link
-              key={s.host}
-              href={hrefFor({ lang, season, episode, host: s.host })}
+              key={`${s.host}:${s.lang}:${s.url}`}
+              href={hrefFor({ lang: s.lang, season, episode, host: s.host })}
               className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                selected && s.host === selected.host
+                selected && s.host === selected.host && s.lang === selected.lang
                   ? "border-violet-500 bg-violet-600 text-white"
                   : "border-white/10 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
               }`}
             >
-              {s.label}
+              {s.label} · {s.lang.toUpperCase()}
             </Link>
           ))}
         </div>

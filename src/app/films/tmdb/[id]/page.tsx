@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { fetchTmdbOverviewById } from "@/lib/tmdb";
 import { resolvePlaybackByTmdbId } from "@/lib/vidzy";
 import { vidzySources } from "@/lib/player-sources";
+import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
 
 /**
@@ -56,12 +57,16 @@ export default async function TmdbMoviePage({ params, searchParams }: TmdbMovieP
 
   const title = asset?.title ?? "Film";
 
-  const [overview, playback] = await Promise.all([
+  const [overview, playback, partnerSources] = await Promise.all([
     fetchTmdbOverviewById(id, "movie"),
     resolvePlaybackByTmdbId(id, "movie"),
+    resolvePartnerPlaybackSources(title, "MOVIE", asset?.releaseYear ?? null),
   ]);
 
-  const sources = playback?.available ? vidzySources(playback) : [];
+  const sources = [
+    ...(playback?.available ? vidzySources(playback) : []),
+    ...partnerSources,
+  ];
 
   const poster = asset?.posterUrl ?? playback?.poster ?? null;
   const year = asset?.releaseYear ?? playback?.year ?? null;

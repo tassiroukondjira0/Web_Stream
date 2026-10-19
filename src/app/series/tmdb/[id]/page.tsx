@@ -17,6 +17,7 @@ import {
 } from "@/lib/tmdb";
 import { resolvePlaybackByTmdbId } from "@/lib/vidzy";
 import { vidzySources } from "@/lib/player-sources";
+import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
 
 /**
@@ -63,12 +64,16 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
 
   const title = asset?.title ?? "Série";
 
-  const [overview, playback] = await Promise.all([
+  const [overview, playback, partnerSources] = await Promise.all([
     fetchTmdbOverviewById(id, "tv"),
     resolvePlaybackByTmdbId(id, "tv"),
+    resolvePartnerPlaybackSources(title, "SERIES", asset?.releaseYear ?? null),
   ]);
 
-  const sources = playback?.available ? vidzySources(playback) : [];
+  const sources = [
+    ...(playback?.available ? vidzySources(playback) : []),
+    ...partnerSources,
+  ];
 
   if (sources.length === 0) {
     return (

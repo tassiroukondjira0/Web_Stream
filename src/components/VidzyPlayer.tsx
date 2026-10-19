@@ -1,66 +1,9 @@
-import { prisma } from "@/lib/prisma";
-import { normalizeTitleKey } from "@/lib/title-key";
-import { PARTNER_PROVIDER, fetchMovieEmbed, fetchSeriesDetail } from "@/modules/providers/partner/partner.client";
-import { providerSources, vidzySources } from "@/lib/player-sources";
+import { vidzySources } from "@/lib/player-sources";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
+import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
 import { SourcePlayer } from "@/components/SourcePlayer";
 
-/**
- * Lecteur des fiches locales : Vidzy et, si une correspondance unique existe,
- * les embeds de la fiche partenaire correspondante.
- */
-async function resolvePartnerSources(
-  title: string,
-  contentType: "MOVIE" | "SERIES",
-  year: number | null,
-) {
-  if (process.env.DATABASE_READY !== "true") return [];
-
-  const titleKey = normalizeTitleKey(title);
-  const queryToken = titleKey.split(" ").find((part) => part.length >= 3);
-  if (!queryToken) return [];
-
-  try {
-    const candidates = await prisma.providerAsset.findMany({
-      where: {
-        provider: PARTNER_PROVIDER,
-        contentType,
-        isPublished: true,
-        title: { contains: queryToken, mode: "insensitive" },
-        ...(year
-          ? { OR: [{ releaseYear: year }, { releaseYear: null }] }
-          : {}),
-      },
-      select: { externalId: true, title: true, releaseYear: true },
-      take: 100,
-    });
-
-    const matches = candidates.filter(
-      (asset) =>
-        normalizeTitleKey(asset.title) === titleKey &&
-        (!year || asset.releaseYear === null || asset.releaseYear === year),
-    );
-    const exactYearMatches = year
-      ? matches.filter((asset) => asset.releaseYear === year)
-      : [];
-    const uniqueMatches = exactYearMatches.length > 0 ? exactYearMatches : matches;
-    if (uniqueMatches.length !== 1) return [];
-
-    const externalId = uniqueMatches[0].externalId;
-    if (contentType === "MOVIE") {
-      const embed = await fetchMovieEmbed(externalId);
-      return embed
-        ? providerSources([{ lang: "vf", episode: 1, host: "partner", url: embed }])
-        : [];
-    }
-
-    const detail = await fetchSeriesDetail(externalId);
-    return detail ? providerSources(detail.streams) : [];
-  } catch (error) {
-    console.error("Erreur de résolution de source partenaire :", error);
-    return [];
-  }
-}
+/** Lecteur des fiches locales : Vidzy et source partenaire en correspondance exacte. */
 
 export async function VidzyPlayer({
   basePath,
@@ -79,7 +22,7 @@ export async function VidzyPlayer({
 }) {
   const [playback, partnerSources] = await Promise.all([
     resolveCatalogPlayback(title, contentType, year),
-    resolvePartnerSources(title, contentType, year),
+    resolvePartnerPlaybackSources(title, contentType, year),
   ]);
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
