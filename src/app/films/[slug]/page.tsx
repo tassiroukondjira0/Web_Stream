@@ -5,14 +5,15 @@ import Link from "next/link";
 import { getMediaBySlug, getSimilarMedias } from "@/lib/catalog";
 import { getAppUrl } from "@/lib/env";
 import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
-import { VideoPlayer } from "@/components/VideoPlayer";
+import { VidzyPlayer } from "@/components/VidzyPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
-import { ShieldCheck, Film, Calendar, Clock } from "lucide-react";
+import { ShieldCheck, Film, Calendar, Clock, Lock } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ lang?: string; season?: string; ep?: string; host?: string }>;
 }
 
 // Pas de generateStaticParams : le catalogue est lu à la requête (base vide au
@@ -61,8 +62,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-async function FilmContent({ params }: PageProps) {
+async function FilmContent({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const sp = searchParams ? await searchParams : {};
   const film = await getMediaBySlug(slug);
 
   if (!film) {
@@ -117,14 +119,38 @@ async function FilmContent({ params }: PageProps) {
 
       {/* Lecteur Vidéo Principal */}
       <div className="mb-8">
-        <VideoPlayer
-          src={film.videoUrl}
-          slug={film.slug}
-          poster={film.backdropUrl || film.posterUrl}
-          title={film.title}
-          isPremium={film.accessLevel === "PREMIUM"}
-          hasAccess={hasAccess}
-        />
+        {hasAccess ? (
+          <VidzyPlayer
+            basePath="/films"
+            slug={film.slug}
+            title={film.title}
+            contentType="MOVIE"
+            year={film.releaseYear}
+            searchParams={{ lang: sp.lang, season: sp.season, ep: sp.ep, host: sp.host }}
+          />
+        ) : (
+          <div className="relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-2xl border border-amber-500/30 bg-zinc-950 p-6 text-center">
+            <Lock className="mb-4 h-10 w-10 text-amber-400" />
+            <h2 className="text-lg font-bold text-white">Accès Premium requis</h2>
+            <p className="mt-2 max-w-md text-sm text-zinc-400">
+              Ce film est réservé aux membres Premium. Connectez-vous avec un abonnement actif pour le regarder.
+            </p>
+            <div className="mt-5 flex gap-3">
+              <Link
+                href="/premium"
+                className="rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black hover:bg-amber-400"
+              >
+                Découvrir Premium
+              </Link>
+              <Link
+                href="/connexion"
+                className="rounded-xl border border-white/10 bg-zinc-800 px-5 py-2.5 text-sm font-medium text-zinc-200 hover:bg-zinc-700"
+              >
+                Se connecter
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Fiche descriptive et Métadonnées */}

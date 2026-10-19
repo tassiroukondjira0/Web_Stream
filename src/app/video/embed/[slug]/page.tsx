@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { getMediaBySlug } from "@/lib/catalog";
 import { getCurrentUser } from "@/lib/auth";
-import { generateCloudflareSignedToken, buildPlaybackUrl } from "@/lib/cloudflare-stream";
+import { prisma } from "@/lib/prisma";
+import { HlsVideo } from "@/components/HlsVideo";
 
 // Cette page sert de player dans une iframe : elle dépend de données runtime
 // (base de données + session). `instant: false` autorise le rendu bloquant
@@ -11,10 +12,13 @@ export const instant = false;
 
 export default async function VideoEmbedPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ episode?: string; season?: string }>;
 }) {
   const { slug } = await params;
+  const { episode: episodeParam, season: seasonParam } = (await searchParams) ?? {};
   const media = await getMediaBySlug(slug);
 
   if (!media) {
@@ -45,10 +49,28 @@ export default async function VideoEmbedPage({
     );
   }
 
+  const episodeNumber = Number.parseInt(episodeParam ?? "", 10);
+  const seasonNumber = Number.parseInt(seasonParam ?? "", 10);
+  const episode =
+    Number.isSafeInteger(episodeNumber) && episodeNumber > 0
+      ? await prisma.episode.findFirst({
+          where: {
+            episodeNumber,
+            season: {
+              mediaId: media.id,
+              ...(Number.isSafeInteger(seasonNumber) && seasonNumber > 0
+                ? { seasonNumber }
+                : {}),
+            },
+          },
+          select: { videoUrl: true, accessLevel: true },
+        })
+      : null;
+
   // 2. Contrôle d'accès Premium
   const user = await getCurrentUser().catch(() => null);
   if (
-    media.accessLevel === "PREMIUM" &&
+    (media.accessLevel === "PREMIUM" || episode?.accessLevel === "PREMIUM") &&
     (!user || (user.role !== "SUBSCRIBER" && user.role !== "ADMIN"))
   ) {
     return (
@@ -73,22 +95,11 @@ export default async function VideoEmbedPage({
     );
   }
 
-  // 3. Résolution de l'URL de lecture
-  let playbackUrl = "";
-  if (media.videoStreamId) {
-    try {
-      const token = await generateCloudflareSignedToken({
-        videoUid: media.videoStreamId,
-        userId: user?.id ?? "anonymous",
-      });
-      playbackUrl = buildPlaybackUrl(media.videoStreamId, token);
-    } catch {
-      // Cloudflare Stream non configuré : repli sur videoUrl si renseignée.
-      playbackUrl = media.videoUrl || "";
-    }
-  } else {
-    playbackUrl = media.videoUrl || "";
-  }
+  // Une URL d'épisode est obligatoire dès qu'un épisode est sélectionné :
+  // ne pas démarrer accidentellement la vidéo d'un autre contenu.
+  const playbackUrl = episodeParam
+    ? episode?.videoUrl || ""
+    : media.videoUrl || "";
 
   if (!playbackUrl) {
     return (
@@ -125,14 +136,7 @@ export default async function VideoEmbedPage({
         justifyContent: "center",
       }}
     >
-      <video
-        controls
-        playsInline
-        src={playbackUrl}
-        poster={media.posterUrl || undefined}
-        title={media.title}
-        style={{ maxWidth: "100%", maxHeight: "100%", outline: "none" }}
-      />
+      <HlsVideo src={playbackUrl} poster={media.posterUrl || undefined} title={media.title} />
     </div>
   );
 }

@@ -31,13 +31,12 @@ export default function MentionsPage() {
           <h2 className="text-lg font-bold text-white mb-2">2. Hébergement de l&apos;application &amp; des vidéos</h2>
           <p>
             <strong className="text-white">Application Web &amp; base de données</strong> : hébergées sur une infrastructure
-            cloud (Vercel et/ou Cloudflare). Les données applicatives sont stockées sur une base de données
+            cloud. Les données applicatives sont stockées sur une base de données
             PostgreSQL gérée.
           </p>
           <p className="mt-2">
-            <strong className="text-white">Diffusion vidéo (HLS / DASH) &amp; stockage média</strong> : Cloudflare Stream
-            (Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, États-Unis). Cloudflare agit en qualité
-            de sous-traitant technique pour le transport et la mise en cache des contenus vidéo.
+            <strong className="text-white">Diffusion vidéo</strong> : les vidéos sont lues depuis les URL directes
+            (fichiers MP4/WebM ou playlists HLS) renseignées par l&apos;éditeur auprès de son hébergeur.
           </p>
           <p className="mt-2 text-xs text-zinc-400">
             Les coordonnées complètes de chaque hébergeur, ainsi que ses conditions propres, sont disponibles sur

@@ -128,14 +128,21 @@ Le déploiement ne crée **pas** les tables. Vérification rapide en local :
 npm run db:studio    # ou : npm run db:push si les tables manquent
 ```
 
-Ce projet utilise `prisma db push` (pas de dossier `prisma/migrations`).
-Pour passer à des migrations versionnées :
+Le schéma est habituellement synchronisé avec `prisma db push`. Le dossier
+`prisma/migrations` contient également les migrations SQL versionnées. Pour
+une base déjà en production, appliquez le changement avec le même mécanisme
+que celui qui a servi à la créer :
 
 ```bash
-npx prisma migrate dev --name init
-git add prisma/migrations && git commit -m "chore: migration initiale"
-npm run db:migrate   # ensuite, à chaque déploiement
+npm run db:push      # base gérée avec db push
+npm run db:migrate   # base gérée avec l'historique des migrations
 ```
+
+La migration `20261019_replace_video_stream_ids` retire les anciens
+identifiants de flux et ajoute une URL vidéo par épisode. Ces identifiants ne
+sont pas convertis en URL : sauvegardez-les si vous souhaitez les conserver,
+puis renseignez les URL autorisées depuis le back-office après la mise à jour
+du schéma (`npm run db:push` ou `npm run db:migrate`, selon votre déploiement).
 
 ### 5. Redéployer
 
@@ -239,7 +246,7 @@ Ou sur l'interface Netlify : **Deploys** → **Trigger deploy**.
 | `NEXT_PUBLIC_APP_NAME` | — *(non lue actuellement)* | Build |
 | `TMDB_API_TOKEN` / `TMDB_API_KEY` | `src/lib/tmdb.ts` | Runtime |
 
-**Non utilisées** (ne les renseignez pas) : `NEXTAUTH_URL`, `CLOUDFLARE_*`.
+**Non utilisée** (ne la renseignez pas) : `NEXTAUTH_URL`.
 
 ### Aucune API propriétaire de fournisseur
 
@@ -262,6 +269,10 @@ production : le serverless ouvre de nombreuses connexions courtes.
 
 ## Points d'attention
 
+- **Lecture vidéo** : Cloudflare Stream n'est plus utilisé. Les fiches locales
+  acceptent une URL MP4/WebM ou HLS par film et par épisode ; les lecteurs
+  Vidzy et partenaire peuvent aussi être proposés lorsqu'une correspondance
+  partenaire unique est disponible.
 - **Plan Hobby = usage non commercial.** Vercel impose le plan Pro (20 $/mois)
   dès qu'il y a monétisation. Avec un système d'abonnement (`/premium`,
   webhook de paiement), vérifiez votre éligibilité.
@@ -282,4 +293,3 @@ npm run vercel:pull   # écrit .env.local depuis l'environnement production
 ```
 
 `.env.local` est également ignoré par Git.
-

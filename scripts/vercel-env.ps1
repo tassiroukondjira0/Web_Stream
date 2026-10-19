@@ -8,7 +8,7 @@
 
     Utilise une LISTE BLANCHE : seules les variables rÃ©ellement lues par
     l'application sont transmises. Toute autre variable prÃ©sente dans .env
-    (NEXTAUTH_URL, CLOUDFLARE_*, etc.) est ignorÃ©e â€” le code ne l'utilise pas.
+    (NEXTAUTH_URL et autres variables non utilisées) est ignorÃ©e â€” le code ne l'utilise pas.
 
 .PARAMETER Environments
     Cibles Vercel. Par dÃ©faut : production, preview, development.
@@ -41,7 +41,7 @@ $Whitelist = [ordered]@{
 }
 
 # Variables prÃ©sentes dans .env mais hors liste blanche (affichage informatif)
-$Excluded = @("NEON_API_KEY", "NEON_BRANCH", "DATABASE_URL_UNPOOLED", "NEXTAUTH_URL", "CLOUDFLARE_STREAM_JWK_KEY", "CLOUDFLARE_STREAM_PEM_KEY_ID", "CLOUDFLARE_CUSTOMER_SUBDOMAIN")
+$Excluded = @("NEON_API_KEY", "NEON_BRANCH", "DATABASE_URL_UNPOOLED", "NEXTAUTH_URL")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $envFile  = Join-Path $repoRoot ".env"
@@ -164,4 +164,3 @@ if ($fail -gt 0) {
 
 Write-Host ""
 Write-Host "  Prochaine Ã©tape : vercel --prod" -ForegroundColor Cyan
-

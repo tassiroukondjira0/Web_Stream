@@ -1,0 +1,3 @@
+ALTER TABLE "medias" DROP COLUMN IF EXISTS "videoStreamId";
+ALTER TABLE "episodes" DROP COLUMN IF EXISTS "videoStreamId";
+ALTER TABLE "episodes" ADD COLUMN IF NOT EXISTS "videoUrl" TEXT;

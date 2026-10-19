@@ -15,7 +15,7 @@ import { prisma } from "@/lib/prisma";
  *       "durationMinutes": 120,
  *       "posterUrl": "https://...",
  *       "backdropUrl": "https://...",
- *       "videoUrl": "https://...",
+ *       "videoUrl": "https://... (fichier vidéo ou playlist HLS sous licence)",
  *       "accessLevel": "FREE" | "PREMIUM",
  *       "categories": ["action", "drame"]
  *     }
@@ -216,7 +216,6 @@ export async function POST(request: Request): Promise<NextResponse> {
           posterUrl,
           backdropUrl,
           videoUrl,
-          videoStreamId: null,
           isPublished: false, // brouillon : l'admin publiera après ajout de vidéo
           rightsValidUntil: null,
           categories: { create: categoryConnections },

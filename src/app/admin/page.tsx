@@ -31,6 +31,13 @@ interface MediaRecord {
   durationMinutes: number | null;
   isPublished: boolean;
   rightsValidUntil: string;
+  videoUrl?: string;
+  episodeSources?: {
+    seasonNumber: number;
+    episodeNumber: number;
+    title: string;
+    videoUrl: string;
+  }[];
 }
 
 export default function AdminDashboardPage() {
@@ -85,7 +92,10 @@ export default function AdminDashboardPage() {
   // Édition / publication d'un média
   const [showEditModal, setShowEditModal] = useState(false);
   const [editSlug, setEditSlug] = useState("");
-  const [editVideoId, setEditVideoId] = useState("");
+  const [editVideoUrl, setEditVideoUrl] = useState("");
+  const [editEpisodeSources, setEditEpisodeSources] = useState<NonNullable<MediaRecord["episodeSources"]>>([]);
+  const [editEpisodeSourcesLoaded, setEditEpisodeSourcesLoaded] = useState(false);
+  const [editContentType, setEditContentType] = useState("");
   const [editAccessLevel, setEditAccessLevel] = useState("FREE");
   const [editRightsUntil, setEditRightsUntil] = useState("2030-12-31");
   const [editPublished, setEditPublished] = useState(false);
@@ -209,9 +219,12 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const openEdit = (media: MediaRecord) => {
+  const openEdit = async (media: MediaRecord) => {
     setEditSlug(media.slug);
-    setEditVideoId("");
+    setEditVideoUrl(media.videoUrl || "");
+    setEditEpisodeSources([]);
+    setEditEpisodeSourcesLoaded(false);
+    setEditContentType(media.type);
     setEditAccessLevel(media.accessLevel || "FREE");
     setEditRightsUntil(
       media.rightsValidUntil ? media.rightsValidUntil.split("T")[0] : "2030-12-31"
@@ -219,6 +232,20 @@ export default function AdminDashboardPage() {
     setEditPublished(media.isPublished);
     setEditMessage("");
     setShowEditModal(true);
+    try {
+      const response = await fetch(`/api/admin/medias?slug=${encodeURIComponent(media.slug)}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Impossible de charger les sources du média.");
+      }
+      setEditVideoUrl(data.media.videoUrl || "");
+      setEditEpisodeSources(data.media.episodeSources || []);
+      setEditEpisodeSourcesLoaded(true);
+    } catch (error) {
+      setEditMessage(
+        error instanceof Error ? error.message : "Impossible de charger les sources du média."
+      );
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -232,7 +259,8 @@ export default function AdminDashboardPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slug: editSlug,
-          videoStreamId: editVideoId.trim() || undefined,
+          videoUrl: editVideoUrl.trim(),
+          ...(editEpisodeSourcesLoaded ? { episodeSources: editEpisodeSources } : {}),
           accessLevel: editAccessLevel,
           rightsValidUntil: editRightsUntil,
           isPublished: editPublished,
@@ -757,17 +785,52 @@ export default function AdminDashboardPage() {
             <h3 className="text-lg font-bold text-white mb-1">Éditer &amp; publier</h3>
             <p className="text-xs text-zinc-400 mb-4 font-mono">/{editSlug}</p>
             <form onSubmit={handleSave} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-zinc-300 mb-1">ID vidéo (flux externe)</label>
-                <input
-                  type="text"
-                  value={editVideoId}
-                  onChange={(e) => setEditVideoId(e.target.value)}
-                  placeholder="Ex: 1a2b3c4d-....  (laisser vide si déjà défini)"
-                  className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white font-mono"
-                />
-                <p className="mt-1 text-[11px] text-zinc-500">Collez l&apos;identifiant de la vidéo licenciée. Requis pour pouvoir publier.</p>
-              </div>
+              {editContentType !== "SERIES" && (
+                <div>
+                  <label className="block text-zinc-300 mb-1">URL de lecture du média</label>
+                  <input
+                    type="url"
+                    value={editVideoUrl}
+                    onChange={(e) => setEditVideoUrl(e.target.value)}
+                    placeholder="https://votre-domaine/film.m3u8"
+                    className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
+                  />
+                  <p className="mt-1 text-[11px] text-zinc-500">
+                    Fichier vidéo direct (MP4/WebM) ou playlist HLS (.m3u8), dont vous détenez les droits.
+                  </p>
+                </div>
+              )}
+
+              {editEpisodeSources.length > 0 && (
+                <fieldset className="max-h-64 space-y-3 overflow-y-auto rounded-xl border border-white/10 p-3">
+                  <legend className="px-1 text-zinc-300">Sources des épisodes</legend>
+                  {editEpisodeSources.map((episode, index) => (
+                    <label
+                      key={`${episode.seasonNumber}-${episode.episodeNumber}`}
+                      className="block"
+                    >
+                      <span className="mb-1 block text-zinc-400">
+                        Saison {episode.seasonNumber}, épisode {episode.episodeNumber} — {episode.title}
+                      </span>
+                      <input
+                        type="url"
+                        value={episode.videoUrl}
+                        onChange={(event) =>
+                          setEditEpisodeSources((current) =>
+                            current.map((item, itemIndex) =>
+                              itemIndex === index
+                                ? { ...item, videoUrl: event.target.value }
+                                : item
+                            )
+                          )
+                        }
+                        placeholder="https://votre-domaine/episode.m3u8"
+                        className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
+                      />
+                    </label>
+                  ))}
+                </fieldset>
+              )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -818,7 +881,7 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || !editEpisodeSourcesLoaded}
                   className="rounded-xl bg-violet-600 px-4 py-2 font-semibold text-white hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {saving ? "Enregistrement..." : "Enregistrer"}

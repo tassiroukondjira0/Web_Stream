@@ -11,8 +11,13 @@ export interface MediaItem {
   durationMinutes: number | null;
   posterUrl: string;
   backdropUrl: string;
-  videoStreamId: string;
   videoUrl?: string;
+  episodeSources?: {
+    seasonNumber: number;
+    episodeNumber: number;
+    title: string;
+    videoUrl: string;
+  }[];
   isPublished: boolean;
   rightsValidUntil: string;
   categories: { name: string; slug: string }[];
@@ -49,7 +54,6 @@ export async function getAllMedias(): Promise<MediaItem[]> {
       durationMinutes: m.durationMinutes,
       posterUrl: m.posterUrl || "",
       backdropUrl: m.backdropUrl || "",
-      videoStreamId: m.videoStreamId || "",
       videoUrl: m.videoUrl || "",
       isPublished: m.isPublished,
       rightsValidUntil: m.rightsValidUntil?.toISOString() || "",

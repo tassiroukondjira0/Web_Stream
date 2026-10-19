@@ -6,15 +6,15 @@ import { getMediaBySlug } from "@/lib/catalog";
 import { prisma } from "@/lib/prisma";
 import { getAppUrl } from "@/lib/env";
 import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
-import { VideoPlayer } from "@/components/VideoPlayer";
+import { VidzyPlayer } from "@/components/VidzyPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
-import { Tv, Calendar } from "lucide-react";
+import { Tv, Calendar, Lock } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ ep?: string }>;
+  searchParams?: Promise<{ season?: string; ep?: string }>;
 }
 
 // Pas de generateStaticParams : le catalogue est lu à la requête (base vide au
@@ -51,6 +51,7 @@ async function SeriesContent({ params, searchParams }: PageProps) {
   }
 
   const sp = searchParams ? await searchParams : {};
+  const currentSeasonNum = Number(sp.season) || 1;
   const currentEpNum = Number(sp.ep) || 1;
 
   // L'ADMIN accède à tout le catalogue sans pass Premium.
@@ -70,16 +71,20 @@ async function SeriesContent({ params, searchParams }: PageProps) {
 
   const episodes = (dbMedia?.seasons ?? []).flatMap((season) =>
     season.episodes.map((ep) => ({
+      seasonNumber: season.seasonNumber,
       number: ep.episodeNumber,
       title: ep.title,
       duration: ep.durationMinutes ? `${ep.durationMinutes} min` : "",
       synopsis: ep.synopsis || "",
       access: ep.accessLevel as "FREE" | "PREMIUM",
+      videoUrl: ep.videoUrl || "",
     }))
   );
 
   const activeEpisode =
-    episodes.find((e) => e.number === currentEpNum) || episodes[0] || null;
+    episodes.find(
+      (e) => e.number === currentEpNum && e.seasonNumber === currentSeasonNum
+    ) || episodes[0] || null;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -109,13 +114,33 @@ async function SeriesContent({ params, searchParams }: PageProps) {
       {/* Lecteur de l'épisode sélectionné */}
       <div className="mb-8">
         {activeEpisode ? (
-          <VideoPlayer
-            slug={serie.slug}
-            poster={serie.backdropUrl}
-            title={`${serie.title} - Épisode ${activeEpisode.number}: ${activeEpisode.title}`}
-            isPremium={activeEpisode.access === "PREMIUM"}
-            hasAccess={activeEpisode.access === "FREE" || hasFullAccess}
-          />
+          (serie.accessLevel === "FREE" && activeEpisode.access === "FREE") || hasFullAccess ? (
+            <VidzyPlayer
+              basePath="/series"
+              slug={serie.slug}
+              title={`${serie.title} - Épisode ${activeEpisode.number}: ${activeEpisode.title}`}
+              contentType="SERIES"
+              year={serie.releaseYear}
+              searchParams={{
+                season: String(activeEpisode.seasonNumber),
+                ep: String(activeEpisode.number),
+              }}
+            />
+          ) : (
+            <div className="flex aspect-video w-full flex-col items-center justify-center rounded-2xl border border-amber-500/30 bg-zinc-950 p-6 text-center">
+              <Lock className="mb-4 h-10 w-10 text-amber-400" />
+              <h2 className="text-lg font-bold text-white">Accès Premium requis</h2>
+              <p className="mt-2 max-w-md text-sm text-zinc-400">
+                Cet épisode est réservé aux membres Premium.
+              </p>
+              <Link
+                href="/premium"
+                className="mt-5 rounded-xl bg-amber-500 px-5 py-2.5 text-sm font-bold text-black hover:bg-amber-400"
+              >
+                Découvrir Premium
+              </Link>
+            </div>
+          )
         ) : (
           <div className="flex aspect-video w-full items-center justify-center rounded-2xl border border-white/10 bg-zinc-950 text-sm text-zinc-500">
             Aucun épisode disponible pour cette série.
@@ -128,7 +153,7 @@ async function SeriesContent({ params, searchParams }: PageProps) {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="min-w-0 flex-1 text-2xl font-extrabold text-white sm:text-3xl">{serie.title}</h1>
             <span className="rounded bg-zinc-800 px-2 py-0.5 text-xs text-zinc-400">
-              Saison 1
+              Saison {activeEpisode?.seasonNumber ?? 1}
             </span>
           </div>
 
@@ -157,8 +182,8 @@ async function SeriesContent({ params, searchParams }: PageProps) {
                 const isSelected = activeEpisode?.number === ep.number;
                 return (
                   <Link
-                    key={ep.number}
-                    href={`/series/${serie.slug}?ep=${ep.number}`}
+                    key={`${ep.seasonNumber}-${ep.number}`}
+                    href={`/series/${serie.slug}?season=${ep.seasonNumber}&ep=${ep.number}`}
                     className={`flex items-start justify-between rounded-xl border p-4 transition-all ${
                       isSelected
                         ? "border-violet-500/50 bg-violet-600/10"

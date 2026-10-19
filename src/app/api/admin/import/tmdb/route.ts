@@ -91,7 +91,7 @@ async function importSeriesSeasons(
           title: ep.name || `Épisode ${ep.episode_number}`,
           synopsis: ep.overview || null,
           durationMinutes: ep.runtime ?? null,
-          videoStreamId: null,
+          videoUrl: null,
           accessLevel: "FREE",
         },
       });
@@ -213,7 +213,6 @@ export async function POST(request: Request) {
             durationMinutes: draft.durationMinutes,
             posterUrl: draft.posterUrl,
             backdropUrl: draft.backdropUrl,
-            videoStreamId: null,
             videoUrl: null,
             isPublished: false, // Brouillon : en attente d'une vidéo licenciée
             rightsValidUntil: null,

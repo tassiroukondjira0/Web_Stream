@@ -141,8 +141,7 @@ model Media {
   durationMinutes  Int?
   posterUrl        String?
   backdropUrl      String?
-  videoStreamId    String?         // Cloudflare Stream UID
-  videoUrl         String?         // URL de lecture directe (fallback partenaire / externe)
+  videoUrl         String?         // URL de lecture directe (fichier vidéo ou playlist HLS)
   isPublished      Boolean         @default(false)
   rightsValidUntil DateTime?       // Limite légale d'exploitation des droits
   createdAt        DateTime        @default(now())
@@ -187,7 +186,7 @@ model Episode {
   title           String
   synopsis        String?        @db.Text
   durationMinutes Int?
-  videoStreamId   String?        // Cloudflare Stream UID
+  videoUrl        String?        // URL de lecture directe de l'épisode (fichier ou playlist HLS)
   accessLevel     AccessLevel    @default(FREE)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt

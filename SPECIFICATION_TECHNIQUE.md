@@ -5,7 +5,7 @@
 **Statut :** Validé pour implémentation  
 **Date :** 12 Octobre 2026  
 **Modèle Économique :** Freemium (Catalogue public gratuit + Contenus exclusifs Premium)  
-**Pipeline Vidéo :** Cloudflare Stream (HLS / DASH, Signed Tokens, Transcodage automatique)  
+**Pipeline Vidéo :** URL directe vers un fichier vidéo ou une playlist HLS
 **Stack Principale :** Next.js 16 (App Router), TypeScript, PostgreSQL (Prisma ORM), Tailwind CSS  
 
 ---
@@ -16,7 +16,7 @@
 - Offrir une expérience de streaming fluide, réactive et multi-appareils (desktop, tablette, mobile).
 - Maximiser l'acquisition naturelle grâce à un référencement naturel (SEO) optimisé pour les fiches films et séries.
 - Mettre en place un modèle **Freemium** fiable avec contrôle d'accès strict côté serveur.
-- Garantir un coût de fonctionnement maîtrisé grâce au stockage et à la distribution via Cloudflare Stream.
+- Diffuser uniquement des vidéos dont l'éditeur possède les droits et configure l'hébergement.
 
 ### 1.2. Architecture Système
 
@@ -27,9 +27,8 @@ flowchart TD
         Player["Lecteur Vidéo HLS / Vidstack / Plyr"]
     end
 
-    subgraph Edge ["Réseau Edge & CDN (Cloudflare)"]
-        CF_CDN["Cache CDN & Proxy"]
-        CF_Stream["Cloudflare Stream (HLS/DASH + Player)"]
+    subgraph VideoHosting ["Hébergement vidéo choisi par l'éditeur"]
+        VideoFiles["Fichiers MP4/WebM ou playlists HLS"]
     end
 
     subgraph AppServer ["Serveur d'Application (Next.js App Router)"]
@@ -43,12 +42,10 @@ flowchart TD
         Prisma["Prisma ORM"]
     end
 
-    Client -->|Requêtes HTTP / Page Load| CF_CDN
-    CF_CDN --> AppServer
+    Client -->|Requêtes HTTP / Page Load| AppServer
     AppServer --> Prisma
     Prisma --> DB
-    Player -->|Flux HLS signé (Token HMAC)| CF_Stream
-    API -->|API Token / Signatures TUS| CF_Stream
+    Player -->|URL de lecture directe après contrôle d'accès| VideoFiles
 ```
 
 ---
@@ -62,7 +59,7 @@ flowchart TD
 | **Base de Données** | PostgreSQL | Robustesse transactionnelle, gestion des relations complexes (saisons, épisodes, abonnements, historique). |
 | **ORM** | Prisma | Typage de bout en bout, migrations déclaratives claires, requêtes optimisées. |
 | **Authentification** | Auth.js (NextAuth v5) / Lucide Auth | Sessions sécurisées avec cookies HTTP-only, gestion des rôles (USER, SUBSCRIBER, ADMIN). |
-| **Hébergement Vidéo** | Cloudflare Stream | Transcodage automatique multi-résolutions, lecteur HLS/DASH adaptatif, jetons signés avec expiration, coût prévisible. |
+| **Hébergement Vidéo** | Hébergeur choisi par l'éditeur | Fichiers MP4/WebM ou playlists HLS accessibles par URL directe ; les droits et les règles d'accès à la source sont gérés par l'éditeur. |
 | **Player Vidéo Frontend** | Vidstack Player ou Plyr | Compatible HLS.js, personnalisable, accessible au clavier, support natif mobile et Picture-in-Picture. |
 | **Design & UI** | Tailwind CSS + Radix UI (Shadcn) | UI moderne et accessible (thème sombre par défaut adapté au streaming). |
 | **Validation** | Zod | Validation stricte des entrées utilisateurs, webhooks et formulaires back-office. |
@@ -116,7 +113,7 @@ erDiagram
         int durationMinutes
         string posterUrl
         string backdropUrl
-        string videoStreamId "Cloudflare Stream UID"
+        string videoUrl "URL directe du fichier vidéo ou de la playlist HLS"
         boolean isPublished
         datetime rightsValidUntil "Contrôle d'expiration des droits"
         datetime createdAt
@@ -136,7 +133,7 @@ erDiagram
         string title
         string synopsis
         int durationMinutes
-        string videoStreamId "Cloudflare Stream UID"
+        string videoUrl "URL directe de la vidéo de l'épisode"
         string accessLevel "FREE | PREMIUM"
     }
 
@@ -161,15 +158,17 @@ erDiagram
 
 ---
 
-## 4. Pipeline et Sécurité de Diffusion Vidéo
+## 4. Lecture Vidéo et Contrôle d'Accès
 
-### 4.1. Flux d'Upload (Back-office)
-1. L'administrateur crée une fiche média (titre, synopsis, niveau d'accès `FREE` ou `PREMIUM`).
-2. Demande d'un URL de téléversement direct (*Direct Creator Upload*) via l'API Cloudflare Stream (protocole TUS).
-3. Cloudflare Stream transcode la vidéo en résolutions adaptatives (360p, 720p, 1080p) et génère les vignettes temporelles.
-4. Un webhook ou une mise à jour d'état notifie l'application lorsque le traitement est terminé (`status: ready`).
+### 4.1. Configuration des sources vidéo
+1. L'administrateur ajoute une URL HTTPS vers un fichier MP4/WebM ou un manifeste HLS (`.m3u8`) pour chaque film.
+2. Pour une série ou un anime, l'administrateur renseigne une URL pour chaque épisode.
+3. L'éditeur vérifie qu'il détient les droits de diffusion et que l'hébergeur autorise l'intégration depuis le domaine de la plateforme.
+4. Le navigateur lit la source directement ; les playlists HLS sont prises en charge par le lecteur du site.
 
-### 4.2. Autorisation et Lecture Sécurisée
+Les fiches locales films/séries peuvent également proposer les embeds du fournisseur partenaire lorsqu'un unique titre publié correspond au titre normalisé et à l'année. Les fiches de catalogue partenaire et d'animés continuent d'utiliser les embeds fournis par leurs pages/API respectives. Ces sources sont des lecteurs intégrés, pas des URL directes de fichiers MP4/HLS.
+
+### 4.2. Autorisation et lecture
 ```mermaid
 sequenceDiagram
     autonumber
@@ -177,7 +176,7 @@ sequenceDiagram
     participant Front as Frontend (Player)
     participant Server as Serveur Next.js
     participant DB as PostgreSQL
-    participant CF as Cloudflare Stream
+    participant Host as Hébergeur vidéo configuré
 
     User->>Front: Ouvre la page d'un média
     Front->>Server: Requête GET /api/videos/[id]/token
@@ -185,12 +184,13 @@ sequenceDiagram
     alt Droits non valides (contenu Premium mais utilisateur Free, ou droits expirés)
         Server-->>Front: Erreur 403 (Accès restreint / Proposer abonnement)
     else Accès autorisé
-        Server->>CF: Génère un Signed Token JWT (clé privée RSA/HMAC, exp: 2h)
-        Server-->>Front: Retourne le jeton de lecture signé
-        Front->>CF: Charge le manifest HLS (https://customer-xxx.cloudflarestream.com/[uid]/manifest/video.m3u8?token=[jwt])
-        CF-->>Front: Flux vidéo adaptatif chiffré
+        Server-->>Front: Affiche le lecteur avec l'URL configurée
+        Front->>Host: Charge le fichier vidéo ou le manifeste HLS
+        Host-->>Front: Flux vidéo selon les règles de l'hébergeur
     end
 ```
+
+Les URL directes ne constituent pas des jetons temporaires : l'accès Premium et la validité des droits sont contrôlés côté application avant d'afficher le lecteur, mais l'hébergeur doit aussi protéger les sources qui ne doivent pas être publiques.
 
 ---
 
@@ -236,7 +236,7 @@ Injection automatique dans chaque page pour affichage enrichi dans Google :
 | Domaine | Test Clé | Critère d'Acceptation |
 | :--- | :--- | :--- |
 | **Authentification** | Inscription & Connexion | Mots de passe hachés (Argon2/Bcrypt), sessions chiffrées, pas de fuite de tokens en console. |
-| **Contrôle d'Accès** | Contenu Premium | Un utilisateur non abonné ne reçoit jamais l'URL de lecture ou le token Cloudflare. |
+| **Contrôle d'Accès** | Contenu Premium | Un utilisateur non abonné ne reçoit pas l'accès au lecteur ; l'hébergeur protège séparément les URL qui ne doivent pas être publiques. |
 | **Expiration Droits** | Licence expirée | Si `rightsValidUntil < now()`, la vidéo est inaccessible et un message clair est affiché. |
 | **Progression** | Reprise de lecture | La position est synchronisée toutes les 10 secondes et restaurée au rechargement. |
 | **SEO** | Lighthouse & Mobile | Score SEO > 95, balises `canonical`, `og:image` et `schema.org` valides sur Rich Results Test. |
@@ -259,8 +259,8 @@ gantt
     section Phase 3 : Auth & Rôles
     Authentification, Profils, Favoris & Historique       :c1, after b2, 7d
     section Phase 4 : Vidéo & Droits
-    Intégration Cloudflare Stream & Player Vidstack       :d1, after c1, 10d
-    Contrôle d'accès Freemium & Tokens signés             :d2, after d1, 5d
+    Intégration des URL vidéo directes et du lecteur HLS  :d1, after c1, 10d
+    Contrôle d'accès Freemium                             :d2, after d1, 5d
     section Phase 5 : Back-office & Lancement
     Dashboard Admin (CRUD Médias, Upload vidéo)          :e1, after d2, 7d
     Tests de sécurité, Recette & Déploiement Vercel/VPS   :e2, after e1, 7d

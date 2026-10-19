@@ -5,8 +5,10 @@ import { ShieldCheck, Lock } from "lucide-react";
 
 interface VideoPlayerProps {
   src?: string;
-  /** Slug du média, utilisé pour résoudre l'URL de lecture via l'API de token quand `src` est absent. */
+  /** Slug du média, utilisé pour charger la source après contrôle d'accès côté serveur. */
   slug?: string;
+  seasonNumber?: number;
+  episodeNumber?: number;
   poster?: string;
   title: string;
   isPremium?: boolean;
@@ -16,14 +18,21 @@ interface VideoPlayerProps {
 export function VideoPlayer({
   src,
   slug,
+  seasonNumber,
+  episodeNumber,
   poster,
   title,
   isPremium = false,
   hasAccess = true,
 }: VideoPlayerProps) {
-  // URL de l'iframe de lecture : slug prioritaire (résolution côté serveur via /video/embed/[slug]),
-  // sinon src directe si fournie.
-  const embedUrl = slug ? `/video/embed/${slug}` : src;
+  // La route embed contrôle les droits et résout la source directe côté serveur.
+  const playbackParams = new URLSearchParams();
+  if (seasonNumber) playbackParams.set("season", String(seasonNumber));
+  if (episodeNumber) playbackParams.set("episode", String(episodeNumber));
+  const playbackQuery = playbackParams.toString();
+  const embedUrl = slug
+    ? `/video/embed/${slug}${playbackQuery ? `?${playbackQuery}` : ""}`
+    : src;
 
   // Verrouillage Freemium
   if (isPremium && !hasAccess) {
