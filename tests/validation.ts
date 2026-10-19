@@ -5,6 +5,7 @@
 
 import { hashPassword, verifyPassword, signSessionToken, verifySessionToken } from "../src/lib/auth";
 import { getAllMedias } from "../src/lib/catalog";
+import { parseMovieEmbeds } from "../src/modules/providers/partner/partner.client";
 
 /** Slugs des anciens contenus de démonstration (désormais supprimés). */
 const DEMO_SLUGS = ["sintel", "tears-of-steel", "cosmos-laundromat", "chroniques-pionnieres"];
@@ -26,6 +27,23 @@ async function runValidationTests() {
       failed++;
     }
   }
+
+  // TEST 0 : Tous les embeds déclarés par un partenaire sont exposés, sans URL fabriquée.
+  const movieEmbeds = parseMovieEmbeds(
+    [
+      '<div data-url="https://uqload.to/embed/movie?a=1&amp;b=2"></div>',
+      "<div data-url='https://voe.sx/e/movie'></div>",
+      '<div data-url="https://luluvid.com/e/movie"></div>',
+      '<div data-url="https://uqload.to/embed/movie?a=1&amp;b=2"></div>',
+      '<div data-url="javascript:alert(1)"></div>',
+    ].join(""),
+  );
+  assert(
+    movieEmbeds.length === 3 &&
+      movieEmbeds.map((embed) => embed.host).join(",") === "uqload.to,voe.sx,luluvid.com" &&
+      movieEmbeds[0].url === "https://uqload.to/embed/movie?a=1&b=2",
+    "Lecture : Les embeds Uqload, Voe et Luluvido déclarés par la fiche sont disponibles",
+  );
 
   // TEST 1 : Inscription & Sécurité des données sensibles (Mots de passe hachés)
   try {

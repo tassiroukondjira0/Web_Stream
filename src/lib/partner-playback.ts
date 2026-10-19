@@ -3,7 +3,7 @@ import { normalizeTitleKey } from "@/lib/title-key";
 import { providerSources, type PlayerSource } from "@/lib/player-sources";
 import {
   PARTNER_PROVIDER,
-  fetchMovieEmbed,
+  fetchMovieEmbeds,
   fetchSeriesDetail,
 } from "@/modules/providers/partner/partner.client";
 
@@ -51,10 +51,10 @@ export async function resolvePartnerPlaybackSources(
 
   const externalId = uniqueMatches[0].externalId;
   if (contentType === "MOVIE") {
-    const embed = await fetchMovieEmbed(externalId);
-    return embed
-      ? providerSources([{ lang: "vf", episode: 1, host: "frenchstream", url: embed }])
-      : [];
+    const embeds = await fetchMovieEmbeds(externalId);
+    return providerSources(
+      embeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
+    );
   }
 
   const detail = await fetchSeriesDetail(externalId);

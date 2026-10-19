@@ -11,14 +11,14 @@ import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
 import { providerSources, vidzySources } from "@/lib/player-sources";
 import {
-  fetchMovieEmbed,
+  fetchMovieEmbeds,
   PARTNER_PROVIDER,
 } from "@/modules/providers/partner/partner.client";
 
 /**
  * Fiche & lecteur d'un film partenaire. Le lecteur est multi-sources : notre
- * flux Vidzy (résolu par identifiant TMDB) complété, quand il est exposé, par
- * l'embed brut du fournisseur. L'utilisateur choisit sa source.
+ * flux Vidzy (résolu par identifiant TMDB) complété, quand ils sont exposés,
+ * par les embeds du fournisseur. L'utilisateur choisit sa source.
  */
 
 interface PartnerMoviePageProps {
@@ -61,17 +61,17 @@ export default async function PartnerMoviePage({ params, searchParams }: Partner
 
   // Synopsis TMDB + lecture Vidzy (identifiant TMDB résolu depuis le titre) +
   // embed brut du fournisseur (best-effort).
-  const [overview, playback, providerEmbed] = await Promise.all([
+  const [overview, playback, providerEmbeds] = await Promise.all([
     fetchTmdbOverviewByTitle(title),
     resolveCatalogPlayback(title, "MOVIE", asset?.releaseYear ?? null),
-    fetchMovieEmbed(id).catch(() => null),
+    fetchMovieEmbeds(id).catch(() => []),
   ]);
 
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
-    ...(providerEmbed
-      ? providerSources([{ lang: "vf", episode: 1, host: "partner", url: providerEmbed }])
-      : []),
+    ...providerSources(
+      providerEmbeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
+    ),
   ];
 
   const poster = asset?.posterUrl ?? playback?.poster ?? null;

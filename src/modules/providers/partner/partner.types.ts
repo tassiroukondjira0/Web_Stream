@@ -1,7 +1,7 @@
 /**
  * Types du fournisseur partenaire (catalogue externe).
  *
- * Films : un seul lecteur (embed) exposé sur la fiche (`data-url`).
+ * Films : embeds exposés sur la fiche (`data-url`).
  * Séries : épisodes × langues × hôtes via l'API JSON du fournisseur.
  */
 
@@ -22,6 +22,13 @@ export interface PartnerStream {
   /** Slug de l'hébergeur (vidzy, uqload, netu, voe, premium…). */
   host: string;
   /** URL d'embed (iframe). */
+  url: string;
+}
+
+export interface PartnerMovieEmbed {
+  /** Nom d'hôte déduit de l'URL d'embed fournie par le partenaire. */
+  host: string;
+  /** URL d'embed. */
   url: string;
 }
 

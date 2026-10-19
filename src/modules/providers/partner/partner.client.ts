@@ -11,6 +11,7 @@ import type {
   PartnerDetail,
   PartnerEpisodeInfo,
   PartnerItem,
+  PartnerMovieEmbed,
   PartnerStream,
 } from "./partner.types";
 
@@ -174,17 +175,34 @@ export async function fetchSeriesDetail(externalId: string): Promise<PartnerDeta
   }
 }
 
-/**
- * Récupère l'embed d'un film depuis sa fiche (`data-url`).
- * Retourne null si aucun embed n'est exposé.
- */
-export async function fetchMovieEmbed(externalId: string): Promise<string | null> {
-  if (!/^\d{1,10}$/.test(externalId)) return null;
+/** Parse tous les embeds HTTP(S) explicitement exposés dans les attributs data-url. */
+export function parseMovieEmbeds(html: string): PartnerMovieEmbed[] {
+  const embeds: PartnerMovieEmbed[] = [];
+  const seen = new Set<string>();
+  const attributePattern = /\bdata-url\s*=\s*(["'])(.*?)\1/gi;
+  let match: RegExpExecArray | null;
+
+  while ((match = attributePattern.exec(html)) !== null) {
+    const url = decodeHtml(match[2]).trim();
+    try {
+      const parsed = new URL(url);
+      if ((parsed.protocol !== "http:" && parsed.protocol !== "https:") || seen.has(url)) continue;
+      seen.add(url);
+      embeds.push({ host: parsed.hostname, url });
+    } catch {
+      continue;
+    }
+  }
+
+  return embeds;
+}
+
+/** Récupère les embeds de film explicitement exposés sur sa fiche (`data-url`). */
+export async function fetchMovieEmbeds(externalId: string): Promise<PartnerMovieEmbed[]> {
+  if (!/^\d{1,10}$/.test(externalId)) return [];
   const base = await getBaseUrl();
   const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
-  if (!html) return null;
-  const embed = html.match(/data-url="(https?:\/\/[^"]+)"/)?.[1] ?? null;
-  return embed;
+  return html ? parseMovieEmbeds(html) : [];
 }
 
 /** Normalise `{ "<lang>": { "<ep>": { "<host>": "<url>" } }, "info": { "<ep>": {...} } }`. */
