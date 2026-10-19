@@ -336,6 +336,10 @@ function slugToHref(slug: string): string {
   if (m) {
     const [, provider, kind, id] = m;
     // FrenchManga : lecteur dédié (films d'animation comme séries, épisode unique).
+    // Les animés sont classés dans la section « Animes », pas dans « Séries ».
+    if (kind === "anime") {
+      return `/animes/${provider}/${id}`;
+    }
     if (provider === "frenchmanga") {
       return `/series/frenchmanga/${id}`;
     }

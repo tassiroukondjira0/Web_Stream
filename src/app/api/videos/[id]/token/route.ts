@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getMediaBySlug } from "@/lib/catalog";
+import { generateCloudflareSignedToken, buildPlaybackUrl } from "@/lib/cloudflare-stream";
 
 interface RouteProps {
   params: Promise<{ id: string }>;
@@ -48,7 +49,25 @@ export async function GET(_request: Request, { params }: RouteProps) {
     // 3. Délivrance de l'autorisation de lecture.
     //    Le catalogue est servi par un lecteur externe : on retourne
     //    simplement la videoUrl associée au média.
-    const playbackUrl: string = media.videoUrl || "";
+    // 3. Délivrance de l'URL de lecture.
+    //    Résout le manifest HLS Cloudflare Stream à partir de l'UID
+    //    vidéo (videoStreamId) via un jeton signé, conformément au
+    //    pipeline Cloudflare Stream (SPECIFICATION_TECHNIQUE.md).
+    let playbackUrl = "";
+    if (media.videoStreamId) {
+      try {
+        const token = await generateCloudflareSignedToken({
+          videoUid: media.videoStreamId,
+          userId: user?.id ?? "anonymous",
+        });
+        playbackUrl = buildPlaybackUrl(media.videoStreamId, token);
+      } catch {
+        // Cloudflare Stream non configuré : repli sur videoUrl si renseignée.
+        playbackUrl = media.videoUrl || "";
+      }
+    } else {
+      playbackUrl = media.videoUrl || "";
+    }
 
     return NextResponse.json({
       success: true,

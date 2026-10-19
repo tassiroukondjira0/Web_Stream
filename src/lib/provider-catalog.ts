@@ -98,14 +98,19 @@ const TMDB_PROVIDER = "TMDB";
 const MOVIE_SERIES_PROVIDERS = [PARTNER_PROVIDER, TMDB_PROVIDER];
 
 /**
- * Route de fiche/lecture d'un asset partenaire. Chaque fournisseur a son
- * lecteur : French-Manga et Partenaire → fiches dédiées. Les animés peuvent
- * être des films OU des séries : on se fie à `sourceType`.
+ * Route de fiche/lecture d'un asset partenaire. Les animés ont leur propre
+ * section (`/animes/...`) quel que soit le fournisseur. Les films et séries
+ * conservent leurs routes dédiées par fournisseur.
  */
 export function providerItemHref(
   item: Pick<ProviderCatalogItem, "contentType" | "sourceType" | "externalId"> &
     Partial<Pick<ProviderCatalogItem, "provider">>,
 ): string {
+  // Les animés sont classés dans la section « Animes », pas dans « Séries ».
+  if (item.contentType === "ANIME") {
+    const provider = (item.provider ?? PARTNER_PROVIDER).toLowerCase();
+    return `/animes/${provider}/${item.externalId}`;
+  }
   if (item.provider === TMDB_PROVIDER) {
     return item.contentType === "SERIES"
       ? `/series/tmdb/${item.externalId}`
@@ -116,8 +121,8 @@ export function providerItemHref(
       ? `/series/partner/${item.externalId}`
       : `/films/partner/${item.externalId}`;
   }
-  // FrenchManga (animés) : lecteur dédié `/series/frenchmanga/`.
-  return `/series/frenchmanga/${item.externalId}`;
+  // FrenchManga (animés) : lecteur dédié `/animes/frenchmanga/`.
+  return `/animes/frenchmanga/${item.externalId}`;
 }
 
 const ASSET_SELECT = {

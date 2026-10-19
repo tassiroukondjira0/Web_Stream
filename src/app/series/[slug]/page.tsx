@@ -110,6 +110,7 @@ async function SeriesContent({ params, searchParams }: PageProps) {
       <div className="mb-8">
         {activeEpisode ? (
           <VideoPlayer
+            slug={serie.slug}
             poster={serie.backdropUrl}
             title={`${serie.title} - Épisode ${activeEpisode.number}: ${activeEpisode.title}`}
             isPremium={activeEpisode.access === "PREMIUM"}

@@ -119,6 +119,7 @@ async function FilmContent({ params }: PageProps) {
       <div className="mb-8">
         <VideoPlayer
           src={film.videoUrl}
+          slug={film.slug}
           poster={film.backdropUrl || film.posterUrl}
           title={film.title}
           isPremium={film.accessLevel === "PREMIUM"}
