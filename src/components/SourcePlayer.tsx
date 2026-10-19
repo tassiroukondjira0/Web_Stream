@@ -72,7 +72,7 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
               className="h-full w-full"
               allowFullScreen
               allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-              referrerPolicy="no-referrer"
+              referrerPolicy="strict-origin-when-cross-origin"
             />
             {nextEpisode && !isMovie && (
               <Link
