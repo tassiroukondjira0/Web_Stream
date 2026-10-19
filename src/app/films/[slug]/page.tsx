@@ -258,7 +258,7 @@ async function FilmContent({ params, searchParams }: PageProps) {
   );
 }
 
-export default function FilmPage({ params }: PageProps) {
+export default function FilmPage({ params, searchParams }: PageProps) {
   return (
     <Suspense
       fallback={
