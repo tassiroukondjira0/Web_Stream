@@ -1,19 +1,19 @@
 import { notFound } from "next/navigation";
-import { unstable_noStore } from "next/cache";
 import { getMediaBySlug } from "@/lib/catalog";
 import { getCurrentUser } from "@/lib/auth";
 import { generateCloudflareSignedToken, buildPlaybackUrl } from "@/lib/cloudflare-stream";
 
 // Cette page sert de player dans une iframe : elle dépend de données runtime
-// (base de données + session). `unstable_noStore` désactive le cache de
-// cette requête. Avec `cacheComponents: true` dans next.config.ts, la route
-// est rendue dynamiquement sans prerendering statique.
+// (base de données + session). `instant: false` autorise le rendu bloquant
+// (dynamic rendering) et évite le prerendering statique. Compatible avec
+// `cacheComponents: true` dans next.config.ts.
+export const instant = false;
+
 export default async function VideoEmbedPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  unstable_noStore();
   const { slug } = await params;
   const media = await getMediaBySlug(slug);
 
