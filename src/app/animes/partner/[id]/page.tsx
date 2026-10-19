@@ -78,7 +78,7 @@ export default async function PartnerAnimePage({
 
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
-    ...(detail ? providerSources(detail.streams) : []),
+    ...(detail ? providerSources(detail.streams, 1, "frenchstream") : []),
   ];
 
   if (sources.length === 0) {

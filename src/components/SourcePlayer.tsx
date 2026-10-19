@@ -53,10 +53,18 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
       s.episode === episode &&
       (s.season === season || s.host.startsWith("ext:")),
   );
-  const selected =
-    episodeSources.find(
+  const selectedByRequest = selection.host
+    ? episodeSources.find(
       (s) => s.host === selection.host && s.lang === lang,
-    ) ??
+    )
+    : undefined;
+  const selected =
+    selectedByRequest ??
+    (!selection.host
+      ? episodeSources.find(
+          (s) => s.host.startsWith("ext:frenchstream:") && s.lang === lang,
+        )
+      : undefined) ??
     episodeSources.find((s) => s.lang === lang) ??
     episodeSources[0];
 

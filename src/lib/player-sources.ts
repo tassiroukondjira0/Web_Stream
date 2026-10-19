@@ -85,9 +85,10 @@ export function vidzySources(playback: CatalogPlayback): PlayerSource[] {
 export function providerSources(
   streams: { lang: string; episode: number; host: string; url: string }[],
   season = 1,
+  provider?: "frenchstream" | "frenchmanga",
 ): PlayerSource[] {
   return streams.map((s) => ({
-    host: `ext:${s.host}`,
+    host: `ext:${provider ? `${provider}:` : ""}${s.host}`,
     label: hostLabel(s.host, s.url),
     lang: s.lang,
     season,

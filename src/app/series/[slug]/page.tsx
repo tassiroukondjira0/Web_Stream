@@ -14,7 +14,7 @@ import { Tv, Calendar, Lock } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ season?: string; ep?: string }>;
+  searchParams?: Promise<{ lang?: string; season?: string; ep?: string; host?: string }>;
 }
 
 // Pas de generateStaticParams : le catalogue est lu à la requête (base vide au
@@ -122,8 +122,10 @@ async function SeriesContent({ params, searchParams }: PageProps) {
               contentType="SERIES"
               year={serie.releaseYear}
               searchParams={{
+                lang: sp.lang,
                 season: String(activeEpisode.seasonNumber),
                 ep: String(activeEpisode.number),
+                host: sp.host,
               }}
             />
           ) : (

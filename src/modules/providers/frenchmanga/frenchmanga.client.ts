@@ -12,8 +12,15 @@ import type { FrenchMangaDetail, FrenchMangaItem, FrenchMangaStream } from "./fr
 
 export const FRENCHMANGA_PROVIDER = "FRENCHMANGA";
 
-/** Candidats de domaine, du plus canonique au miroir. */
-const DOMAINS = ["https://french-manga.net", "https://w16.french-manga.net"] as const;
+/** Candidats de domaine, du plus canonique au miroir (surcharge : `MANGA_DOMAINS`). */
+const MANGA_DOMAINS = process.env.MANGA_DOMAINS
+  ?.split(",")
+  .map((d) => d.trim())
+  .filter(Boolean)
+  .map((d) => (d.startsWith("http") ? d : `https://${d}`));
+const DOMAINS = (MANGA_DOMAINS?.length
+  ? MANGA_DOMAINS
+  : ["https://french-manga.net", "https://w16.french-manga.net"]) as readonly string[];
 /** Catégorie DLE de la liste mangas (« Les Meilleurs Mangas… »). */
 const CATEGORY = "manga-streaming-1";
 

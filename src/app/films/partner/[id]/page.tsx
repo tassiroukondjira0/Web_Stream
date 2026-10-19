@@ -71,6 +71,8 @@ export default async function PartnerMoviePage({ params, searchParams }: Partner
     ...(playback?.available ? vidzySources(playback) : []),
     ...providerSources(
       providerEmbeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
+      1,
+      "frenchstream",
     ),
   ];
 

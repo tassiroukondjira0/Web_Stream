@@ -17,7 +17,21 @@ import type {
 
 export const PARTNER_PROVIDER = "FRENCHSTREAM";
 
-const DOMAINS = ["https://partner-source.net", "https://partner-source.lat"] as const;
+/**
+ * Domaines du fournisseur (essai dans l'ordre). Surchargeables via
+ * `PARTNER_DOMAINS` (séparés par des virgules) : quand le fournisseur fait
+ * tourner ses domaines, on met à jour la variable sans redéployer de code.
+ * C'est via ces pages que les hébergeurs (uqload, voe, luluvido…) sont relevés.
+ */
+const PARTNER_DOMAINS = process.env.PARTNER_DOMAINS
+  ?.split(",")
+  .map((d) => d.trim())
+  .filter(Boolean)
+  .map((d) => (d.startsWith("http") ? d : `https://${d}`));
+
+const DOMAINS = (PARTNER_DOMAINS?.length
+  ? PARTNER_DOMAINS
+  : ["https://partner-source.net", "https://partner-source.lat"]) as readonly string[];
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";

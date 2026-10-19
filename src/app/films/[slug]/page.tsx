@@ -267,7 +267,7 @@ export default function FilmPage({ params }: PageProps) {
         </div>
       }
     >
-      <FilmContent params={params} />
+      <FilmContent params={params} searchParams={searchParams} />
     </Suspense>
   );
 }

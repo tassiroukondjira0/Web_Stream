@@ -54,9 +54,11 @@ export async function resolvePartnerPlaybackSources(
     const embeds = await fetchMovieEmbeds(externalId);
     return providerSources(
       embeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
+      1,
+      "frenchstream",
     );
   }
 
   const detail = await fetchSeriesDetail(externalId);
-  return detail ? providerSources(detail.streams) : [];
+  return detail ? providerSources(detail.streams, 1, "frenchstream") : [];
 }
