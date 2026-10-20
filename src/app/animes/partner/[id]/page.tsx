@@ -26,8 +26,7 @@ interface PartnerAnimePageProps {
   searchParams: Promise<{ lang?: string; season?: string; ep?: string; host?: string }>;
 }
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const instant = false;
 
 export async function generateMetadata({ params }: PartnerAnimePageProps): Promise<Metadata> {
   const { id } = await params;
