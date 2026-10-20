@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { normalizeTitleKey } from "@/lib/title-key";
 import { providerSources, type PlayerSource } from "@/lib/player-sources";
+import { filterPlayableSources } from "@/lib/embed-health";
 import {
   PARTNER_PROVIDER,
   fetchMovieEmbeds,
@@ -62,11 +63,12 @@ export async function resolvePartnerPlaybackSources(
     const uniqueMatches = exactYearMatches.length > 0 ? exactYearMatches : matches;
     if (uniqueMatches.length !== 1) return [];
     const embeds = await fetchMovieEmbeds(uniqueMatches[0].externalId);
-    return providerSources(
+    const sources = providerSources(
       embeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
       1,
       "frenchstream",
     );
+    return filterPlayableSources(sources);
   }
 
   // Série : fiche de la saison demandée, sinon fiche unique sans suffixe.
@@ -76,7 +78,8 @@ export async function resolvePartnerPlaybackSources(
   if (!fiche) return [];
 
   const detail = await fetchSeriesDetail(fiche.externalId);
-  return detail ? providerSources(detail.streams, season, "frenchstream") : [];
+  if (!detail) return [];
+  return filterPlayableSources(providerSources(detail.streams, season, "frenchstream"));
 }
 
 /** Numéro de saison déduit d'un titre partenaire (« Titre - Saison 3 »). */

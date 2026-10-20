@@ -9,6 +9,7 @@
  */
 
 import { vidzyMovieUrl, vidzySeriesUrl, type CatalogPlayback } from "./vidzy";
+import { externalEmbedUrl, isExternalEmbedHost } from "./embed-ext";
 
 /** Identifiant d'hébergeur de notre lecteur TMDB (distinct des slugs fournisseur). */
 export const VIDZY_HOST = "vidzy-org";
@@ -110,7 +111,10 @@ function proxiedVidzyUrl(wrapperUrl: string): string {
 /** Sources du fournisseur (iframes bruts) → une entrée par flux.
  *
  * Les embeds Vidzy exposés par le partenaire (vidzy.cc, vidzy.live…) subissent
- * le même problème de token `gk` : ils passent aussi par `/api/embed`. */
+ * le même problème de token `gk` : ils passent aussi par `/api/embed`.
+ * Les autres hébergeurs (uqload, voe, fsvid…) refusent le hotlink : ils
+ * passent par `/api/embed/ext`, qui rejoue la requête avec le référent du
+ * fournisseur et réécrit les appels runtime. */
 export function providerSources(
   streams: { lang: string; episode: number; host: string; url: string }[],
   season = 1,
@@ -122,7 +126,11 @@ export function providerSources(
     lang: s.lang,
     season,
     episode: s.episode > 0 ? s.episode : 1,
-    url: isVidzyUrl(s.url) ? proxiedVidzyUrl(s.url) : s.url,
+    url: isVidzyUrl(s.url)
+      ? proxiedVidzyUrl(s.url)
+      : isExternalEmbedHost(s.url)
+        ? externalEmbedUrl(s.url)
+        : s.url,
   }));
 }
 

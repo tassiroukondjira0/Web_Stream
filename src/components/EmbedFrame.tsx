@@ -47,11 +47,15 @@ export function EmbedFrame({
   const recoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Seuls les embeds Vidzy passant par /api/embed postent `timeupdate` au
-  // parent : les hébergeurs externes (uqload, voe…) communiquent depuis leur
-  // propre origine et n'alimentent jamais ces compteurs — inutile de lancer
-  // les timers qui déclencheraient un faux « lecture interrompue ».
-  const isProxiedEmbed = src.startsWith("/api/embed");
+  // Seuls les embeds Vidzy passant par /api/embed?src= postent `timeupdate` au
+  // parent : les hébergeurs externes (proxifiés via /api/embed/ext) n'alimentent
+  // jamais ces compteurs — inutile de lancer les timers qui déclencheraient un
+  // faux « lecture interrompue ».
+  const isProxiedEmbed = src.startsWith("/api/embed?src=");
+  // Les documents externes proxifiés (/api/embed/ext) sont aussi sandboxés
+  // (sans allow-same-origin) : leur code est réécrit et n'a pas besoin de
+  // cookies, et une origine opaque évite de polluer notre stockage.
+  const isSandboxed = isProxiedEmbed || src.startsWith("/api/embed/ext?u=");
 
   // Réinitialiser l'état quand la source change (pattern React :
   // ajustement d'état pendant le rendu plutôt que dans un effect).
@@ -167,9 +171,10 @@ export function EmbedFrame({
             Attention : Vidzy embarque des kill-switches (__fssSbx/__fssPop)
             qui détruisent le lecteur dès qu'ils détectent une origine
             opaque non partenaire — ils sont désamorcés côté /api/embed.
-            Les hébergeurs externes (uqload, voe…) ne passent PAS par ce
-            sandbox : ils ont besoin de leur propre origine (cookies, stockage)
-            et ne sont pas nos pages à rewriter. */}
+            Les embeds externes proxifiés (/api/embed/ext) sont aussi sandboxés :
+            le document est réécrit par notre proxy (référent fournisseur,
+            bootstrap des appels runtime), donc l'origine opaque est sans effet
+            sur son fonctionnement et isole ses scripts du reste du site. */}
         <iframe
           ref={iframeRef}
           key={`${src}#${nonce}`}
@@ -180,7 +185,7 @@ export function EmbedFrame({
           allow="autoplay; encrypted-media; picture-in-picture"
           referrerPolicy="strict-origin-when-cross-origin"
           sandbox={
-            isProxiedEmbed ? "allow-scripts allow-forms allow-popups allow-presentation" : undefined
+            isSandboxed ? "allow-scripts allow-forms allow-popups allow-presentation" : undefined
           }
         />
         {/* Bouton de rechargement manuel : le token CDN de Vidzy expire
