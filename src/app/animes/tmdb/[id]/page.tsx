@@ -64,11 +64,28 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
 
   const title = asset?.title ?? "Animé";
 
-  const [overview, playback, partnerSources] = await Promise.all([
+  const [overview, playback] = await Promise.all([
     fetchTmdbOverviewById(id, "tv"),
     resolvePlaybackByTmdbId(id, "tv"),
-    resolvePartnerPlaybackSources(title, "ANIME", asset?.releaseYear ?? null),
   ]);
+
+  const seasons = playback?.seasons ?? [];
+  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+  const activeSeason =
+    requestedSeason !== null && seasons.some((s) => s.season === requestedSeason)
+      ? requestedSeason
+      : seasons.length > 0
+        ? seasons[0].season
+        : (requestedSeason ?? 1);
+
+  // Le partenaire classe les animés comme des séries (fiche par saison) :
+  // on ne récupère que la saison active, alignée sur la grille Vidzy.
+  const partnerSources = await resolvePartnerPlaybackSources(
+    title,
+    "ANIME",
+    asset?.releaseYear ?? null,
+    activeSeason,
+  ).catch(() => []);
 
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
@@ -81,7 +98,7 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
         <Film className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
         <h1 className="text-xl font-bold text-white">Animé indisponible</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Aucun flux de lecture n'est disponible pour cet animé pour le moment.
+          Aucun flux de lecture n&apos;est disponible pour cet animé pour le moment.
         </p>
         <Link
           href="/animes"
@@ -100,21 +117,13 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
-  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
-  const seasons = playback?.seasons ?? [];
-  const activeSeason = requestedSeason && seasons.some((s) => s.season === requestedSeason)
-    ? requestedSeason
-    : seasons.length > 0
-      ? seasons[0].season
-      : 1;
-
   let seasonDetail: TmdbSeason | null = null;
   let posterMap = new Map<number, string | null>();
   if (playback?.tmdbId) {
     const raw = await fetchTvSeasonsPosters(playback.tmdbId, seasons.map((s) => s.season)).catch(() => null);
     if (raw instanceof Map) posterMap = raw;
   }
-  let seasonsWithPosters: { season: number; episodes: number[]; posterUrl: string | null }[] =
+  const seasonsWithPosters: { season: number; episodes: number[]; posterUrl: string | null }[] =
     seasons.map((s) => ({
       season: s.season,
       episodes: s.episodes,

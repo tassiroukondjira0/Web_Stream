@@ -34,6 +34,8 @@ export interface VidzyAvailability {
   poster: string | null;
   languages: string[];
   seasons: VidzySeason[];
+  /** URL d'embed directe retournée par l'API (ex. `https://vidzy.cc/embed-xxx.html`). */
+  embedUrl: string | null;
 }
 
 /** Récupère la disponibilité et la grille de lecture d'un titre TMDB. */
@@ -83,6 +85,7 @@ function mapAvailability(tmdbId: number, data: Record<string, unknown>): VidzyAv
     poster: typeof data.poster === "string" ? data.poster : null,
     languages,
     seasons,
+    embedUrl: typeof data.embed === "string" ? data.embed : null,
   };
 }
 
@@ -133,6 +136,8 @@ export interface CatalogPlayback {
   poster: string | null;
   languages: string[];
   seasons: VidzySeason[];
+  /** URL d'embed directe (ex. `https://vidzy.cc/embed-xxx.html`). */
+  embedUrl: string | null;
 }
 
 /**
@@ -156,6 +161,7 @@ export async function resolvePlaybackByTmdbId(
     poster: info.poster,
     languages: info.languages,
     seasons: info.seasons,
+    embedUrl: info.embedUrl,
   };
 }
 
@@ -184,5 +190,6 @@ export async function resolveCatalogPlayback(
     poster: info.poster,
     languages: info.languages,
     seasons: info.seasons,
+    embedUrl: info.embedUrl,
   };
 }

@@ -37,16 +37,32 @@ export interface PlayerSelection {
   episode?: number | null;
 }
 
-/** Libellé lisible d'un hébergeur : son domaine, sinon son slug. */
+/** Libellé lisible d'un hébergeur : son slug partenaire capitalisé, sinon son domaine. */
 function hostLabel(host: string, url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return host;
+  const hostname = (() => {
+    try {
+      return new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+      return null;
+    }
+  })();
+
+  // Slugs sémantiques du partenaire (« premium », « voe », « uqload »…) : on
+  // affiche le nom plutôt que le domaine. Le slug « vidzy » devient son
+  // domaine pour le distinguer de notre lecteur Vidzy hébergé (« Vidzy »).
+  if (!host.includes(".")) {
+    if (host.toLowerCase().startsWith("vidzy")) return hostname ?? "Vidzy";
+    return host.charAt(0).toUpperCase() + host.slice(1);
   }
+  return hostname ?? host;
 }
 
-/** Sources Vidzy (TMDB) : une entrée par langue × saison × épisode. */
+/** Sources Vidzy (TMDB) : une entrée par langue × saison × épisode.
+ *
+ * Les URLs passent par notre proxy `/api/embed` qui injecte le token `gk`
+ * (obtenu côté serveur avec des param whitelistés) dans le HTML d'embed.
+ * Sans ce token, le CDN Vidzy rejette les segments HLS après ~90 s de grâce
+ * et la lecture stalle. */
 export function vidzySources(playback: CatalogPlayback): PlayerSource[] {
   const langs = playback.languages.length > 0 ? playback.languages : ["vf"];
 
@@ -57,7 +73,7 @@ export function vidzySources(playback: CatalogPlayback): PlayerSource[] {
       lang,
       season: 1,
       episode: 1,
-      url: vidzyMovieUrl(playback.tmdbId, { lang }),
+      url: proxiedVidzyUrl(vidzyMovieUrl(playback.tmdbId, { lang })),
     }));
   }
 
@@ -73,7 +89,9 @@ export function vidzySources(playback: CatalogPlayback): PlayerSource[] {
           lang,
           season: s.season,
           episode,
-          url: vidzySeriesUrl(playback.tmdbId, s.season, episode, { lang, autonext: true }),
+          url: proxiedVidzyUrl(
+            vidzySeriesUrl(playback.tmdbId, s.season, episode, { lang, autonext: true }),
+          ),
         });
       }
     }
@@ -81,7 +99,18 @@ export function vidzySources(playback: CatalogPlayback): PlayerSource[] {
   return sources;
 }
 
-/** Sources du fournisseur (iframes bruts) → une entrée par flux. */
+/**
+ * Enveloppe une URL wrapper Vidzy dans notre proxy `/api/embed?src=…`.
+ * Le proxy récupère le HTML d'embed et y injecte le token `gk`.
+ */
+function proxiedVidzyUrl(wrapperUrl: string): string {
+  return `/api/embed?src=${encodeURIComponent(wrapperUrl)}`;
+}
+
+/** Sources du fournisseur (iframes bruts) → une entrée par flux.
+ *
+ * Les embeds Vidzy exposés par le partenaire (vidzy.cc, vidzy.live…) subissent
+ * le même problème de token `gk` : ils passent aussi par `/api/embed`. */
 export function providerSources(
   streams: { lang: string; episode: number; host: string; url: string }[],
   season = 1,
@@ -93,6 +122,15 @@ export function providerSources(
     lang: s.lang,
     season,
     episode: s.episode > 0 ? s.episode : 1,
-    url: s.url,
+    url: isVidzyUrl(s.url) ? proxiedVidzyUrl(s.url) : s.url,
   }));
+}
+
+/** Vrai si l'URL pointe vers un domaine Vidzy (vidzy.org, vidzy.cc…). */
+function isVidzyUrl(url: string): boolean {
+  try {
+    return /(^|\.)vidzy\./i.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
 }

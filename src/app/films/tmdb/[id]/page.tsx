@@ -60,7 +60,9 @@ export default async function TmdbMoviePage({ params, searchParams }: TmdbMovieP
   const [overview, playback, partnerSources] = await Promise.all([
     fetchTmdbOverviewById(id, "movie"),
     resolvePlaybackByTmdbId(id, "movie"),
-    resolvePartnerPlaybackSources(title, "MOVIE", asset?.releaseYear ?? null),
+    resolvePartnerPlaybackSources(title, "MOVIE", asset?.releaseYear ?? null).catch(
+      () => [],
+    ),
   ]);
 
   const sources = [

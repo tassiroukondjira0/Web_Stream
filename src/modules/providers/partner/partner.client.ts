@@ -18,10 +18,11 @@ import type {
 export const PARTNER_PROVIDER = "FRENCHSTREAM";
 
 /**
- * Domaines du fournisseur (essai dans l'ordre). Surchargeables via
- * `PARTNER_DOMAINS` (séparés par des virgules) : quand le fournisseur fait
- * tourner ses domaines, on met à jour la variable sans redéployer de code.
- * C'est via ces pages que les hébergeurs (uqload, voe, luluvido…) sont relevés.
+ * Domaines du fournisseur (essai dans l'ordre), définis via `PARTNER_DOMAINS`
+ * (séparés par des virgules) : quand le fournisseur fait tourner ses
+ * domaines, on met à jour la variable sans redéployer de code. Sans cette
+ * variable, le fournisseur est inactif (toutes les fonctions retournent
+ * vide) et seuls nos lecteurs hébergés (Vidzy TMDB) sont proposés.
  */
 const PARTNER_DOMAINS = process.env.PARTNER_DOMAINS
   ?.split(",")
@@ -29,9 +30,7 @@ const PARTNER_DOMAINS = process.env.PARTNER_DOMAINS
   .filter(Boolean)
   .map((d) => (d.startsWith("http") ? d : `https://${d}`));
 
-const DOMAINS = (PARTNER_DOMAINS?.length
-  ? PARTNER_DOMAINS
-  : ["https://french-stream.net"]) as readonly string[];
+const DOMAINS: readonly string[] = PARTNER_DOMAINS?.length ? PARTNER_DOMAINS : [];
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -46,6 +45,7 @@ function headers(extra?: Record<string, string>): Record<string, string> {
 
 /** Domaine opérationnel (résolu une fois, avec repli sur le miroir). */
 async function getBaseUrl(): Promise<string> {
+  if (!DOMAINS.length) return "";
   if (cachedBase) return cachedBase;
   for (const domain of DOMAINS) {
     try {
@@ -132,6 +132,7 @@ export async function fetchPartnerCatalogPage(
   page: number,
 ): Promise<PartnerItem[]> {
   const base = await getBaseUrl();
+  if (!base) return [];
   const html = await fetchText(`${base}/${kind}/page/${page}/`);
   if (!html) return [];
   return parseCatalog(html);
@@ -149,6 +150,7 @@ export async function fetchFicheMeta(externalId: string): Promise<{
     return { synopsis: null, runtime: null, releaseYear: null };
   }
   const base = await getBaseUrl();
+  if (!base) return { synopsis: null, runtime: null, releaseYear: null };
   const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
   if (!html) return { synopsis: null, runtime: null, releaseYear: null };
 
@@ -183,6 +185,7 @@ export async function fetchFicheMeta(externalId: string): Promise<{
 export async function fetchSeriesDetail(externalId: string): Promise<PartnerDetail | null> {
   if (!/^\d{1,10}$/.test(externalId)) return null;
   const base = await getBaseUrl();
+  if (!base) return null;
 
   // 1. API ep-data.php (flux structurés langue × épisode × hôte)
   const text = await fetchText(`${base}/ep-data.php?id=${externalId}&format=js`, {
@@ -261,6 +264,7 @@ export function parseMovieEmbeds(html: string): PartnerMovieEmbed[] {
 export async function fetchMovieEmbeds(externalId: string): Promise<PartnerMovieEmbed[]> {
   if (!/^\d{1,10}$/.test(externalId)) return [];
   const base = await getBaseUrl();
+  if (!base) return [];
   const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
   return html ? parseMovieEmbeds(html) : [];
 }
@@ -276,7 +280,7 @@ function mapDetail(externalId: string, data: unknown): PartnerDetail {
         if (value && typeof value === "object") {
           for (const [episode, meta] of Object.entries(value as Record<string, unknown>)) {
             if (!meta || typeof meta !== "object") continue;
-            const m = episode as unknown as Record<string, unknown>;
+            const m = meta as Record<string, unknown>;
             info[Number.parseInt(episode, 10) || 0] = {
               title: typeof m.title === "string" ? decodeHtml(m.title) : null,
               synopsis: typeof m.synopsis === "string" ? decodeHtml(m.synopsis) : null,

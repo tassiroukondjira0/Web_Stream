@@ -1,12 +1,17 @@
 import Link from "next/link";
-import type { PlayerSelection, PlayerSource } from "@/lib/player-sources";
+import { VIDZY_HOST, type PlayerSelection, type PlayerSource } from "@/lib/player-sources";
 import { EmbedFrame } from "@/components/EmbedFrame";
+import { SourceSelect } from "@/components/SourceSelect";
 
 /**
  * Lecteur multi-sources : iframe + sélecteurs langue / saison / épisode /
  * hébergeur rendus côté serveur. La navigation se fait par URL via `hrefFor`,
  * sans état client. Toutes les sources (Vidzy et iframes fournisseur) sont
  * fusionnées : pour un épisode donné, l'utilisateur peut changer d'hébergeur.
+ *
+ * Toute la logique interactive (rechargement du token, détection de blocage)
+ * est isolée dans `EmbedFrame` (composant client) : on ne lui passe que des
+ * propriétés sérialisables.
  */
 
 interface SourcePlayerProps {
@@ -61,9 +66,7 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
   const selected =
     selectedByRequest ??
     (!selection.host
-      ? episodeSources.find(
-          (s) => s.host.startsWith("ext:frenchstream:") && s.lang === lang,
-        )
+      ? episodeSources.find((s) => s.host === VIDZY_HOST && s.lang === lang)
       : undefined) ??
     episodeSources.find((s) => s.lang === lang) ??
     episodeSources[0];
@@ -72,48 +75,59 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
 
   return (
     <div className="mt-4">
-      <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black relative">
-        {selected ? (
-          <>
-            <EmbedFrame src={selected.url} title={title} />
-            {nextEpisode && !isMovie && (
-              <Link
-                href={hrefFor({ lang, season, episode: nextEpisode, host: null })}
-                className="absolute bottom-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-violet-600/90 text-white text-sm font-semibold shadow-xl backdrop-blur-sm transition-transform hover:bg-violet-600 hover:scale-105"
-                aria-label={`Épisode ${nextEpisode}`}
-              >
-                {nextEpisode}
-              </Link>
-            )}
-          </>
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-zinc-400">
-            Flux indisponible.
-          </div>
-        )}
-      </div>
-
-      {/* Hébergeurs disponibles pour la sélection courante (multi-choix). */}
-      {episodeSources.length > 1 && (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-            Sources
-          </span>
-          {episodeSources.map((s) => (
-            <Link
-              key={`${s.host}:${s.lang}:${s.url}`}
-              href={hrefFor({ lang: s.lang, season, episode, host: s.host })}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                selected && s.host === selected.host && s.lang === selected.lang
-                  ? "border-violet-500 bg-violet-600 text-white"
-                  : "border-white/10 bg-zinc-900 text-zinc-300 hover:bg-zinc-800"
-              }`}
-            >
-              {s.label} · {s.lang.toUpperCase()}
-            </Link>
-          ))}
+      {selected ? (
+        <EmbedFrame
+          src={selected.url}
+          title={title}
+          nextHref={
+            nextEpisode && !isMovie
+              ? hrefFor({ lang, season, episode: nextEpisode, host: null })
+              : null
+          }
+          nextEpisode={nextEpisode}
+          isMovie={isMovie}
+        />
+      ) : (
+        <div className="aspect-video w-full flex items-center justify-center rounded-2xl border border-white/10 bg-black text-sm text-zinc-400">
+          Flux indisponible.
         </div>
       )}
+
+      {/* Hébergeurs disponibles pour la sélection courante (menu déroulant). */}
+      {episodeSources.length > 1 && (() => {
+        const seen = new Set<string>();
+        const options = episodeSources
+          .map((s) => ({
+            value: hrefFor({ lang: s.lang, season, episode, host: s.host }),
+            label: `${s.label} · ${s.lang.toUpperCase()}`,
+          }))
+          .filter((option) => {
+            if (seen.has(option.value)) return false;
+            seen.add(option.value);
+            return true;
+          });
+
+        return (
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Sources
+            </span>
+            <SourceSelect
+              options={options}
+              value={
+                selected
+                  ? hrefFor({
+                      lang: selected.lang,
+                      season,
+                      episode,
+                      host: selected.host,
+                    })
+                  : ""
+              }
+            />
+          </div>
+        );
+      })()}
 
       {/* Langues. */}
       {langs.length > 1 && (

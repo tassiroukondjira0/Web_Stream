@@ -3,7 +3,7 @@ import { resolveCatalogPlayback } from "@/lib/vidzy";
 import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
 import { SourcePlayer } from "@/components/SourcePlayer";
 
-/** Lecteur des fiches locales : Vidzy et source partenaire en correspondance exacte. */
+/** Lecteur des fiches locales : Vidzy (TMDB) + sources partenaires. */
 
 export async function VidzyPlayer({
   basePath,
@@ -20,10 +20,23 @@ export async function VidzyPlayer({
   year: number | null;
   searchParams: { lang?: string; season?: string; ep?: string; host?: string };
 }) {
-  const [playback, partnerSources] = await Promise.all([
-    resolveCatalogPlayback(title, contentType, year),
-    resolvePartnerPlaybackSources(title, contentType, year),
-  ]);
+  const playback = await resolveCatalogPlayback(title, contentType, year);
+
+  const requestedSeason = Number.parseInt(searchParams.season ?? "", 10) || null;
+  const allSeasons = playback?.seasons ?? [];
+  const activeSeason =
+    requestedSeason !== null && allSeasons.some((s) => s.season === requestedSeason)
+      ? requestedSeason
+      : (allSeasons[0]?.season ?? requestedSeason ?? 1);
+
+  // Sources partenaire : une fiche par saison, récupérée pour la saison active.
+  const partnerSources = await resolvePartnerPlaybackSources(
+    title,
+    contentType,
+    year,
+    activeSeason,
+  ).catch(() => []);
+
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
     ...partnerSources,

@@ -64,11 +64,29 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
 
   const title = asset?.title ?? "Série";
 
-  const [overview, playback, partnerSources] = await Promise.all([
+  const [overview, playback] = await Promise.all([
     fetchTmdbOverviewById(id, "tv"),
     resolvePlaybackByTmdbId(id, "tv"),
-    resolvePartnerPlaybackSources(title, "SERIES", asset?.releaseYear ?? null),
   ]);
+
+  const allSeasons = playback?.seasons ?? [];
+
+  // Saison active : celle demandée par l'URL si elle existe, sinon la première.
+  // Le lecteur applique la même règle, la liste d'épisodes reste donc en phase.
+  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+  const activeSeason =
+    requestedSeason !== null && allSeasons.some((s) => s.season === requestedSeason)
+      ? requestedSeason
+      : (allSeasons[0]?.season ?? requestedSeason ?? 1);
+
+  // Sources partenaire : le partenaire publie une fiche PAR saison, on ne
+  // récupère donc que celle de la saison active (après la grille Vidzy).
+  const partnerSources = await resolvePartnerPlaybackSources(
+    title,
+    "SERIES",
+    asset?.releaseYear ?? null,
+    activeSeason ?? 1,
+  ).catch(() => []);
 
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
@@ -100,10 +118,6 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
-  // Saison active : celle demandée par l'URL si elle existe, sinon la première.
-  // Le lecteur applique la même règle, la liste d'épisodes reste donc en phase.
-  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
-
   // Affiches de saison depuis TMDB (fallback silencieux si pas de credentials)
   const seasonPosters = playback?.tmdbId
     ? await fetchTvSeasonsPosters(
@@ -112,17 +126,10 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
       ).catch(() => new Map())
     : new Map();
 
-  const allSeasons = playback?.seasons ?? [];
-
   const seasonsWithPosters = allSeasons.map((s) => ({
     ...s,
     posterUrl: seasonPosters.get(s.season) ?? null,
   }));
-
-  const activeSeason =
-    requestedSeason !== null && allSeasons.some((s) => s.season === requestedSeason)
-      ? requestedSeason
-      : (allSeasons[0]?.season ?? null);
 
   const seasonToShow = allSeasons.find((s) => s.season === activeSeason) ?? null;
 
