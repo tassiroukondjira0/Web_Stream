@@ -54,7 +54,7 @@ async function AnimesContent({ searchParams }: AnimesPageProps) {
               Mangas & Animés
             </h1>
             <p className="mt-1 text-sm text-zinc-400">
-              Studios légendaires, shonen d'action et classiques intemporels.
+              Studios légendaires, shonen d&apos;action et classiques intemporels.
             </p>
           </div>
         </div>
@@ -67,7 +67,7 @@ async function AnimesContent({ searchParams }: AnimesPageProps) {
           <Sparkles className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
           <h3 className="text-lg font-medium text-white">Aucun animé disponible</h3>
           <p className="mt-1 text-sm text-zinc-400">
-            Le catalogue partenaire n'a pas encore été synchronisé.
+            Le catalogue partenaire n&apos;a pas encore été synchronisé.
           </p>
         </div>
       ) : (

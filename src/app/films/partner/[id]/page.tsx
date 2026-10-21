@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { ChevronLeft, Film, Play } from "lucide-react";
+import { ChevronLeft, Film, Play, Search } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
@@ -105,9 +105,19 @@ export default async function PartnerMoviePage({ params, searchParams }: Partner
           title={title}
         />
       ) : (
-        <div className="mt-4 flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black text-sm text-zinc-400">
+        <div className="mt-4 flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-black px-6 text-center text-sm text-zinc-400">
           <Film className="h-10 w-10 text-zinc-600" />
-          Flux indisponible pour ce film.
+          <p>
+            Flux indisponible pour ce film pour le moment. Nos sources sont
+            régulièrement mises à jour — revenez plus tard ou cherchez un titre équivalent.
+          </p>
+          <Link
+            href={`/recherche?q=${encodeURIComponent(title)}`}
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500"
+          >
+            <Search className="h-4 w-4" />
+            Chercher un autre titre
+          </Link>
         </div>
       )}
 

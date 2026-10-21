@@ -17,6 +17,7 @@ import {
 } from "@/lib/tmdb";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
 import { providerSources, vidzySources } from "@/lib/player-sources";
+import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
 import {
   fetchMangaDetail,
   fetchMangaMeta,
@@ -79,9 +80,20 @@ export default async function FrenchMangaAnimePage({ params, searchParams }: Fre
   const fullTitle = asset?.title ?? detail?.title ?? titleBase;
   const synopsis = overview ?? fiche.synopsis;
 
+  // Repli : le manga n'est pas toujours servi par son site partenaire. On
+  // complète avec les flux du catalogue FRENCHSTREAM (même lecteur, même
+  // reclassement en animés) pour que le titre reste lisible.
+  const [mangaSources, partnerSources] = await Promise.all([
+    Promise.resolve(detail ? providerSources(detail.streams, 1) : []),
+    resolvePartnerPlaybackSources(fullTitle, "ANIME", asset?.releaseYear ?? null).catch(
+      () => [],
+    ),
+  ]);
+
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
-    ...(detail ? providerSources(detail.streams, 1) : []),
+    ...mangaSources,
+    ...partnerSources,
   ];
 
   if (sources.length === 0) {
@@ -90,7 +102,7 @@ export default async function FrenchMangaAnimePage({ params, searchParams }: Fre
         <Film className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
         <h1 className="text-xl font-bold text-white">Contenu indisponible</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Aucun flux de lecture n'est disponible pour ce titre pour le moment.
+          Aucun flux de lecture n&apos;est disponible pour ce titre pour le moment.
         </p>
         <Link
           href="/animes"
@@ -123,7 +135,7 @@ export default async function FrenchMangaAnimePage({ params, searchParams }: Fre
     const raw = await fetchTvSeasonsPosters(playback.tmdbId, seasons.map((s) => s.season)).catch(() => null);
     if (raw instanceof Map) posterMap = raw;
   }
-  let seasonsWithPosters: { season: number; episodes: number[]; posterUrl: string | null }[] =
+  const seasonsWithPosters: { season: number; episodes: number[]; posterUrl: string | null }[] =
     seasons.map((s) => ({
       season: s.season,
       episodes: s.episodes,

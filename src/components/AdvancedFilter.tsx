@@ -166,8 +166,7 @@ export function AdvancedFilter({
             className="rounded-xl border border-white/10 bg-zinc-900/50 px-3 py-2.5 text-xs text-zinc-200 focus:outline-none focus:ring-2 focus:ring-violet-500/50 transition-colors cursor-pointer"
           >
             <option value="">Toutes les années</option>
-            {availableYears
-              .slice()
+            {Array.from(new Set(availableYears))
               .sort((a, b) => b - a)
               .map((y) => (
                 <option key={y} value={String(y)}>

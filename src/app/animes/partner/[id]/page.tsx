@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, Film, Calendar } from "lucide-react";
+import { redirect } from "next/navigation";
+import { ChevronLeft, Search } from "lucide-react";
 import { SourcePlayer } from "@/components/SourcePlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
@@ -9,17 +10,15 @@ import { SeasonSelector } from "@/components/SeasonSelector";
 import { EpisodeList } from "@/components/EpisodeList";
 import { prisma } from "@/lib/prisma";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
-import { providerSources, vidzySources } from "@/lib/player-sources";
+import { vidzySources } from "@/lib/player-sources";
+import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
 import {
   fetchTvDetails,
   fetchTvSeasonsPosters,
   fetchTvSeason,
   type TmdbEpisode,
 } from "@/lib/tmdb";
-import {
-  fetchSeriesDetail,
-  PARTNER_PROVIDER,
-} from "@/modules/providers/partner/partner.client";
+import { PARTNER_PROVIDER } from "@/modules/providers/partner/partner.client";
 
 interface PartnerAnimePageProps {
   params: Promise<{ id: string }>;
@@ -32,12 +31,28 @@ export async function generateMetadata({ params }: PartnerAnimePageProps): Promi
   const { id } = await params;
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: PARTNER_PROVIDER, externalId: id, contentType: "ANIME" },
+      where: { provider: PARTNER_PROVIDER, externalId: id },
       select: { title: true },
     })
     .catch(() => null);
   const title = asset?.title ?? "Animé";
   return { title: `${title} – CinéMax`, robots: { index: false } };
+}
+
+/** Query string de navigation (langue, saison, épisode, hébergeur). */
+function selectionQuery(sp: {
+  lang?: string;
+  season?: string;
+  ep?: string;
+  host?: string;
+}): string {
+  const query = new URLSearchParams();
+  if (sp.lang) query.set("lang", sp.lang);
+  if (sp.season) query.set("season", sp.season);
+  if (sp.ep) query.set("ep", sp.ep);
+  if (sp.host) query.set("host", sp.host);
+  const qs = query.toString();
+  return qs ? `?${qs}` : "";
 }
 
 export default async function PartnerAnimePage({
@@ -49,39 +64,57 @@ export default async function PartnerAnimePage({
 
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: PARTNER_PROVIDER, externalId: id, contentType: "ANIME" },
+      where: { provider: PARTNER_PROVIDER, externalId: id },
       select: {
         title: true,
         posterUrl: true,
         totalEpisodes: true,
         releaseYear: true,
+        contentType: true,
       },
     })
     .catch(() => null);
+
+  // Fiche pas encore reclassée en animé : on renvoie vers la section Séries.
+  if (asset?.contentType === "SERIES") {
+    redirect(`/series/partner/${id}${selectionQuery(sp)}`);
+  }
 
   const title = asset?.title ?? "Animé";
   const year = asset?.releaseYear ?? null;
   const posterUrl = asset?.posterUrl ?? null;
   const totalEpisodes = asset?.totalEpisodes ?? 0;
 
-  const [playback, detail] = await Promise.all([
-    resolveCatalogPlayback(title, "ANIME", year ?? null).catch(() => null),
-    fetchSeriesDetail(id).catch(() => null),
-  ]);
+  const playback = await resolveCatalogPlayback(title, "ANIME", year).catch(() => null);
+
+  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+  const playbackSeasons = playback?.seasons ?? [];
+  const activeSeason =
+    requestedSeason !== null && playbackSeasons.some((s) => s.season === requestedSeason)
+      ? requestedSeason
+      : (playbackSeasons[0]?.season ?? requestedSeason ?? 1);
+  const activeEpisode = Number.parseInt(sp.ep ?? "", 10) || 1;
+
+  // Le partenaire publie une fiche par saison : on résout les flux de la
+  // saison active (et non systématiquement ceux de la saison 1).
+  const providerSrcs = await resolvePartnerPlaybackSources(
+    title,
+    "ANIME",
+    year,
+    activeSeason,
+  ).catch(() => []);
 
   const vidzySrcs = playback?.available ? vidzySources(playback) : [];
-  const providerSrcs = detail ? providerSources(detail.streams, 1, "frenchstream") : [];
   const sources = [...vidzySrcs, ...providerSrcs];
-
-  const activeSeason = Number(sp.season ?? "1");
-  const activeEpisode = Number(sp.ep ?? "1");
 
   let seasonCards: { season: number; episodes: number[]; posterUrl?: string | null }[] = [];
   let currentEpisodes: TmdbEpisode[] = [];
   let seriesOverview: string | null = null;
   let seasonsPosterMap = new Map<number, string | null>();
 
-  const tmdbId = detail?.externalId ? Number(detail.externalId) : null;
+  // L'identifiant TMDB vient de la résolution Vidzy (par titre) : l'identifiant
+  // du partenaire (`newsid`) n'est PAS un identifiant TMDB.
+  const tmdbId = playback?.tmdbId ?? null;
   if (tmdbId) {
     const details = await fetchTvDetails(tmdbId).catch(() => null);
     seriesOverview = details?.overview ?? null;
@@ -109,28 +142,18 @@ export default async function PartnerAnimePage({
     }));
   }
 
-  const hrefFor = ({
-    season,
-    episode,
-    lang,
-  }: {
-    season: number;
-    episode: number;
-    lang?: string | null;
-  }) => {
-    const query = new URLSearchParams();
-    query.set("season", String(season));
-    query.set("ep", String(episode));
-    if (lang) query.set("lang", lang);
-    const qs = query.toString();
-    return `/animes/partner/${id}${qs ? `?${qs}` : ""}`;
-  };
-
   const quality = "HD 1080p";
   const langLabel = (sp.lang ?? "vf").toUpperCase();
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <Link
+        href="/animes"
+        className="mb-4 inline-flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+      >
+        <ChevronLeft className="h-4 w-4" /> Catalogue animés
+      </Link>
+
       {/* Lecteur en haut, large */}
       <div className="mb-8 rounded-2xl border border-white/10 bg-black overflow-hidden">
         {sources.length > 0 ? (
@@ -154,8 +177,18 @@ export default async function PartnerAnimePage({
             title={title}
           />
         ) : (
-          <div className="flex h-[400px] items-center justify-center text-sm text-zinc-400 bg-zinc-900">
-            Aucun lecteur disponible pour cet animé.
+          <div className="flex h-[400px] flex-col items-center justify-center gap-3 px-6 text-center text-sm text-zinc-400 bg-zinc-900">
+            <p>
+              Aucun lecteur disponible pour cet animé pour le moment. Nos sources sont
+              régulièrement mises à jour — revenez plus tard ou cherchez un titre équivalent.
+            </p>
+            <Link
+              href={`/recherche?q=${encodeURIComponent(title)}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500"
+            >
+              <Search className="h-4 w-4" />
+              Chercher un autre titre
+            </Link>
           </div>
         )}
       </div>

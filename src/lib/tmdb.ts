@@ -409,19 +409,74 @@ export async function resolveTmdbMatch(
       query: cleaned,
       include_adult: "false",
     });
-    const candidates = (data.results ?? []).filter((r) => r.media_type === kind);
+    const results = data.results ?? [];
+    // Certains titres sont mal typés dans notre catalogue (un animé rangé en
+    // film, un téléfilm en série…). On privilégie le type demandé mais on se
+    // rabat sur l'autre type TMDB si celui-ci ne donne rien, plutôt que de
+    // laisser la fiche sans lecture.
+    const sameKind = results.filter((r) => r.media_type === kind);
+    const otherKind = results.filter(
+      (r) => r.media_type === (kind === "movie" ? "tv" : "movie"),
+    );
+    const candidates = sameKind.length > 0 ? sameKind : otherKind;
     if (candidates.length === 0) return null;
 
     const preferred =
       (hintedYear ? candidates.find((c) => matchYear(c) === hintedYear) : undefined) ??
       candidates[0];
 
+    const resolvedKind: "movie" | "tv" =
+      preferred.media_type === "movie" || preferred.media_type === "tv"
+        ? preferred.media_type
+        : kind;
+
     return {
       id: preferred.id,
-      mediaType: kind,
+      mediaType: resolvedKind,
       title: (preferred.title ?? preferred.name ?? cleaned).trim(),
       year: matchYear(preferred),
     };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Résout le poster (URL) d'un titre par son nom via la recherche TMDB
+ * (`/search/multi`). Sert à combler les fiches du catalogue externe dont la
+ * source ne fournit pas d'affiche. L'année attendue, quand connue, est utilisée
+ * pour privilégier le bon résultat.
+ *
+ * Retourne null si TMDB n'est pas configuré, si aucun résultat n'expose
+ * d'affiche, ou en cas d'erreur — jamais d'exception remontée (CDC §11).
+ */
+export async function fetchTmdbPosterByTitle(
+  title: string,
+  year?: number | null,
+): Promise<string | null> {
+  if (!hasTmdbCredentials()) return null;
+  const cleaned = stripTitleSuffix(title);
+  if (cleaned.length < 2) return null;
+
+  const hintedYear = year ?? yearFromTitle(title);
+  try {
+    const data = await tmdbFetch<TmdbSearchResponse>("/search/multi", {
+      query: cleaned,
+      include_adult: "false",
+    });
+    const withPoster = (data.results ?? []).filter(
+      (r) =>
+        (r.media_type === "movie" || r.media_type === "tv") &&
+        typeof r.poster_path === "string" &&
+        r.poster_path.length > 0,
+    );
+    if (withPoster.length === 0) return null;
+
+    const preferred =
+      (hintedYear ? withPoster.find((c) => matchYear(c) === hintedYear) : undefined) ??
+      withPoster[0];
+
+    return preferred.poster_path ? `${TMDB_IMG}/w500${preferred.poster_path}` : null;
   } catch {
     return null;
   }

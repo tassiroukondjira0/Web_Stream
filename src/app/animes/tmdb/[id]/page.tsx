@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { ChevronLeft, Play, Film } from "lucide-react";
+import { ChevronLeft, Play } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
+import { UnavailableNotice } from "@/components/UnavailableNotice";
 import { SeasonSelector } from "@/components/SeasonSelector";
 import { EpisodeList } from "@/components/EpisodeList";
 import { prisma } from "@/lib/prisma";
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }: TmdbAnimePageProps): Promise<
   const { id } = await params;
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: TMDB_PROVIDER, externalId: id, contentType: "ANIME" },
+      where: { provider: TMDB_PROVIDER, externalId: id, contentType: { in: ["ANIME", "SERIES"] } },
       select: { title: true },
     })
     .catch(() => null);
@@ -57,7 +58,7 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
 
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: TMDB_PROVIDER, externalId: id, contentType: "ANIME" },
+      where: { provider: TMDB_PROVIDER, externalId: id, contentType: { in: ["ANIME", "SERIES"] } },
       select: { title: true, posterUrl: true, totalEpisodes: true, releaseYear: true },
     })
     .catch(() => null);
@@ -94,18 +95,8 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
 
   if (sources.length === 0) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-24 text-center">
-        <Film className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
-        <h1 className="text-xl font-bold text-white">Animé indisponible</h1>
-        <p className="mt-2 text-sm text-zinc-400">
-          Aucun flux de lecture n&apos;est disponible pour cet animé pour le moment.
-        </p>
-        <Link
-          href="/animes"
-          className="mt-6 inline-block rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500"
-        >
-          Retour aux animés
-        </Link>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <UnavailableNotice kind="anime" title={title} catalogHref="/animes" />
       </div>
     );
   }

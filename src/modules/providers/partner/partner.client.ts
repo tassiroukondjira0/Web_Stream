@@ -91,6 +91,41 @@ async function fetchText(url: string, extra?: Record<string, string>): Promise<s
 }
 
 /**
+ * POST de formulaire avec tentatives (le site limite par intermittence :
+ * timeout, 503). Renvoie le corps texte ou null après 3 essais.
+ */
+async function postForm(
+  url: string,
+  form: Record<string, string>,
+  extra?: Record<string, string>,
+): Promise<string | null> {
+  const body = new URLSearchParams(form).toString();
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: headers({
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Requested-With": "XMLHttpRequest",
+          Origin: new URL(url).origin,
+          "Content-Length": String(Buffer.byteLength(body)),
+          ...extra,
+        }),
+        body,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (res.ok) return await res.text();
+      // 429 : quota de scans du site atteint. Réessayer n'aide pas — on
+      // abandonne sans bruit (le lecteur retombera sur les autres sources).
+      if (res.status === 429) return null;
+    } catch {
+      // Nouvelle tentative.
+    }
+  }
+  return null;
+}
+
+/**
  * Parse une page de catégorie (films ou séries) en vignettes `.short` :
  * identifiant (`?newsid=ID`), titre (`div.short-title`), affiche TMDB,
  * version (`span.film-version`) et éventuel nombre d'épisodes.
@@ -134,6 +169,23 @@ export async function fetchPartnerCatalogPage(
   const base = await getBaseUrl();
   if (!base) return [];
   const html = await fetchText(`${base}/${kind}/page/${page}/`);
+  if (!html) return [];
+  return parseCatalog(html);
+}
+
+/**
+ * Catégorie « Animation » des séries du partenaire (animes et séries animées).
+ * Le partenaire ne distingue pas les animés des séries dans sa catégorie
+ * principale : cette liste sert à les reclasser en `ANIME` pour la section
+ * « Animes » (voir partner.sync).
+ */
+const ANIMATION_SERIES_PATH = "/animation-serie-//";
+
+/** Récupère une page de la catégorie « Animation » (séries animées / animes). */
+export async function fetchAnimationSeriesPage(page: number): Promise<PartnerItem[]> {
+  const base = await getBaseUrl();
+  if (!base) return [];
+  const html = await fetchText(`${base}${ANIMATION_SERIES_PATH}page/${page}/`);
   if (!html) return [];
   return parseCatalog(html);
 }
@@ -187,7 +239,12 @@ export async function fetchSeriesDetail(externalId: string): Promise<PartnerDeta
   const base = await getBaseUrl();
   if (!base) return null;
 
-  // 1. API ep-data.php (flux structurés langue × épisode × hôte)
+  // 1. Endpoint serveur auto_repair.php : flux réels du lecteur dynamique
+  //    (couvre les fiches dont ep-data.php est vide).
+  const repair = await fetchAutoRepairDetail(externalId);
+  if (repair) return repair;
+
+  // 2. API ep-data.php (flux structurés langue × épisode × hôte)
   const text = await fetchText(`${base}/ep-data.php?id=${externalId}&format=js`, {
     "X-Requested-With": "XMLHttpRequest",
     Referer: `${base}/index.php?newsid=${externalId}`,
@@ -201,7 +258,7 @@ export async function fetchSeriesDetail(externalId: string): Promise<PartnerDeta
     }
   }
 
-  // 2. Fallback : extraire directement les iframes de lecteurs vidéo
+  // 3. Fallback : extraire directement les iframes de lecteurs vidéo
   //    depuis la page de détail (ep-data.php est vide sur le site actuel).
   const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
   if (!html) return null;
@@ -260,13 +317,99 @@ export function parseMovieEmbeds(html: string): PartnerMovieEmbed[] {
   return embeds;
 }
 
-/** Récupère les embeds de film explicitement exposés sur sa fiche (`data-url`). */
+/**
+ * Récupère les embeds de film : d'abord le HTML (`data-url` explicites),
+ * puis l'endpoint serveur `auto_repair.php` qui expose les flux du lecteur
+ * dynamique (les fiches récentes n'embarquent plus d'embed statique).
+ */
 export async function fetchMovieEmbeds(externalId: string): Promise<PartnerMovieEmbed[]> {
   if (!/^\d{1,10}$/.test(externalId)) return [];
   const base = await getBaseUrl();
   if (!base) return [];
+
   const html = await fetchText(`${base}/index.php?newsid=${externalId}`);
-  return html ? parseMovieEmbeds(html) : [];
+  const staticEmbeds = html ? parseMovieEmbeds(html) : [];
+  const seen = new Set(staticEmbeds.map((e) => e.url));
+
+  const repair = await fetchAutoRepairDetail(externalId);
+  const repaired: PartnerMovieEmbed[] = [];
+  if (repair) {
+    for (const stream of repair.streams) {
+      if (seen.has(stream.url)) continue;
+      seen.add(stream.url);
+      try {
+        repaired.push({ host: new URL(stream.url).hostname, url: stream.url });
+      } catch {
+        // URL invalide : ignorée.
+      }
+    }
+  }
+
+  return [...staticEmbeds, ...repaired];
+}
+
+/**
+ * Endpoint serveur du partenaire qui renvoie les flux réels d'une fiche
+ * (`auto_repair.php`, `mode=scan`) : c'est lui qui alimente le lecteur chargé
+ * côté navigateur — les embeds n'apparaissent pas dans le HTML statique.
+ *
+ * Réponse : `{ success, is_serie, results: [{ version, lang, ep?, vidzy_url,
+ * fsvid_url, uqload_url, ... }] }`. Les hôtes valides portent `*_url` non vide
+ * (les morts valent "missing"/"hs").
+ */
+export async function fetchAutoRepairDetail(externalId: string): Promise<PartnerDetail | null> {
+  if (!/^\d{1,10}$/.test(externalId)) return null;
+  const base = await getBaseUrl();
+  if (!base) return null;
+
+  const text = await postForm(
+    `${base}/engine/ajax/auto_repair.php`,
+    { film_id: externalId, mode: "scan" },
+    { Referer: `${base}/index.php?newsid=${externalId}` },
+  );
+  if (!text) return null;
+
+  try {
+    const detail = mapAutoRepair(externalId, JSON.parse(text));
+    return detail.streams.length > 0 ? detail : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Hôtes connus du partenaire, associés à leur champ `*_url` dans la réponse. */
+const AUTO_REPAIR_HOSTS: readonly { field: string; host: string }[] = [
+  { field: "vidzy_url", host: "vidzy" },
+  { field: "fsvid_url", host: "fsvid" },
+  { field: "uqload_url", host: "uqload" },
+  { field: "voe_url", host: "voe" },
+  { field: "netu_url", host: "netu" },
+];
+
+/** Convertit la réponse `auto_repair.php` en détail (flux + infos épisodes). */
+export function mapAutoRepair(externalId: string, data: unknown): PartnerDetail {
+  const streams: PartnerStream[] = [];
+  const info: Record<number, PartnerEpisodeInfo> = {};
+  const results =
+    data && typeof data === "object" && Array.isArray((data as { results?: unknown }).results)
+      ? ((data as { results: unknown[] }).results as unknown[])
+      : [];
+
+  for (const entry of results) {
+    if (!entry || typeof entry !== "object") continue;
+    const r = entry as Record<string, unknown>;
+    const lang = (typeof r.lang === "string" ? r.lang : "vf").toLowerCase();
+    const episode = typeof r.ep === "number" ? r.ep : 1;
+
+    for (const { field, host } of AUTO_REPAIR_HOSTS) {
+      const url = r[field];
+      if (typeof url === "string" && /^https?:\/\//.test(url)) {
+        streams.push({ lang, episode, host, url });
+      }
+    }
+  }
+
+  return { externalId, streams, info };
 }
 
 /** Normalise `{ "<lang>": { "<ep>": { "<host>": "<url>" } }, "info": { "<ep>": {...} } }`. */

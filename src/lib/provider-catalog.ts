@@ -88,6 +88,12 @@ const PARTNER_PROVIDER = "FRENCHSTREAM";
 const FRENCHMANGA_PROVIDER = "FRENCHMANGA";
 
 /**
+ * Fournisseur de repli `french-streaming.tv` (films + séries). Alimente les
+ * grilles en complément de TMDB/FRENCHSTREAM et sert de source à la lecture.
+ */
+const FSTREAMTV_PROVIDER = "FSTREAMTV";
+
+/**
  * Fournisseur TMDB (films + séries) — catalogue de métadonnées TMDB lu via
  * Vidzy. `externalId` y est l'identifiant TMDB (lecture directe, sans
  * résolution par titre).
@@ -95,7 +101,10 @@ const FRENCHMANGA_PROVIDER = "FRENCHMANGA";
 const TMDB_PROVIDER = "TMDB";
 
 /** Fournisseurs alimentant les grilles films / séries. */
-const MOVIE_SERIES_PROVIDERS = [PARTNER_PROVIDER, TMDB_PROVIDER];
+const MOVIE_SERIES_PROVIDERS = [PARTNER_PROVIDER, FSTREAMTV_PROVIDER, TMDB_PROVIDER];
+
+/** Fournisseurs alimentant la grille animés (toutes sources confondues). */
+const ANIME_PROVIDERS = [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER, FSTREAMTV_PROVIDER, TMDB_PROVIDER];
 
 /**
  * Route de fiche/lecture d'un asset partenaire. Les animés ont leur propre
@@ -122,6 +131,11 @@ export function providerItemHref(
     return item.contentType === "SERIES"
       ? `/series/partner/${item.externalId}`
       : `/films/partner/${item.externalId}`;
+  }
+  if (item.provider === FSTREAMTV_PROVIDER) {
+    return item.contentType === "SERIES"
+      ? `/series/fstreamtv/${item.externalId}`
+      : `/films/fstreamtv/${item.externalId}`;
   }
   // FrenchManga (animés) : lecteur dédié `/animes/frenchmanga/`.
   return `/animes/frenchmanga/${item.externalId}`;
@@ -163,6 +177,9 @@ async function listAssets(
       contentType,
       isPublished: true,
       isDuplicate: false,
+      // N'expose que les fiches ayant au moins une source de lecture connue
+      // (calculé par la passe de couverture — voir modules/providers/coverage).
+      hasSources: true,
       // Drame inclut les K-Drama : une série coréenne est taguée « k-drama »
       // (voir modules/providers/tmdb/tmdb.sync) mais reste un drame.
       ...(filters.categorySlug
@@ -226,13 +243,13 @@ export function getPartnerSeries(
   return listAssets("SERIES", page, pageSize, MOVIE_SERIES_PROVIDERS, filters);
 }
 
-/** Animés / mangas du catalogue partenaire — French-Manga uniquement. */
+/** Animés / mangas du catalogue (French-Manga, partenaire et TMDB). */
 export function getPartnerAnimes(
   page = 1,
   pageSize = 24,
   filters: AssetFilters = {},
 ): Promise<ProviderCatalogPage> {
-  return listAssets("ANIME", page, pageSize, [FRENCHMANGA_PROVIDER], filters);
+  return listAssets("ANIME", page, pageSize, ANIME_PROVIDERS, filters);
 }
 
 /**
@@ -246,9 +263,10 @@ export async function getLatestPartnerAssets(limit = 60): Promise<ProviderCatalo
   try {
     const rows = await prisma.providerAsset.findMany({
       where: {
-        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER, TMDB_PROVIDER] },
+        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER, FSTREAMTV_PROVIDER, TMDB_PROVIDER] },
         isPublished: true,
         isDuplicate: false,
+        hasSources: true,
       },
       orderBy: { lastSeenAt: "desc" },
       take,
@@ -277,6 +295,7 @@ export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCata
         contentType: "MOVIE",
         isPublished: true,
         isDuplicate: false,
+        hasSources: true,
         trendingRank: { not: null },
       },
       orderBy: { trendingRank: "asc" },
@@ -299,6 +318,7 @@ export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCata
           contentType: "MOVIE",
           isPublished: true,
           isDuplicate: false,
+          hasSources: true,
           ...exclude,
         },
         orderBy: [{ lastSeenAt: "desc" }, { id: "asc" }],
@@ -455,10 +475,11 @@ export async function searchPartnerAssets(
   try {
     const rows = await prisma.providerAsset.findMany({
       where: {
-        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER, TMDB_PROVIDER] },
+        provider: { in: [FRENCHMANGA_PROVIDER, PARTNER_PROVIDER, FSTREAMTV_PROVIDER, TMDB_PROVIDER] },
         contentType: { in: ["MOVIE", "SERIES", "ANIME"] },
         isPublished: true,
         isDuplicate: false,
+        hasSources: true,
         title: { contains: q, mode: "insensitive" },
       },
       orderBy: [{ lastSeenAt: "desc" }, { id: "asc" }],

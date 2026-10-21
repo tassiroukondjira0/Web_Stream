@@ -318,6 +318,11 @@ model ProviderAsset {
   /// toucher au choix de publication de l'admin (`isPublished`). Calculé par la
   /// déduplication (voir modules/providers/tmdb/dedupe.ts).
   isDuplicate   Boolean            @default(false)
+  /// Vrai si au moins une source de lecture est connue pour ce titre (Vidzy
+  /// ou un fournisseur de repli homologue). Calculé par la passe de couverture
+  /// (scripts/coverage-fstreamtv.ts). Les grilles ne listent que hasSources=true
+  /// pour ne pas exposer de fiches sans lecteur.
+  hasSources    Boolean            @default(true)
   firstSeenAt   DateTime             @default(now())
   lastSeenAt    DateTime             @default(now()) // rafraîchi à chaque synchro
 
@@ -329,6 +334,7 @@ model ProviderAsset {
   @@index([provider, contentType, platforms])
   @@index([provider, contentType, releaseYear])
   @@index([provider, contentType, isDuplicate])
+  @@index([provider, contentType, hasSources])
   @@map("provider_assets")
 }
 

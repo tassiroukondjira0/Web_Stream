@@ -21,7 +21,7 @@ import { TMDB_PROVIDER } from "./tmdb.client";
 /** Fournisseur dont les doublons sont masqués au profit de TMDB. */
 const SECONDARY_PROVIDER = "FRENCHSTREAM";
 
-const CONTENT_TYPES = ["MOVIE", "SERIES"] as const;
+const CONTENT_TYPES = ["MOVIE", "SERIES", "ANIME"] as const;
 
 /** Taille des lots d'écriture (limite le nombre d'allers-retours DB). */
 const UPDATE_CHUNK = 1000;
@@ -54,7 +54,8 @@ async function flagIds(ids: string[], isDuplicate: boolean): Promise<number> {
 }
 
 /**
- * Recalcule les doublons FRENCHSTREAM par rapport à TMDB (films + séries).
+ * Recalcule les doublons FRENCHSTREAM par rapport à TMDB (films, séries et
+ * animés).
  */
 export async function dedupeAgainstTmdb(): Promise<DedupeReport> {
   const startedAt = Date.now();

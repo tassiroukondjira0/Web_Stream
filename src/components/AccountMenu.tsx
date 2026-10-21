@@ -107,7 +107,7 @@ export function AccountMenu() {
                     </Link>
                   )}
                   <Link
-                    href="/mon-compte#favoris"
+                    href="/favoris"
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
                   >
@@ -115,7 +115,7 @@ export function AccountMenu() {
                     Mes favoris
                   </Link>
                   <Link
-                    href="/mon-compte#souhaits"
+                    href="/souhaits"
                     onClick={() => setOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
                   >

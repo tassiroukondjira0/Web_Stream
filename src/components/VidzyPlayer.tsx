@@ -1,6 +1,9 @@
 import { vidzySources } from "@/lib/player-sources";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
-import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
+import {
+  resolveFStreamTvPlaybackSources,
+  resolvePartnerPlaybackSources,
+} from "@/lib/partner-playback";
 import { SourcePlayer } from "@/components/SourcePlayer";
 
 /** Lecteur des fiches locales : Vidzy (TMDB) + sources partenaires. */
@@ -37,9 +40,19 @@ export async function VidzyPlayer({
     activeSeason,
   ).catch(() => []);
 
+  // Repli : si le partenaire principal n'expose aucune source lisible, on tente
+  // le fournisseur secondaire (`french-streaming.tv`, moteur distinct).
+  const fallbackSources =
+    partnerSources.length > 0
+      ? []
+      : await resolveFStreamTvPlaybackSources(title, contentType, year, activeSeason).catch(
+          () => [],
+        );
+
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
     ...partnerSources,
+    ...fallbackSources,
   ];
 
   if (sources.length === 0) return null;

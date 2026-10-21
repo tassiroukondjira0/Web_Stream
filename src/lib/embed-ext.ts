@@ -18,7 +18,7 @@ export const EMBED_USER_AGENT =
  * pour ne pas transformer le proxy en relais ouvert.
  */
 export const EXTERNAL_EMBED_HOST_RE =
-  /(^|\.)(uqload\.[a-z]+|fsvid\.[a-z]+|filemoon\.[a-z]+|trakx\.[a-z]+|voe\.[a-z]+|netu\.[a-z]+|luluvido\.[a-z]+|doodstream\.[a-z]+|dood\.[a-z]+|streamtape\.[a-z]+|mixdrop\.[a-z]+|upstream\.[a-z]+)$/i;
+  /(^|\.)(uqload\.[a-z]+|fsvid\.[a-z]+|filemoon\.[a-z]+|kokoflix\.[a-z]+|trakx\.[a-z]+|voe\.[a-z]+|netu\.[a-z]+|luluvido\.[a-z]+|doodstream\.[a-z]+|dood\.[a-z]+|streamtape\.[a-z]+|mixdrop\.[a-z]+|upstream\.[a-z]+)$/i;
 
 export const EXT_PROXY_PREFIX = "/api/embed/ext/proxy?u=";
 export const EXT_DOC_PREFIX = "/api/embed/ext?u=";
@@ -73,12 +73,15 @@ export function originalEmbedUrl(url: string): string | null {
 }
 
 /**
- * Référent envoyé aux hébergeurs : premier domaine du fournisseur
- * (`PARTNER_DOMAINS`). Repli sur le domaine historique.
+ * Référent envoyé aux hébergeurs. Ordre de résolution :
+ *  1. le domaine du fournisseur de repli `FSTREAMTV_DOMAIN` (fournisseur actif) ;
+ *  2. le premier domaine de `PARTNER_DOMAINS` (partenaire principal, si présent) ;
+ *  3. le domaine historique de repli.
  */
 export function partnerReferer(): string {
-  const raw = process.env.PARTNER_DOMAINS?.split(",")[0]?.trim();
-  if (!raw) return "https://french-stream.net/";
+  const raw =
+    process.env.FSTREAMTV_DOMAIN?.trim() || process.env.PARTNER_DOMAINS?.split(",")[0]?.trim();
+  if (!raw) return "https://www.french-streaming.tv/";
   const base = raw.startsWith("http") ? raw : `https://${raw}`;
   return base.endsWith("/") ? base : `${base}/`;
 }

@@ -28,13 +28,16 @@ export async function GET() {
   }
 
   try {
-    const [total, movies, series, runs] = await Promise.all([
+    const [total, movies, series, animes, runs] = await Promise.all([
       prisma.providerAsset.count({ where: { provider: PARTNER_PROVIDER } }),
       prisma.providerAsset.count({
         where: { provider: PARTNER_PROVIDER, contentType: "MOVIE" },
       }),
       prisma.providerAsset.count({
         where: { provider: PARTNER_PROVIDER, contentType: "SERIES" },
+      }),
+      prisma.providerAsset.count({
+        where: { provider: PARTNER_PROVIDER, contentType: "ANIME" },
       }),
       prisma.providerSyncRun.findMany({
         where: { provider: PARTNER_PROVIDER },
@@ -45,7 +48,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      assets: { total, movies, series, animes: 0 },
+      assets: { total, movies, series, animes },
       runs: runs.map((r) => ({
         id: r.id,
         status: r.status,

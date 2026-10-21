@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { ChevronLeft, Play, Tv } from "lucide-react";
+import { redirect } from "next/navigation";
+import { ChevronLeft, Play } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
+import { UnavailableNotice } from "@/components/UnavailableNotice";
 import { SeasonSelector } from "@/components/SeasonSelector";
 import { EpisodeList } from "@/components/EpisodeList";
 import { prisma } from "@/lib/prisma";
@@ -17,7 +19,10 @@ import {
 } from "@/lib/tmdb";
 import { resolvePlaybackByTmdbId } from "@/lib/vidzy";
 import { vidzySources } from "@/lib/player-sources";
-import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
+import {
+  resolveFStreamTvPlaybackSources,
+  resolvePartnerPlaybackSources,
+} from "@/lib/partner-playback";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
 
 /**
@@ -37,7 +42,7 @@ export async function generateMetadata({ params }: TmdbSeriesPageProps): Promise
   const { id } = await params;
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: TMDB_PROVIDER, externalId: id, contentType: "SERIES" },
+      where: { provider: TMDB_PROVIDER, externalId: id },
       select: { title: true },
     })
     .catch(() => null);
@@ -57,10 +62,27 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
 
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: TMDB_PROVIDER, externalId: id, contentType: "SERIES" },
-      select: { title: true, posterUrl: true, totalEpisodes: true, releaseYear: true },
+      where: { provider: TMDB_PROVIDER, externalId: id },
+      select: {
+        title: true,
+        posterUrl: true,
+        totalEpisodes: true,
+        releaseYear: true,
+        contentType: true,
+      },
     })
     .catch(() => null);
+
+  // Une série TV animée (genre Animation) appartient à la section « Animes ».
+  if (asset?.contentType === "ANIME") {
+    const query = new URLSearchParams();
+    if (sp.lang) query.set("lang", sp.lang);
+    if (sp.season) query.set("season", sp.season);
+    if (sp.ep) query.set("ep", sp.ep);
+    if (sp.host) query.set("host", sp.host);
+    const qs = query.toString();
+    redirect(`/animes/tmdb/${id}${qs ? `?${qs}` : ""}`);
+  }
 
   const title = asset?.title ?? "Série";
 
@@ -88,25 +110,27 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
     activeSeason ?? 1,
   ).catch(() => []);
 
+  // Repli : fournisseur secondaire si le partenaire n'expose aucune source.
+  const fallbackSources =
+    partnerSources.length > 0
+      ? []
+      : await resolveFStreamTvPlaybackSources(
+          title,
+          "SERIES",
+          asset?.releaseYear ?? null,
+          activeSeason ?? 1,
+        ).catch(() => []);
+
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
     ...partnerSources,
+    ...fallbackSources,
   ];
 
   if (sources.length === 0) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-24 text-center">
-        <Tv className="mx-auto h-12 w-12 text-zinc-600 mb-3" />
-        <h1 className="text-xl font-bold text-white">Série indisponible</h1>
-        <p className="mt-2 text-sm text-zinc-400">
-          Aucun flux de lecture n&apos;est disponible pour cette série pour le moment.
-        </p>
-        <Link
-          href="/series"
-          className="mt-6 inline-block rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500"
-        >
-          Retour aux séries
-        </Link>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <UnavailableNotice kind="series" title={title} catalogHref="/series" />
       </div>
     );
   }

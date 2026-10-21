@@ -13,9 +13,12 @@
  */
 
 import { prisma } from "@/lib/prisma";
+import { fetchTmdbDiscover } from "@/lib/tmdb";
 import { bulkUpsertProviderAssets } from "../bulk-upsert";
+import { reclassifyProviderAssets, touchProviderAssets } from "../reclass";
 import { dedupeAgainstTmdb } from "./dedupe";
 import {
+  TMDB_ANIMATION_GENRE_ID,
   TMDB_PROVIDER,
   fetchTmdbCatalogPage,
   type TmdbCatalogItem,
@@ -24,6 +27,13 @@ import {
 
 const DEFAULT_PAGES = 2;
 const MAX_PAGES = 500; // TMDB plafonne ses listes à 500 pages
+/**
+ * Pages de `/discover/tv?with_genres=16` parcourues pour reclasser en `ANIME`
+ * les séries animées déjà présentes en base (section « Animes »).
+ */
+const DEFAULT_ANIME_PAGES = 150;
+const MAX_ANIME_PAGES = 500;
+const ANIME_FETCH_CONCURRENCY = 6;
 const PRUNE_AFTER_DAYS = 30;
 /** Pages téléchargées simultanément (limite le débit vers TMDB). */
 const FETCH_CONCURRENCY = 6;
@@ -81,7 +91,17 @@ export interface TmdbSyncReport {
   duplicatesHidden: number;
   /** Séries coréennes taguées « k-drama » (après synchro). */
   kdramaTagged: number;
+  /** Séries animées reclassées en `ANIME` pendant cette synchro. */
+  animesReclassified: number;
   durationMs: number;
+}
+
+/** Rapport de reclassement des animés TMDB. */
+export interface TmdbAnimeReclassReport {
+  /** Titres animés trouvés dans `/discover/tv?with_genres=16`. */
+  animationAssets: number;
+  /** Séries reclassées en animés. */
+  reclassified: number;
 }
 
 /** Récupère `pages` pages d'une liste en parallèle (ordre préservé). */
@@ -97,6 +117,58 @@ async function fetchSource(source: TmdbListSource, pages: number): Promise<TmdbC
   }
   await Promise.all(Array.from({ length: Math.min(FETCH_CONCURRENCY, pages) }, worker));
   return results.flat();
+}
+
+/**
+ * Reclasse en `ANIME` les séries TV animées déjà présentes en base.
+ *
+ * TMDB distingue films et séries mais pas les animés : une série TV du genre
+ * Animation (id 16) doit apparaître dans la section « Animes », pas « Séries ».
+ * On balaie `/discover/tv?with_genres=16` (tri par popularité) et on déplace
+ * les lignes correspondantes ; les nouvelles synchros classent déjà via
+ * `genre_ids` (voir tmdb.client).
+ */
+export async function classifyTmdbAnimes(
+  options: { pages?: number; dryRun?: boolean } = {},
+): Promise<TmdbAnimeReclassReport> {
+  const pages = Math.min(Math.max(options.pages ?? DEFAULT_ANIME_PAGES, 1), MAX_ANIME_PAGES);
+  const results: string[][] = new Array(pages);
+  let next = 1;
+  async function worker(): Promise<void> {
+    for (;;) {
+      const page = next++;
+      if (page > pages) return;
+      try {
+        const data = await fetchTmdbDiscover(
+          "/discover/tv",
+          { with_genres: String(TMDB_ANIMATION_GENRE_ID), sort_by: "popularity.desc" },
+          page,
+        );
+        results[page - 1] = (data.results ?? [])
+          .filter((item) => (item.genre_ids ?? []).includes(TMDB_ANIMATION_GENRE_ID))
+          .map((item) => String(item.id));
+      } catch {
+        results[page - 1] = [];
+      }
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(ANIME_FETCH_CONCURRENCY, pages) }, worker),
+  );
+
+  const ids = Array.from(new Set(results.flat()));
+  const report: TmdbAnimeReclassReport = { animationAssets: ids.length, reclassified: 0 };
+  if (options.dryRun || ids.length === 0) return report;
+
+  report.reclassified = await reclassifyProviderAssets(
+    TMDB_PROVIDER,
+    ids,
+    "SERIES",
+    "ANIME",
+    { categorySlug: "animation" },
+  );
+  await touchProviderAssets(TMDB_PROVIDER, ids);
+  return report;
 }
 
 /** Force le tag « k-drama » sur les séries coréennes remontées par discover.
@@ -141,7 +213,11 @@ export async function syncTmdbCatalog(options: TmdbSyncOptions = {}): Promise<Tm
   // Déduplication par (type, id) en préservant l'ordre de découverte, puis
   // attribution d'un rang de tendance par type (1 = plus tendance).
   const seen = new Set<string>();
-  const rankByType: Record<"MOVIE" | "SERIES", number> = { MOVIE: 0, SERIES: 0 };
+  const rankByType: Record<"MOVIE" | "SERIES" | "ANIME", number> = {
+    MOVIE: 0,
+    SERIES: 0,
+    ANIME: 0,
+  };
   const rows: (TmdbCatalogItem & { trendingRank: number })[] = [];
   for (const items of perSource) {
     for (const item of items) {
@@ -155,9 +231,26 @@ export async function syncTmdbCatalog(options: TmdbSyncOptions = {}): Promise<Tm
 
   const fetched = rows.length;
   const pagesFetched = sources.length > 0 ? pages : 0;
+  const animeIds = rows
+    .filter((row) => row.contentType === "ANIME")
+    .map((row) => row.externalId);
 
   let upserted = 0;
+  let animesReclassified = 0;
   if (!dryRun) {
+    // Une série animée déjà en base sous `SERIES` doit être déplacée AVANT
+    // l'upsert : la clé unique inclut `contentType`, sinon deux lignes
+    // coexisteraient (une en Séries, une en Animes).
+    if (animeIds.length > 0) {
+      animesReclassified = await reclassifyProviderAssets(
+        TMDB_PROVIDER,
+        animeIds,
+        "SERIES",
+        "ANIME",
+        { categorySlug: "animation" },
+      );
+      await touchProviderAssets(TMDB_PROVIDER, animeIds);
+    }
     upserted = await bulkUpsertProviderAssets(
       rows.map((row) => ({
         provider: TMDB_PROVIDER,
@@ -222,6 +315,7 @@ export async function syncTmdbCatalog(options: TmdbSyncOptions = {}): Promise<Tm
     pruned,
     duplicatesHidden,
     kdramaTagged,
+    animesReclassified,
     durationMs: Date.now() - startedAt,
   };
 }

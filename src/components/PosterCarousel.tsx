@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { PosterPlaceholder } from "./PosterPlaceholder";
 
 /** Carte de catalogue générique (affiche l'affiche ou un placeholder). */
 function PosterCard({
@@ -31,9 +32,7 @@ function PosterCard({
           className="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
       ) : (
-        <div className="flex aspect-[2/3] items-center justify-center bg-zinc-800/40 text-xs text-zinc-500">
-          Aucune affiche
-        </div>
+        <PosterPlaceholder title={title} />
       )}
       {badge && (
         <span

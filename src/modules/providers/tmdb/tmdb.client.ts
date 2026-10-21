@@ -22,10 +22,13 @@ export interface TmdbListSource {
   kind: "movie" | "tv";
 }
 
+/** Genre TMDB « Animation » — une série TV animée part dans la section Animes. */
+export const TMDB_ANIMATION_GENRE_ID = 16;
+
 /** Vignette normalisée prête pour `bulkUpsertProviderAssets`. */
 export interface TmdbCatalogItem {
   externalId: string;
-  contentType: "MOVIE" | "SERIES";
+  contentType: "MOVIE" | "SERIES" | "ANIME";
   sourceType: "movie" | "tv";
   title: string;
   releaseYear: number | null;
@@ -36,6 +39,7 @@ export interface TmdbCatalogItem {
 /**
  * Convertit un élément TMDB brut en vignette de catalogue. Gère les deux formes
  * de champs (films : title/release_date ; séries : name/first_air_date).
+ * Les séries TV du genre Animation sont classées `ANIME` (section « Animes »).
  * Retourne null si l'élément est inexploitable (sans id ni titre).
  */
 export function mapTmdbItem(item: TmdbMovie, kind: "movie" | "tv"): TmdbCatalogItem | null {
@@ -50,13 +54,16 @@ export function mapTmdbItem(item: TmdbMovie, kind: "movie" | "tv"): TmdbCatalogI
     "";
   const year = rawDate ? Number.parseInt(rawDate.slice(0, 4), 10) : Number.NaN;
 
-  const categorySlug =
-    (item.genre_ids ?? []).map((id) => TMDB_GENRES[id]?.slug).find((s): s is string => Boolean(s)) ??
-    null;
+  const isAnime = kind === "tv" && (item.genre_ids ?? []).includes(TMDB_ANIMATION_GENRE_ID);
+  const categorySlug = isAnime
+    ? "animation"
+    : ((item.genre_ids ?? [])
+        .map((id) => TMDB_GENRES[id]?.slug)
+        .find((s): s is string => Boolean(s)) ?? null);
 
   return {
     externalId: String(item.id),
-    contentType: kind === "movie" ? "MOVIE" : "SERIES",
+    contentType: kind === "movie" ? "MOVIE" : isAnime ? "ANIME" : "SERIES",
     sourceType: kind,
     title,
     releaseYear: Number.isFinite(year) ? year : null,

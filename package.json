@@ -18,7 +18,12 @@
     "tmdb:sync": "tsx scripts/sync-tmdb.ts",
     "platform:sync": "tsx scripts/sync-platforms.ts",
     "tmdb:dedupe": "tsx scripts/dedupe-tmdb.ts",
+    "animes:reclass": "tsx scripts/reclass-animes.ts",
     "partner:sync": "tsx scripts/sync-partner.ts",
+    "fstreamtv:sync": "tsx scripts/sync-fstreamtv.ts",
+    "coverage:mark": "tsx scripts/coverage-fstreamtv.ts",
+    "posters:enrich": "tsx scripts/enrich-posters.ts",
+    "posters:fix-relative": "tsx scripts/fix-relative-posters.ts",
     "vercel:env": "powershell -ExecutionPolicy Bypass -File ./scripts/vercel-env.ps1",
     "vercel:pull": "vercel env pull .env.local --environment=production",
     "deploy": "vercel --prod"

@@ -118,7 +118,7 @@ function proxiedVidzyUrl(wrapperUrl: string): string {
 export function providerSources(
   streams: { lang: string; episode: number; host: string; url: string }[],
   season = 1,
-  provider?: "frenchstream" | "frenchmanga",
+  provider?: "frenchstream" | "frenchmanga" | "fstreamtv",
 ): PlayerSource[] {
   return streams.map((s) => ({
     host: `ext:${provider ? `${provider}:` : ""}${s.host}`,
