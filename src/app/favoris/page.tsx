@@ -3,18 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  User,
-  ShieldCheck,
-  LogOut,
-  Film,
-  Clock,
-  Bookmark,
-  ListPlus,
-  Sparkles,
-  AlertCircle,
-  X,
-} from "lucide-react";
+import { Bookmark, ListPlus, Sparkles, AlertCircle, X } from "lucide-react";
+import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 
 interface UserProfile {
   id: string;
@@ -101,7 +91,7 @@ export default function FavorisPage() {
             href="/inscription"
             className="inline-flex items-center gap-2 px-4 py-2 border border-white/10 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
           >
-            S&apos;inscrire
+            S'inscrire
           </Link>
         </div>
       </div>
@@ -115,62 +105,47 @@ export default function FavorisPage() {
           <Bookmark className="h-6 w-6 inline-block align-middle mr-2" /> Mes favoris
         </h1>
         <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
+          onClick={() => router.push("/nouveautes")}
+          className="inline-flex items-center gap-2 px-4 py-2 border border-white/10 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors text-sm"
         >
-          <ShieldCheck className="h-4 w-4" /> Déconnexion
+          <Sparkles className="h-4 w-4" /> Nouveautés
         </button>
       </div>
 
       {bookmarks.length === 0 ? (
-        <div className="mx-auto max-w-md px-4 py-12 text-center text-zinc-500">
-          <Bookmark className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>Aucun favori pour le moment.</p>
-          <p className="mt-2 text-sm">
-            Ajoutez des médias à vos favoris depuis les fiches de film, série ou animé.
-          </p>
+        <div className="text-center py-12 text-zinc-400">
+          Aucun favori pour le moment. Ajoutez des médias à vos favoris depuis les fiches de film, série ou animé.
         </div>
       ) : (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {bookmarks.map((slug) => {
             const href = slugToHref(slug);
+            const title = prettyTitle(slug);
+            const posterUrl = getPosterUrl(slug);
+
             return (
-              <li
+              <ProviderPosterCard
                 key={slug}
-                className="group rounded-xl border border-white/5 bg-black/30 overflow-hidden hover:border-violet-500/50 transition-colors"
-              >
-                <a
-                  href={href}
-                  className="block aspect-w-16 aspect-h-24 bg-zinc-800 overflow-hidden group-hover:opacity-90"
-                >
-                  <div
-                  className="w-full h-full bg-zinc-700"
-                  style={{ backgroundImage: `url("${getPosterUrl(slug) || "/placeholder.svg?height=200&width=300"}")` }}
-                />
-                </a>
-                <div className="p-3">
-                  <Link
-                    href={href}
-                    className="text-xs font-medium text-zinc-200 hover:text-white transition-colors"
-                  >
-                    {prettyTitle(slug)}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => removeBookmark(slug)}
-                    className="mt-2 w-full rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-amber-500/10 hover:text-amber-400 text-xs"
-                    title="Retirer de la liste"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </div>
-              </li>
+                href={href}
+                posterUrl={posterUrl}
+                title={title}
+                year={extractYear(slug)}
+              />
             );
           })}
-        </ul>
+        </div>
       )}
     </div>
   );
+}
+
+/** Extract year from slug if possible */
+function extractYear(slug: string): string | null {
+  const yearMatch = slug.match(/(19|20)\d{2}/);
+  if (yearMatch) {
+    return yearMatch[0];
+  }
+  return null;
 }
 
 /** Route de fiche correspondant à un slug (local ou partenaire externe). */
@@ -212,17 +187,83 @@ function humanize(value: string): string {
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+
 /** Obtient l'ID TMDB depuis un slug (pour les slugs tmdb-*). */
 function getTmdbId(slug: string): string | null {
-  const m = slug.match(/^tmdb-(movie|series|anime)-(.+)$/);
-  return m ? m[2] : null;
+  /** Patterns de slugs TMDB supportés (multiples formats possibles) */
+  const TMDB_PATTERNS = [
+    // Format standard: tmdb-movie-550, tmdb-series-123, tmdb-anime-gintama
+    /^tmdb-(movie|series|anime)-(.+)$/,
+    // Format alternatif: tmdb-550, tmdb-123 (ID seul après tmdb-)
+    /^tmdb-([0-9]+)$/,
+    // Format avec underscore: tmdb_movie_550, tmdb_series_123
+    /^tmdb_[_-](.+)$/,
+    // Format court: juste l'ID TMDB sans préfixe (si stocké tel quel)
+    /^[0-9]{3,8}$/,
+  ];
+
+  for (const pattern of TMDB_PATTERNS) {
+    const m = slug.match(pattern);
+    if (m) {
+      // Extraire l'ID du motif capturé
+      let id: string | undefined;
+
+      if (pattern.source.includes("(movie|series|anime)")) {
+        // Format tmdb-movie-550 -> ID est le 3e groupe
+        id = m[2];
+      } else if (pattern.source.includes("([0-9]+)"))) {
+        // Format tmdb-550 -> ID est le 2e groupe
+        id = m[1];
+      } else if (pattern.source.includes("tmdb_[_-]")) {
+        // Format tmdb_movie_550 -> ID est le 2e groupe
+        id = m[1];
+      } else {
+        // Format ID brut
+        id = m[0];
+      }
+
+      // Nettoyer l'ID - enlever espaces, caractères spéciaux, mais garder les chiffres
+      const cleanedId = id?.replace(/[^0-9]/g, "") ?? "";
+
+      if (cleanedId && cleanedId.length >= 3) {
+        return cleanedId;
+      }
+
+      // Si l'ID nettoyé est trop court ou vide, essayer le slug original
+      const originalId = (id || slug).replace("tmdb-", "").replace("tmdb_", "").replace(/-/g, "").replace(/_/g, "").trim();
+      if (originalId && /^[0-9]+$/.test(originalId)) {
+        return originalId;
+      }
+    }
+  }
+
+  return null;
 }
 
 /** Obtient l'URL de l'affiche TMDB pour un slug. */
 function getPosterUrl(slug: string): string | null {
   const tmdbId = getTmdbId(slug);
-  if (!tmdbId) return null;
-  // Utilise l'image CDN TMDB avec un placeholder par défaut
+  if (!tmdbId) {
+    console.debug(`[getPosterUrl] Aucun TMDB ID trouvé pour le slug: ${slug}`);
+    return null;
+  }
+
+  // Utiliser la variable d'environnement si définie, sinon fallback CDN TMDB
   const TMDB_IMG = process.env.NEXT_PUBLIC_TMDB_IMG || "https://image.tmdb.org/t/p";
-  return `${TMDB_IMG}/w500/placeholder.svg`;
+
+  // Construire l'URL avec w500 (taille moyenne)
+  // Format: https://image.tmdb.org/t/p/w500/{id}.jpg
+  const posterUrl = `${TMDB_IMG}/w500/${tmdbId}.jpg`;
+
+  // Log de debug pour aider au débogage
+  console.debug(`[getPosterUrl] URL générée: ${posterUrl} (ID: ${tmdbId})`);
+
+  // Retourne l'URL - si l'image n'existe pas, le composant ProviderPosterCard
+  // affichera automatiquement le placeholder par défaut
+  return posterUrl;
+}
+
+/** Vérifie si un slug est au format TMDB */
+function isTmdbSlug(slug: string): boolean {
+  return /^tmdb-/i.test(slug);
 }

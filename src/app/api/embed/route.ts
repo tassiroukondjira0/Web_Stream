@@ -180,6 +180,19 @@ try{
   // l'interception en CSS (élément conservé, anti-tamper du code Vidzy aveugle)
   // plutôt qu'en le supprimant.
   const overlayShim = `<style>#dontfoid,#adbd,#play_limit_box,[znid]{pointer-events:none!important}[style*="2147483647"]{pointer-events:none!important}</style>`;
+  // L'embed Vidzy embarque DEUX interfaces de lecteur au-dessus de la même
+  // balise <video> :
+  //  - le skin legacy FMovies (`#fm-*`) : barre de contrôle + gros bouton
+  //    play centré, câblé (listeners click réels) — c'est celui que l'on voit ;
+  //  - le skin video.js/nuevo (`#vjs-*`) : `.vjs-control-bar` réduite à
+  //    0 px de haut (hors cadre, `vjs-null`) et gros bouton play en
+  //    `display:none` — le skin est là mais replié, et peut se redéplier par
+  //   -dessus le skin legacy au premier survol/interaction.
+  // Résultat à l'écran : deux lecteurs superposés (deux barres de contrôle,
+  // deux boutons play). On masque donc le chrome video.js et on ne garde que
+  // le skin legacy, qui est le seul à réagir aux clics ; video.js conserve
+  // la gestion du flux HLS (le <video> lui appartient toujours).
+  const playerUiShim = `<style>.vjs-control-bar,.vjs-big-play-button,.vjs-poster,.vjs-overlay,.vjs-modal-dialog{display:none!important}</style>`;
   // Bootstrap : le document d'embed tourne sur notre origine, alors que son
   // code suppose être sur vidzy.xx. On réécrit les appels runtime :
   //  - URLs root-relative (`/js/domain.txt`) → origine de l'embed ;
@@ -311,7 +324,7 @@ document.addEventListener("click",function(e){
   },300);
 },true);
 })();</script>`;
-  const combined = gkScript + killSwitchShim + overlayShim + storageShim + boot;
+  const combined = gkScript + killSwitchShim + overlayShim + playerUiShim + storageShim + boot;
   if (/<head[^>]*>/i.test(html)) {
     return html.replace(/<head[^>]*>/i, (m) => `${m}${combined}`);
   }

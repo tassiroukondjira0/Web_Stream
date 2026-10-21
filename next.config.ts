@@ -30,8 +30,10 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Permissions-Policy",
+            // `light-sensor` n'est pas une directive reconnue par Chrome :
+            // sa présence déclenche « Unrecognized feature » dans la console.
             value:
-              "accelerometer=(), light-sensor=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+              "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
           },
         ],
       },
