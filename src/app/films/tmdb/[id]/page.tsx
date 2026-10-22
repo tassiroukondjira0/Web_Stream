@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { ChevronLeft, Film, Play, Search } from "lucide-react";
+import { ChevronLeft, Film, Play, Search, Calendar } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
@@ -139,8 +139,11 @@ export default async function TmdbMoviePage({ params, searchParams }: TmdbMovieP
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-extrabold text-white sm:text-2xl lg:text-3xl">{title}</h1>
           {year && (
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
-              <span>{year}</span>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-2.5 py-1 font-semibold text-zinc-200 shadow-sm">
+                <Calendar className="h-3.5 w-3.5 text-violet-400" />
+                {year}
+              </span>
             </div>
           )}
           {overview && (

@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
-import { Play } from "lucide-react";
+import { Play, Tv } from "lucide-react";
 
 interface SeasonCard {
   season: number;
@@ -47,23 +47,26 @@ export function SeasonSelector({
   return (
     <div className="mt-4 flex flex-col gap-3">
       <label className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-        Saison
+        Saisons
       </label>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
         {seasons.map((s) => {
           const poster = s.posterUrl ?? seriesPoster ?? null;
+          const epCount = s.episodes.length;
+          const selected = isSelected(s.season);
+
           return (
             <button
               key={s.season}
               onClick={() => selectSeason(s.season)}
-              aria-pressed={isSelected(s.season)}
-              className={`relative group rounded-xl border overflow-hidden transition-all ${
-                isSelected(s.season)
-                  ? "border-violet-500 bg-violet-500/10 ring-1 ring-violet-500/50"
-                  : "border-white/10 bg-zinc-900/50 hover:border-white/30"
+              aria-pressed={selected}
+              className={`relative group rounded-xl border overflow-hidden p-1.5 transition-all text-left ${
+                selected
+                  ? "border-violet-500 bg-violet-500/10 ring-1 ring-violet-500/50 shadow-lg shadow-violet-500/10"
+                  : "border-white/10 bg-zinc-900/50 hover:border-white/30 hover:bg-zinc-800/60"
               }`}
             >
-              <div className="aspect-[3/4] bg-zinc-800/40 relative overflow-hidden">
+              <div className="aspect-[3/4] bg-zinc-800/40 relative overflow-hidden rounded-lg">
                 {poster ? (
                   <img
                     src={poster}
@@ -77,18 +80,26 @@ export function SeasonSelector({
                 )}
                 <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Play className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Play className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow" />
                 </div>
-                <div className="absolute left-2 top-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-sm text-xs font-semibold text-white border border-white/10">
+                {/* Badge numéro de saison */}
+                <div className="absolute left-2 top-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-xs font-bold text-white border border-white/10">
                   <span>S{s.season}</span>
                 </div>
+                {/* Badge nombre d'épisodes sur l'affiche */}
+                <div className="absolute right-2 top-2 flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-950/80 backdrop-blur-sm text-[11px] font-bold text-violet-300 border border-violet-500/30">
+                  <span>{epCount} ép.</span>
+                </div>
               </div>
-              <div className="mt-2 px-2 text-center">
-                <span className="block text-xs font-medium text-zinc-200">
+
+              {/* Titre et badge du nombre d'épisodes sous l'affiche */}
+              <div className="mt-2 px-1 pb-1 text-center">
+                <span className="block text-xs font-semibold text-zinc-200">
                   Saison {s.season}
                 </span>
-                <span className="block text-[10px] text-zinc-500">
-                  {s.episodes.length} épisode{s.episodes.length > 1 ? "s" : ""}
+                <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-violet-500/15 border border-violet-500/30 px-2 py-0.5 text-[10px] font-bold text-violet-300">
+                  <Tv className="h-2.5 w-2.5" />
+                  {epCount} épisode{epCount > 1 ? "s" : ""}
                 </span>
               </div>
             </button>

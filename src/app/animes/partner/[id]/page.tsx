@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft, Search, Calendar, Tv } from "lucide-react";
 import { SourcePlayer } from "@/components/SourcePlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
@@ -112,8 +112,7 @@ export default async function PartnerAnimePage({
   let seriesOverview: string | null = null;
   let seasonsPosterMap = new Map<number, string | null>();
 
-  // L'identifiant TMDB vient de la résolution Vidzy (par titre) : l'identifiant
-  // du partenaire (`newsid`) n'est PAS un identifiant TMDB.
+  // L'identifiant TMDB vient de la résolution Vidzy (par titre)
   const tmdbId = playback?.tmdbId ?? null;
   if (tmdbId) {
     const details = await fetchTvDetails(tmdbId).catch(() => null);
@@ -195,19 +194,21 @@ export default async function PartnerAnimePage({
 
       {/* Ligne info : badges + boutons d'action */}
       <div className="flex flex-col lg:flex-row gap-4 items-start justify-between mb-6">
-        <div className="flex flex-wrap gap-3 items-baseline">
-          <span className="inline-flex items-center rounded-full bg-zinc-900 border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-300">
+        <div className="flex flex-wrap gap-2.5 items-center">
+          <span className="inline-flex items-center rounded-lg bg-zinc-900 border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-300">
             {quality}
           </span>
-          <span className="inline-flex items-center rounded-full bg-violet-900/40 border border-violet-500/30 px-3 py-1 text-xs font-semibold text-violet-300">
+          <span className="inline-flex items-center rounded-lg bg-violet-900/40 border border-violet-500/30 px-3 py-1 text-xs font-semibold text-violet-300">
             {langLabel}
           </span>
           {year && (
-            <span className="inline-flex items-center rounded-full bg-zinc-900 border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-300">
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-200 shadow-sm">
+              <Calendar className="h-3.5 w-3.5 text-violet-400" />
               {year}
             </span>
           )}
-          <span className="inline-flex items-center rounded-full bg-zinc-900 border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-300">
+          <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-200 shadow-sm">
+            <Tv className="h-3.5 w-3.5 text-amber-400" />
             {totalEpisodes} épisode{totalEpisodes > 1 ? "s" : ""}
           </span>
         </div>
@@ -219,7 +220,7 @@ export default async function PartnerAnimePage({
         </div>
       </div>
 
-      {/* Synopsis */}
+      {/* Synopsis positionné AVANT le sélecteur de saisons */}
       {seriesOverview && (
         <div className="mb-8">
           <h2 className="text-lg font-bold text-white mb-2">Synopsis</h2>
@@ -229,7 +230,7 @@ export default async function PartnerAnimePage({
         </div>
       )}
 
-      {/* Sélecteur de saison */}
+      {/* Sélecteur de saison positionné APRÈS la synopsis */}
       {seasonCards.length > 0 && (
         <SeasonSelector
           seasons={seasonCards}
@@ -238,14 +239,12 @@ export default async function PartnerAnimePage({
         />
       )}
 
-      {/* Liste des épisodes */}
+      {/* Liste des épisodes avec l'épisode en cours au top */}
       <div className="mt-8">
-        <h2 className="text-xl font-bold text-white mb-4">
-          Épisode {activeEpisode} — Saison {activeSeason}
-        </h2>
         <EpisodeList
           seasonNumber={activeSeason}
           episodes={currentEpisodes}
+          activeEpisode={activeEpisode}
           hrefFor={({ season, episode }) => {
             const query = new URLSearchParams();
             query.set("season", String(season));

@@ -52,10 +52,19 @@ export function EmbedFrame({
   // jamais ces compteurs — inutile de lancer les timers qui déclencheraient un
   // faux « lecture interrompue ».
   const isProxiedEmbed = src.startsWith("/api/embed?src=");
-  // Les documents externes proxifiés (/api/embed/ext) sont aussi sandboxés
-  // (sans allow-same-origin) : leur code est réécrit et n'a pas besoin de
-  // cookies, et une origine opaque évite de polluer notre stockage.
-  const isSandboxed = isProxiedEmbed || src.startsWith("/api/embed/ext?u=");
+  const isExtEmbed = src.startsWith("/api/embed/ext?u=");
+
+  // Raccourci sandbox :
+  // - Vidzy a besoin d'une origine opaque (sans allow-same-origin) pour que
+  //   ses requêtes CDN partent avec `Origin: null`.
+  // - Les hébergeurs externes (voe, uqload, dood, filemoon, etc.) ont besoin de
+  //   `allow-same-origin` pour instancier leurs workers HLS (blob:), accéder au
+  //   stockage et bufferiser les flux sans blocage.
+  const sandboxPolicy = isProxiedEmbed
+    ? "allow-scripts allow-forms allow-popups allow-presentation"
+    : isExtEmbed
+    ? "allow-scripts allow-same-origin allow-forms allow-popups allow-presentation allow-downloads"
+    : undefined;
 
   // Réinitialiser l'état quand la source change (pattern React :
   // ajustement d'état pendant le rendu plutôt que dans un effect).
@@ -162,19 +171,6 @@ export function EmbedFrame({
   return (
     <>
       <div className="aspect-video w-full overflow-hidden rounded-2xl border border-white/10 bg-black relative">
-        {/* sandbox (embeds proxés uniquement) SANS allow-same-origin : le
-            document d'embed obtient une origine opaque, donc ses requêtes
-            partent avec `Origin: null`, valeur acceptée par le CDN Vidzy
-            (notre domaine réel est rejeté en 403). Le HTML étant servi par
-            /api/embed, tout le code (scripts, CSS, media) fonctionne sans
-            cookie ni stockage same-origin.
-            Attention : Vidzy embarque des kill-switches (__fssSbx/__fssPop)
-            qui détruisent le lecteur dès qu'ils détectent une origine
-            opaque non partenaire — ils sont désamorcés côté /api/embed.
-            Les embeds externes proxifiés (/api/embed/ext) sont aussi sandboxés :
-            le document est réécrit par notre proxy (référent fournisseur,
-            bootstrap des appels runtime), donc l'origine opaque est sans effet
-            sur son fonctionnement et isole ses scripts du reste du site. */}
         <iframe
           ref={iframeRef}
           key={`${src}#${nonce}`}
@@ -182,11 +178,9 @@ export function EmbedFrame({
           title={title}
           className="h-full w-full"
           allowFullScreen
-          allow="autoplay; encrypted-media; picture-in-picture"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           referrerPolicy="strict-origin-when-cross-origin"
-          sandbox={
-            isSandboxed ? "allow-scripts allow-forms allow-popups allow-presentation" : undefined
-          }
+          sandbox={sandboxPolicy}
         />
         {/* Bouton de rechargement manuel : le token CDN de Vidzy expire
             en cours de lecture (403 sur les segments). Recharger l'iframe
@@ -226,7 +220,7 @@ export function EmbedFrame({
         <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <p className="flex items-center gap-2 text-xs text-amber-200">
             <AlertTriangle className="h-4 w-4 shrink-0" />
-            La lecture semble interrompue. Rechargez le lecteur pour reprendre la video.
+            La lecture semble interrompue. Rechargez le lecteur pour reprendre la vidéo.
           </p>
           <button
             type="button"

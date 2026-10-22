@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { ChevronLeft, Film, Play, Search } from "lucide-react";
+import { redirect } from "next/navigation";
+import { ChevronLeft, Film, Play, Search, Calendar } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
@@ -16,9 +17,9 @@ import {
 } from "@/modules/providers/partner/partner.client";
 
 /**
- * Fiche & lecteur d'un film partenaire. Le lecteur est multi-sources : notre
- * flux Vidzy (résolu par identifiant TMDB) complété, quand ils sont exposés,
- * par les embeds du fournisseur. L'utilisateur choisit sa source.
+ * Fiche & lecteur d'un film partenaire. Lecteur multi-sources : notre flux
+ * Vidzy (identifiant TMDB résolu depuis le titre) complété par les iframes du
+ * fournisseur exposés dans le HTML. Navigation par URL (?lang=&host=).
  */
 
 interface PartnerMoviePageProps {
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: PartnerMoviePageProps): Promi
   const { id } = await params;
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: PARTNER_PROVIDER, externalId: id, contentType: "MOVIE" },
+      where: { provider: PARTNER_PROVIDER, externalId: id },
       select: { title: true },
     })
     .catch(() => null);
@@ -45,23 +46,34 @@ export async function generateMetadata({ params }: PartnerMoviePageProps): Promi
   };
 }
 
-export default async function PartnerMoviePage({ params, searchParams }: PartnerMoviePageProps) {
+export default async function PartnerMoviePage({
+  params,
+  searchParams,
+}: PartnerMoviePageProps) {
   await connection();
   const { id } = await params;
   const sp = await searchParams;
 
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: PARTNER_PROVIDER, externalId: id, contentType: "MOVIE" },
-      select: { title: true, posterUrl: true, releaseYear: true },
+      where: { provider: PARTNER_PROVIDER, externalId: id },
+      select: { title: true, posterUrl: true, releaseYear: true, contentType: true },
     })
     .catch(() => null);
 
+  // Le partenaire classe parfois les animés dans ses films : une fois
+  // reclassée, la fiche appartient à la section « Animes ».
+  if (asset?.contentType === "ANIME") {
+    const query = new URLSearchParams();
+    if (sp.lang) query.set("lang", sp.lang);
+    if (sp.host) query.set("host", sp.host);
+    const qs = query.toString();
+    redirect(`/animes/partner/${id}${qs ? `?${qs}` : ""}`);
+  }
+
   const title = asset?.title ?? "Film";
 
-  // Synopsis TMDB + lecture Vidzy (identifiant TMDB résolu depuis le titre) +
-  // embed brut du fournisseur (best-effort).
-  const [overview, playback, providerEmbeds] = await Promise.all([
+  const [overview, playback, embeds] = await Promise.all([
     fetchTmdbOverviewByTitle(title),
     resolveCatalogPlayback(title, "MOVIE", asset?.releaseYear ?? null),
     fetchMovieEmbeds(id).catch(() => []),
@@ -70,7 +82,7 @@ export default async function PartnerMoviePage({ params, searchParams }: Partner
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
     ...providerSources(
-      providerEmbeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
+      embeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
       1,
       "frenchstream",
     ),
@@ -133,8 +145,11 @@ export default async function PartnerMoviePage({ params, searchParams }: Partner
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-extrabold text-white sm:text-2xl lg:text-3xl">{title}</h1>
           {year && (
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
-              <span>{year}</span>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-2.5 py-1 font-semibold text-zinc-200 shadow-sm">
+                <Calendar className="h-3.5 w-3.5 text-violet-400" />
+                {year}
+              </span>
             </div>
           )}
           {overview && (

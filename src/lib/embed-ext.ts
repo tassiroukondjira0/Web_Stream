@@ -14,11 +14,10 @@ export const EMBED_USER_AGENT =
 
 /**
  * Domaines d'embeds autorisés (le partenaire peut faire tourner les TLD :
- * `.lol`, `.vc`, `.sx`, `.com`…). Volontairement limité aux familles connues
- * pour ne pas transformer le proxy en relais ouvert.
+ * `.lol`, `.vc`, `.sx`, `.com`, `.to`, `.me`, etc.).
  */
 export const EXTERNAL_EMBED_HOST_RE =
-  /(^|\.)(uqload\.[a-z]+|fsvid\.[a-z]+|filemoon\.[a-z]+|kokoflix\.[a-z]+|trakx\.[a-z]+|voe\.[a-z]+|netu\.[a-z]+|luluvido\.[a-z]+|doodstream\.[a-z]+|dood\.[a-z]+|streamtape\.[a-z]+|mixdrop\.[a-z]+|upstream\.[a-z]+)$/i;
+  /(^|\.)(uqload|fsvid|filemoon|kokoflix|trakx|voe|netu|waaw|hqq|luluvido|luluvise|doodstream|dood|ds2play|streamtape|strtape|mixdrop|upstream|streamwish|swishsrv|vidmoly|vido|vidzy)(\.[a-z0-9-]+)+$/i;
 
 export const EXT_PROXY_PREFIX = "/api/embed/ext/proxy?u=";
 export const EXT_DOC_PREFIX = "/api/embed/ext?u=";
@@ -42,7 +41,17 @@ export function isExternalEmbedHost(url: string): boolean {
 export function isAllowedProxyUrl(url: string): boolean {
   if (isExternalEmbedHost(url)) return true;
   try {
-    return new URL(url).hostname === "x";
+    const u = new URL(url);
+    if (u.hostname === "x") return true;
+    // Autorise les CDNs de diffusion vidéo des hébergeurs connus
+    if (
+      /(voe|dood|streamtape|uqload|filemoon|mixdrop|streamwish|vidmoly|hqq|waaw|netu|cdn|delivery|stream)/i.test(
+        u.hostname,
+      )
+    ) {
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }

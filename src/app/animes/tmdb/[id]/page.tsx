@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { ChevronLeft, Play } from "lucide-react";
+import { ChevronLeft, Play, Calendar, Tv } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
@@ -78,6 +78,8 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
       : seasons.length > 0
         ? seasons[0].season
         : (requestedSeason ?? 1);
+
+  const activeEpisode = Number.parseInt(sp.ep ?? "", 10) || 1;
 
   // Le partenaire classe les animés comme des séries (fiche par saison) :
   // on ne récupère que la saison active, alignée sur la grille Vidzy.
@@ -167,13 +169,13 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
         selection={{
           lang: sp.lang,
           season: activeSeason,
-          episode: Number.parseInt(sp.ep ?? "", 10) || null,
+          episode: activeEpisode,
           host: sp.host,
         }}
         title={title}
       />
 
-      {/* Liste des épisodes de la saison active juste après le lecteur */}
+      {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
       {seasonDetail && (
         <EpisodeList
           seasonNumber={activeSeason}
@@ -182,6 +184,7 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
               ? seasonDetail.episodes
               : fallbackEpisodes(seasons.find((s) => s.season === activeSeason)?.episodes ?? [])
           }
+          activeEpisode={activeEpisode}
           hrefFor={({ season, episode, lang: episodeLang }) =>
             hrefFor({
               lang: episodeLang ?? sp.lang ?? undefined,
@@ -202,22 +205,29 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
             className="hidden h-48 w-32 shrink-0 rounded-xl object-cover sm:block"
           />
         )}
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-extrabold text-white sm:text-3xl">{title}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
-            {year && <span>{year}</span>}
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            {year && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-2.5 py-1 font-semibold text-zinc-200 shadow-sm">
+                <Calendar className="h-3.5 w-3.5 text-violet-400" />
+                {year}
+              </span>
+            )}
             {totalEpisodes > 0 && (
-              <span className={year ? "border-l border-white/10 pl-3" : ""}>
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-2.5 py-1 font-semibold text-zinc-200 shadow-sm">
+                <Tv className="h-3.5 w-3.5 text-amber-400" />
                 {totalEpisodes} épisode{totalEpisodes > 1 ? "s" : ""}
               </span>
             )}
           </div>
 
+          {/* Synopsis avant les saisons */}
           {overview && (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
           )}
 
-          {/* Sélecteur de saisons (grille avec couvertures) après la synopsis */}
+          {/* Sélecteur de saisons (grille avec couvertures et badges) positionné APRÈS la synopsis */}
           {playback?.seasons && playback.seasons.length > 0 && (
             <SeasonSelector
               seasons={seasonsWithPosters}
@@ -226,7 +236,7 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
             />
           )}
 
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`tmdb-anime-${id}`} />
             <WishlistButton mediaSlug={`tmdb-anime-${id}`} />
             <ShareButton title={title} />

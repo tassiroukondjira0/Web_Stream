@@ -153,11 +153,14 @@ function toResponse(raw: RawResponse): Response {
   const out: Record<string, string> = {
     "Content-Type": raw.headers["content-type"] ?? "application/octet-stream",
     "Access-Control-Allow-Origin": "*",
+    "Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges",
     "Cache-Control": "no-store",
   };
   if (raw.headers["set-cookie"]) out["Set-Cookie"] = raw.headers["set-cookie"];
   if (raw.headers["content-range"]) out["Content-Range"] = raw.headers["content-range"];
   if (raw.headers["accept-ranges"]) out["Accept-Ranges"] = raw.headers["accept-ranges"];
+  if (raw.headers["content-length"]) out["Content-Length"] = raw.headers["content-length"];
+  else out["Content-Length"] = String(raw.body.length);
   return new Response(new Uint8Array(raw.body), { status: raw.status, headers: out });
 }
 
@@ -270,4 +273,3 @@ export async function OPTIONS() {
     },
   });
 }
-

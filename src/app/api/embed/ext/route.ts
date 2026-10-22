@@ -55,9 +55,10 @@ export async function GET(request: NextRequest) {
 
   const html = rewriteHtml(fetched.html, bridge);
   const bootstrap = buildBootstrap(embedHost, documentPath);
+  const baseTag = `<base href="https://${embedHost}${documentPath}">`;
   const body = /<head[^>]*>/i.test(html)
-    ? html.replace(/<head[^>]*>/i, (m) => `${m}${bootstrap}`)
-    : bootstrap + html;
+    ? html.replace(/<head[^>]*>/i, (m) => `${m}${baseTag}${bootstrap}`)
+    : `${baseTag}${bootstrap}${html}`;
 
   return new Response(body, {
     headers: {
@@ -65,6 +66,7 @@ export async function GET(request: NextRequest) {
       "Cache-Control": "no-store",
       "X-Embed-Host": embedHost,
       "Referrer-Policy": "no-referrer",
+      "Access-Control-Allow-Origin": "*",
     },
   });
 }
@@ -228,10 +230,16 @@ HTMLAnchorElement.prototype.click=function(){
 
 const STORAGE_SHIM = `<script>(function(){
 try{
-  function mk(){var d={};return{_d:d,getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null;},setItem:function(k,v){d[k]=String(v);},removeItem:function(k){delete d[k];},clear:function(){for(var k in d)delete d[k];},key:function(i){return Object.keys(d)[i]||null;},get length(){return Object.keys(d).length;}};}
-  Object.defineProperty(window,"localStorage",{value:mk(),configurable:true,writable:true});
-  Object.defineProperty(window,"sessionStorage",{value:mk(),configurable:true,writable:true});
-}catch(e){}
+  var testKey = "__st_test__";
+  window.localStorage.setItem(testKey, "1");
+  window.localStorage.removeItem(testKey);
+}catch(e){
+  try{
+    function mk(){var d={};return{_d:d,getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null;},setItem:function(k,v){d[k]=String(v);},removeItem:function(k){delete d[k];},clear:function(){for(var k in d)delete d[k];},key:function(i){return Object.keys(d)[i]||null;},get length(){return Object.keys(d).length;}};}
+    Object.defineProperty(window,"localStorage",{value:mk(),configurable:true,writable:true});
+    Object.defineProperty(window,"sessionStorage",{value:mk(),configurable:true,writable:true});
+  }catch(e2){}
+}
 try{
   var jar="";
   Object.defineProperty(document,"cookie",{configurable:true,get:function(){return jar;},set:function(v){var p=String(v).split(";")[0];if(p&&p.indexOf("=")>0){jar=jar?jar+"; "+p:p;}}});
@@ -249,4 +257,3 @@ function unavailablePage(message: string): Response {
     headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
   });
 }
-

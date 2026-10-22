@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { ChevronLeft, Play } from "lucide-react";
+import { ChevronLeft, Film, Play, Search, Calendar } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
 import { SourcePlayer } from "@/components/SourcePlayer";
-import { UnavailableNotice } from "@/components/UnavailableNotice";
 import { prisma } from "@/lib/prisma";
 import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
@@ -18,7 +17,8 @@ import {
 
 /**
  * Fiche & lecteur d'un film `french-streaming.tv`. Lecteur multi-sources :
- * notre flux Vidzy (résolu par titre) complété par les embeds du fournisseur.
+ * notre flux Vidzy complété par les iframes du fournisseur (uqload, vido,
+ * fsvid…) exposés sur la page. Navigation par URL (?lang=&host=).
  */
 
 interface FStreamTvMoviePageProps {
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: FStreamTvMoviePageProps): Pro
   const { id } = await params;
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: FSTREAMTV_PROVIDER, externalId: id, contentType: "MOVIE" },
+      where: { provider: FSTREAMTV_PROVIDER, externalId: id },
       select: { title: true },
     })
     .catch(() => null);
@@ -45,21 +45,28 @@ export async function generateMetadata({ params }: FStreamTvMoviePageProps): Pro
   };
 }
 
-export default async function FStreamTvMoviePage({ params, searchParams }: FStreamTvMoviePageProps) {
+export default async function FStreamTvMoviePage({
+  params,
+  searchParams,
+}: FStreamTvMoviePageProps) {
   await connection();
   const { id } = await params;
   const sp = await searchParams;
 
   const asset = await prisma.providerAsset
     .findFirst({
-      where: { provider: FSTREAMTV_PROVIDER, externalId: id, contentType: "MOVIE" },
-      select: { title: true, posterUrl: true, releaseYear: true },
+      where: { provider: FSTREAMTV_PROVIDER, externalId: id },
+      select: {
+        title: true,
+        posterUrl: true,
+        releaseYear: true,
+      },
     })
     .catch(() => null);
 
   const title = asset?.title ?? "Film";
 
-  const [overview, playback, providerEmbeds] = await Promise.all([
+  const [overview, playback, embeds] = await Promise.all([
     fetchTmdbOverviewByTitle(title),
     resolveCatalogPlayback(title, "MOVIE", asset?.releaseYear ?? null),
     fetchMovieEmbeds(id).catch(() => []),
@@ -68,7 +75,7 @@ export default async function FStreamTvMoviePage({ params, searchParams }: FStre
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
     ...providerSources(
-      providerEmbeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
+      embeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
       1,
       "fstreamtv",
     ),
@@ -103,7 +110,20 @@ export default async function FStreamTvMoviePage({ params, searchParams }: FStre
           title={title}
         />
       ) : (
-        <UnavailableNotice kind="movie" title={title} catalogHref="/films" />
+        <div className="mt-4 flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-black px-6 text-center text-sm text-zinc-400">
+          <Film className="h-10 w-10 text-zinc-600" />
+          <p>
+            Flux indisponible pour ce film pour le moment. Nos sources sont
+            régulièrement mises à jour — revenez plus tard ou cherchez un titre équivalent.
+          </p>
+          <Link
+            href={`/recherche?q=${encodeURIComponent(title)}`}
+            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500"
+          >
+            <Search className="h-4 w-4" />
+            Chercher un autre titre
+          </Link>
+        </div>
       )}
 
       <div className="mt-8 flex gap-5">
@@ -118,8 +138,11 @@ export default async function FStreamTvMoviePage({ params, searchParams }: FStre
         <div className="min-w-0 flex-1">
           <h1 className="text-xl font-extrabold text-white sm:text-2xl lg:text-3xl">{title}</h1>
           {year && (
-            <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
-              <span>{year}</span>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-2.5 py-1 font-semibold text-zinc-200 shadow-sm">
+                <Calendar className="h-3.5 w-3.5 text-violet-400" />
+                {year}
+              </span>
             </div>
           )}
           {overview && (

@@ -10,16 +10,13 @@ import { VidzyPlayer } from "@/components/VidzyPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
-import { Tv, Calendar, Lock } from "lucide-react";
+import { Tv, Calendar, Lock, Play } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
   searchParams?: Promise<{ lang?: string; season?: string; ep?: string; host?: string }>;
 }
 
-// Pas de generateStaticParams : le catalogue est lu à la requête (base vide au
-// build). Les paramètres sont donc des données runtime, résolues dans le
-// <Suspense> de SeriesPage.
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const serie = await getMediaBySlug(slug);
@@ -85,6 +82,17 @@ async function SeriesContent({ params, searchParams }: PageProps) {
     episodes.find(
       (e) => e.number === currentEpNum && e.seasonNumber === currentSeasonNum
     ) || episodes[0] || null;
+
+  // Réordonner pour mettre l'épisode en cours au top
+  const sortedEpisodes = activeEpisode
+    ? [
+        activeEpisode,
+        ...episodes.filter(
+          (e) =>
+            !(e.number === activeEpisode.number && e.seasonNumber === activeEpisode.seasonNumber)
+        ),
+      ]
+    : episodes;
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -159,15 +167,20 @@ async function SeriesContent({ params, searchParams }: PageProps) {
             </span>
           </div>
 
-          <div className="mt-3 flex items-center gap-4 text-xs text-zinc-400">
-            <span className="flex items-center gap-1">
-              <Calendar className="h-4 w-4" /> {serie.releaseYear}
-            </span>
-            <span className="flex items-center gap-1">
-              <Tv className="h-4 w-4" /> {episodes.length} épisodes
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+            {serie.releaseYear && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-2.5 py-1 font-semibold text-zinc-200 shadow-sm">
+                <Calendar className="h-3.5 w-3.5 text-violet-400" />
+                {serie.releaseYear}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-2.5 py-1 font-semibold text-zinc-200 shadow-sm">
+              <Tv className="h-3.5 w-3.5 text-amber-400" />
+              {episodes.length} épisode{episodes.length > 1 ? "s" : ""}
             </span>
           </div>
 
+          {/* Synopsis */}
           <p className="mt-4 text-sm text-zinc-300 leading-relaxed">{serie.synopsis}</p>
 
           <div className="mt-6 flex gap-3">
@@ -176,27 +189,43 @@ async function SeriesContent({ params, searchParams }: PageProps) {
             <ShareButton title={serie.title} />
           </div>
 
-          {/* Liste des épisodes */}
+          {/* Liste des épisodes avec l'épisode en cours au top */}
           <div className="mt-10 border-t border-white/10 pt-6">
-            <h2 className="text-lg font-bold text-white mb-4">Épisodes</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white">Épisodes</h2>
+              {activeEpisode && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/15 border border-violet-500/30 px-3 py-1 text-xs font-bold text-violet-300">
+                  <Play className="h-3 w-3 fill-violet-400" />
+                  S{activeEpisode.seasonNumber}E{activeEpisode.number} au top
+                </span>
+              )}
+            </div>
+
             <div className="space-y-3">
-              {episodes.map((ep) => {
-                const isSelected = activeEpisode?.number === ep.number;
+              {sortedEpisodes.map((ep) => {
+                const isSelected =
+                  activeEpisode?.number === ep.number &&
+                  activeEpisode?.seasonNumber === ep.seasonNumber;
                 return (
                   <Link
                     key={`${ep.seasonNumber}-${ep.number}`}
                     href={`/series/${serie.slug}?season=${ep.seasonNumber}&ep=${ep.number}`}
                     className={`flex items-start justify-between rounded-xl border p-4 transition-all ${
                       isSelected
-                        ? "border-violet-500/50 bg-violet-600/10"
+                        ? "border-violet-500 bg-violet-600/15 ring-1 ring-violet-500/50 shadow-lg shadow-violet-600/10"
                         : "border-white/5 bg-zinc-900/50 hover:border-white/20 hover:bg-zinc-800"
                     }`}
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-violet-500">
-                          Épisode {ep.number}
+                        <span className="text-xs font-bold text-violet-400">
+                          S{ep.seasonNumber}E{ep.number}
                         </span>
+                        {isSelected && (
+                          <span className="rounded bg-violet-600 px-2 py-0.5 text-[10px] font-bold text-white uppercase tracking-wider">
+                            En cours de lecture
+                          </span>
+                        )}
                         <h3 className="text-sm font-semibold text-white">{ep.title}</h3>
                         {ep.access === "PREMIUM" && (
                           <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-bold text-amber-400">
@@ -204,7 +233,7 @@ async function SeriesContent({ params, searchParams }: PageProps) {
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 text-xs text-zinc-400">{ep.synopsis}</p>
+                      {ep.synopsis && <p className="mt-1 text-xs text-zinc-400">{ep.synopsis}</p>}
                     </div>
                     <div className="text-xs text-zinc-500 font-mono flex-shrink-0 ml-4">
                       {ep.duration}

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";
-import { ChevronLeft, Play } from "lucide-react";
+import { ChevronLeft, Play, Calendar, Tv } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
@@ -117,8 +117,8 @@ export default async function PartnerSeriesPage({
   );
 
   // Saison active : celle demandée par l'URL si elle existe, sinon la première.
-  // Le lecteur applique la même règle, la liste d'épisodes reste donc en phase.
   const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+  const allSeasons = playback?.seasons ?? [];
 
   // Affiches de saison depuis TMDB (fallback silencieux si pas de credentials)
   const seasonPosters = playback?.tmdbId
@@ -127,8 +127,6 @@ export default async function PartnerSeriesPage({
         playback.seasons.map((s) => s.season),
       ).catch(() => new Map())
     : new Map();
-
-  const allSeasons = playback?.seasons ?? [];
 
   const seasonsWithPosters = allSeasons.map((s) => ({
     ...s,
@@ -140,6 +138,7 @@ export default async function PartnerSeriesPage({
       ? requestedSeason
       : (allSeasons[0]?.season ?? null);
 
+  const activeEpisode = Number.parseInt(sp.ep ?? "", 10) || 1;
   const seasonToShow = allSeasons.find((s) => s.season === activeSeason) ?? null;
 
   // Détails de la saison active depuis TMDB (nom, synopsis, image par épisode).
@@ -194,13 +193,13 @@ export default async function PartnerSeriesPage({
         selection={{
           lang: sp.lang,
           season: activeSeason,
-          episode: Number.parseInt(sp.ep ?? "", 10) || null,
+          episode: activeEpisode,
           host: sp.host,
         }}
         title={title}
       />
 
-      {/* Liste des épisodes de la saison active juste après le lecteur */}
+      {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
       {seasonToShow && (
         <EpisodeList
           seasonNumber={seasonToShow.season}
@@ -209,6 +208,7 @@ export default async function PartnerSeriesPage({
               ? seasonDetail.episodes
               : fallbackEpisodes(seasonToShow.episodes)
           }
+          activeEpisode={activeEpisode}
           hrefFor={({ season, episode, lang: episodeLang }) =>
             hrefFor({
               lang: episodeLang ?? sp.lang ?? undefined,
@@ -229,29 +229,36 @@ export default async function PartnerSeriesPage({
             className="hidden h-48 w-32 shrink-0 rounded-xl object-cover sm:block"
           />
         )}
-        <div>
+        <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-extrabold text-white sm:text-3xl">{title}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
-            {year && <span>{year}</span>}
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+            {year && (
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-2.5 py-1 font-semibold text-zinc-200 shadow-sm">
+                <Calendar className="h-3.5 w-3.5 text-violet-400" />
+                {year}
+              </span>
+            )}
             {totalEpisodes > 0 && (
-              <span className={year ? "border-l border-white/10 pl-3" : ""}>
+              <span className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-800/90 border border-white/10 px-2.5 py-1 font-semibold text-zinc-200 shadow-sm">
+                <Tv className="h-3.5 w-3.5 text-amber-400" />
                 {totalEpisodes} épisode{totalEpisodes > 1 ? "s" : ""}
               </span>
             )}
           </div>
 
+          {/* Synopsis avant les saisons */}
           {overview && (
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300">{overview}</p>
           )}
 
-          {/* Sélecteur de saisons (grille avec couvertures) après la synopsis */}
+          {/* Sélecteur de saisons (grille avec couvertures et badges) positionné APRÈS la synopsis */}
           <SeasonSelector
             seasons={seasonsWithPosters}
             currentSeason={activeSeason}
             seriesPoster={poster}
           />
 
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
             <BookmarkButton mediaSlug={`partner-series-${id}`} />
             <WishlistButton mediaSlug={`partner-series-${id}`} />
             <ShareButton title={title} />
