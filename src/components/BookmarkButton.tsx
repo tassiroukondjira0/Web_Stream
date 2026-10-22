@@ -12,7 +12,7 @@ export function BookmarkButton({ mediaSlug }: BookmarkButtonProps) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/bookmarks")
+    fetch("/api/bookmarks", { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
@@ -31,6 +31,7 @@ export function BookmarkButton({ mediaSlug }: BookmarkButtonProps) {
       const res = await fetch("/api/bookmarks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ mediaSlug }),
       });
 

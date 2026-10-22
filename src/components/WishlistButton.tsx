@@ -12,7 +12,7 @@ export function WishlistButton({ mediaSlug }: WishlistButtonProps) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/wishlist")
+    fetch("/api/wishlist", { credentials: "include" })
       .then((res) => {
         if (!res.ok) throw new Error();
         return res.json();
@@ -31,6 +31,7 @@ export function WishlistButton({ mediaSlug }: WishlistButtonProps) {
       const res = await fetch("/api/wishlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ mediaSlug }),
       });
 

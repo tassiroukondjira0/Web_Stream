@@ -22,8 +22,13 @@ export function ProviderPosterCard({
 
   const imgSrc = posterUrl || undefined;
 
+  const badgeClass = badgeTone === "sky" ? "bg-sky-500/15 text-sky-300" : "bg-fuchsia-500/15 text-fuchsia-300";
+
   return (
-    <Link href={href} className="group relative block overflow-hidden rounded-xl bg-zinc-800/60">
+    <Link
+      href={href}
+      className="group relative block overflow-hidden rounded-xl bg-zinc-800/60"
+    >
       {imgSrc ? (
         <img
           src={imgSrc}
@@ -36,17 +41,9 @@ export function ProviderPosterCard({
       )}
       {badge && (
         <span
-          className="absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+          className={`absolute left-2 top-2 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${badgeClass}`}
         >
-          {badgeTone === "sky" ? (
-            <span className="bg-sky-500/15 text-sky-300">
-              {badge}
-            </span>
-          ) : (
-            <span className="bg-fuchsia-500/15 text-fuchsia-300">
-              {badge}
-            </span>
-          )}
+          {badge}
         </span>
       )}
       <div
