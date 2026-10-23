@@ -196,6 +196,7 @@ export default async function PartnerAnimePage({
               host: sp.host,
             }}
             title={title}
+            mediaSlug={`partner-anime-${id}`}
           />
         ) : (
           <div className="flex h-[400px] flex-col items-center justify-center gap-3 px-6 text-center text-sm text-zinc-400 bg-zinc-900">

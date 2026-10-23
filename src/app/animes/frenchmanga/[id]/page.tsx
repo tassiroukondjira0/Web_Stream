@@ -214,8 +214,9 @@ export default async function FrenchMangaAnimePage({ params, searchParams }: Fre
           episode: activeEpisode,
           host: sp.host,
         }}
-        title={fullTitle}
-      />
+          title={fullTitle}
+          mediaSlug={`frenchmanga-anime-${id}`}
+        />
 
       {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
       {displayedEpisodes.length > 0 && (

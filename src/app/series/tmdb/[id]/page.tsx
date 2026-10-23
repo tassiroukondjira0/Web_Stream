@@ -227,8 +227,9 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
           episode: activeEpisode,
           host: sp.host,
         }}
-        title={title}
-      />
+          title={title}
+          mediaSlug={`tmdb-series-${id}`}
+        />
 
       {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
       {displayedEpisodes.length > 0 && (

@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { PLAYER_BRIDGE_SCRIPT } from "@/lib/player-bridge";
 
 /**
  * Proxy d'embed Vidzy avec injection du token `gk`.
@@ -324,7 +325,8 @@ document.addEventListener("click",function(e){
   },300);
 },true);
 })();</script>`;
-  const combined = gkScript + killSwitchShim + overlayShim + playerUiShim + storageShim + boot;
+  const combined =
+    gkScript + killSwitchShim + overlayShim + playerUiShim + storageShim + PLAYER_BRIDGE_SCRIPT + boot;
   if (/<head[^>]*>/i.test(html)) {
     return html.replace(/<head[^>]*>/i, (m) => `${m}${combined}`);
   }

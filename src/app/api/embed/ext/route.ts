@@ -8,6 +8,7 @@ import {
   rememberRuntimeHost,
   runtimeHostList,
 } from "@/lib/embed-ext";
+import { PLAYER_BRIDGE_SCRIPT } from "@/lib/player-bridge";
 
 /**
  * Proxy document pour les embeds externes du fournisseur (uqload, voe,
@@ -234,7 +235,7 @@ function rewriteHtml(
 
 /** Injecte le stockage mémoire + le bootstrap de réécriture runtime. */
 function buildBootstrap(embedHost: string, documentPath: string, proxyOrigin: string): string {
-  return `${STORAGE_SHIM}<script>(function(){
+  return `${STORAGE_SHIM}${PLAYER_BRIDGE_SCRIPT}<script>(function(){
 var HOST=${JSON.stringify(embedHost)};
 var PATH=${JSON.stringify(documentPath)};
 var ORIGIN=${JSON.stringify(proxyOrigin)};

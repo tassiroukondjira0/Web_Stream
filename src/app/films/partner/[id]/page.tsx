@@ -115,6 +115,7 @@ export default async function PartnerMoviePage({
           hrefFor={hrefFor}
           selection={{ lang: sp.lang, host: sp.host, season: 1, episode: 1 }}
           title={title}
+          mediaSlug={`partner-movie-${id}`}
         />
       ) : (
         <div className="mt-4 flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-black px-6 text-center text-sm text-zinc-400">

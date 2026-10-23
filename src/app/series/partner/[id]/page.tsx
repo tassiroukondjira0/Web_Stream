@@ -212,6 +212,7 @@ export default async function PartnerSeriesPage({
           host: sp.host,
         }}
         title={title}
+        mediaSlug={`partner-series-${id}`}
       />
 
       {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}

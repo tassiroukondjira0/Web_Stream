@@ -180,8 +180,9 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
           episode: activeEpisode,
           host: sp.host,
         }}
-        title={title}
-      />
+          title={title}
+          mediaSlug={`tmdb-anime-${id}`}
+        />
 
       {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
       {displayedEpisodes.length > 0 && (

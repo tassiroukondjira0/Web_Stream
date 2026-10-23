@@ -89,6 +89,7 @@ export async function VidzyPlayer({
         host: searchParams.host,
       }}
       title={title}
+      mediaSlug={slug}
     />
   );
 }

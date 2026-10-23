@@ -108,8 +108,9 @@ export default async function TmdbMoviePage({ params, searchParams }: TmdbMovieP
           sources={sources}
           hrefFor={hrefFor}
           selection={{ lang: sp.lang, host: sp.host, season: 1, episode: 1 }}
-          title={title}
-        />
+            title={title}
+            mediaSlug={`tmdb-movie-${id}`}
+          />
       ) : (
         <div className="mt-4 flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-2xl border border-white/10 bg-black px-6 text-center text-sm text-zinc-400">
           <Film className="h-10 w-10 text-zinc-600" />

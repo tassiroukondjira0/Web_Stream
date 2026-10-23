@@ -19,6 +19,8 @@ interface SourcePlayerProps {
   selection: PlayerSelection;
   /** Titre de l'iframe (accessibilité). */
   title: string;
+  /** Slug du titre (local ou partenaire) pour la reprise de lecture. */
+  mediaSlug: string;
 }
 
 function unique<T>(values: T[]): T[] {
@@ -37,7 +39,7 @@ function formatLangLabel(langStr: string): string {
   return langStr.toUpperCase();
 }
 
-export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlayerProps) {
+export function SourcePlayer({ sources, hrefFor, selection, title, mediaSlug }: SourcePlayerProps) {
   // 1. Langues disponibles : triées avec priorité à VF puis VOSTFR
   const rawLangs = unique(sources.map((s) => s.lang.toLowerCase()));
   const langPriority = (l: string) => {
@@ -167,6 +169,9 @@ export function SourcePlayer({ sources, hrefFor, selection, title }: SourcePlaye
           }
           nextEpisode={nextEpisode}
           isMovie={isMovie}
+          mediaSlug={mediaSlug}
+          season={isMovie ? null : season}
+          episode={isMovie ? null : episode}
         />
       ) : (
         <div className="aspect-video w-full flex items-center justify-center rounded-2xl border border-white/10 bg-black text-sm text-zinc-400">

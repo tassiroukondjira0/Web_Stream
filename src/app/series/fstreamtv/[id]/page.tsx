@@ -193,8 +193,9 @@ export default async function FStreamTvSeriesPage({
           episode: activeEpisode,
           host: sp.host,
         }}
-        title={title}
-      />
+          title={title}
+          mediaSlug={`fstreamtv-series-${id}`}
+        />
 
       {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
       {displayedEpisodes.length > 0 && (

@@ -7,12 +7,11 @@ import {
   User,
   ShieldCheck,
   LogOut,
-  Film,
   Clock,
   Bookmark,
   ListPlus,
   Sparkles,
-  AlertCircle,
+  Play,
   X,
 } from "lucide-react";
 
@@ -23,12 +22,23 @@ interface UserProfile {
   role: "USER" | "SUBSCRIBER" | "ADMIN";
 }
 
+interface PlaybackEntry {
+  mediaSlug: string;
+  seasonNumber: number | null;
+  episodeNumber: number | null;
+  progressSeconds: number;
+  totalSeconds: number;
+  completed: boolean;
+  updatedAt: string;
+}
+
 export default function AccountPage() {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
+  const [history, setHistory] = useState<PlaybackEntry[]>([]);
   const [listsLoading, setListsLoading] = useState(true);
 
   useEffect(() => {
@@ -56,14 +66,19 @@ export default function AccountPage() {
       fetch("/api/wishlist", {
         credentials: "include",
       }).then((r) => (r.ok ? r.json() : { wishlist: [] })),
+      fetch("/api/history", {
+        credentials: "include",
+      }).then((r) => (r.ok ? r.json() : { history: [] })),
     ])
-      .then(([b, w]) => {
+      .then(([b, w, h]) => {
         setBookmarks(Array.isArray(b.bookmarks) ? b.bookmarks : []);
         setWishlist(Array.isArray(w.wishlist) ? w.wishlist : []);
+        setHistory(Array.isArray(h.history) ? h.history : []);
       })
       .catch(() => {
         setBookmarks([]);
         setWishlist([]);
+        setHistory([]);
       })
       .finally(() => setListsLoading(false));
   }, [user]);
@@ -132,6 +147,7 @@ export default function AccountPage() {
   }
 
   const isPremium = user.role === "SUBSCRIBER" || user.role === "ADMIN";
+  const resumed = history.filter((entry) => !entry.completed).slice(0, 8);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
@@ -321,9 +337,56 @@ export default function AccountPage() {
           <p className="text-xs text-zinc-400">
             Votre position de lecture est sauvegardée automatiquement toutes les 10 secondes.
           </p>
-          <div className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-zinc-500">
-            Aucune session en cours. Lancez un film depuis le catalogue pour démarrer la lecture.
-          </div>
+          {listsLoading ? (
+            <p className="mt-4 text-center text-xs text-zinc-500">Chargement…</p>
+          ) : resumed.length === 0 ? (
+            <div className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-zinc-500">
+              Aucune session en cours. Lancez un film depuis le catalogue pour démarrer la lecture.
+            </div>
+          ) : (
+            <ul className="mt-4 space-y-2">
+              {resumed.map((entry) => {
+                const percent =
+                  entry.totalSeconds > 0
+                    ? Math.min(100, Math.round((entry.progressSeconds / entry.totalSeconds) * 100))
+                    : 0;
+                return (
+                  <li key={`${entry.mediaSlug}-${entry.seasonNumber ?? ""}-${entry.episodeNumber ?? ""}`}>
+                    <Link
+                      href={progressHref(entry)}
+                      className="group flex items-center gap-3 rounded-xl border border-white/5 bg-black/30 px-3 py-2.5 transition-colors hover:border-violet-500/30 hover:bg-violet-500/5"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 text-violet-400">
+                        <Play className="h-4 w-4" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-xs font-medium text-zinc-200 group-hover:text-white">
+                          {prettyTitle(entry.mediaSlug)}
+                          {entry.episodeNumber != null && (
+                            <span className="text-zinc-500">
+                              {entry.seasonNumber != null ? ` · S${entry.seasonNumber}` : ""}
+                              {` · Ép. ${entry.episodeNumber}`}
+                            </span>
+                          )}
+                        </span>
+                        <span className="mt-1 flex items-center gap-2">
+                          <span className="h-1 w-full max-w-[180px] overflow-hidden rounded-full bg-white/10">
+                            <span
+                              className="block h-full rounded-full bg-violet-500"
+                              style={{ width: `${Math.max(2, percent)}%` }}
+                            />
+                          </span>
+                          <span className="shrink-0 text-[11px] text-zinc-500">
+                            {percent}% · {formatTime(entry.progressSeconds)}
+                          </span>
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
       </div>
     </div>
@@ -350,6 +413,27 @@ function slugToHref(slug: string): string {
     return isSeries ? `/series/partner/${id}` : `/films/partner/${id}`;
   }
   return `/films/${slug}`;
+}
+
+/** Lien de reprise : fiche + saison/épisode exacts. */
+function progressHref(entry: PlaybackEntry): string {
+  const base = slugToHref(entry.mediaSlug);
+  const query = new URLSearchParams();
+  if (entry.seasonNumber != null) query.set("season", String(entry.seasonNumber));
+  if (entry.episodeNumber != null) query.set("ep", String(entry.episodeNumber));
+  const qs = query.toString();
+  return qs ? `${base}?${qs}` : base;
+}
+
+/** Durée mm:ss (ou h:mm:ss) pour l'affichage de la progression. */
+function formatTime(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return h > 0
+    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+    : `${m}:${String(s).padStart(2, "0")}`;
 }
 
 /** Libellé lisible à partir d'un slug (sans appel réseau). */

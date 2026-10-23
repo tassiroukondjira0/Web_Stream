@@ -54,11 +54,12 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  subscriptions Subscription[]
-  watchHistory  WatchHistory[]
-  bookmarks     Bookmark[]
-  wishlist      WishlistItem[]
-  pageViews     PageView[]
+  subscriptions    Subscription[]
+  watchHistory     WatchHistory[]
+  bookmarks        Bookmark[]
+  wishlist         WishlistItem[]
+  pageViews        PageView[]
+  playbackProgress PlaybackProgress[]
 
   @@map("users")
 }
@@ -213,6 +214,28 @@ model WatchHistory {
   @@unique([userId, mediaId, episodeId])
   @@index([userId])
   @@map("watch_histories")
+}
+
+/// Position de lecture d'un titre du catalogue (local ou partenaire).
+/// Comme Bookmark, `mediaSlug` est libre (pas de FK vers Media) afin de
+/// couvrir les fiches externes : `partner-series-…`, `tmdb-movie-…`, etc.
+/// `episodeKey` vaut "" pour un film, sinon "s{season}e{episode}".
+model PlaybackProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaSlug       String
+  episodeKey      String   @default("")
+  seasonNumber    Int?
+  episodeNumber   Int?
+  progressSeconds Int      @default(0)
+  totalSeconds    Int      @default(0)
+  completed       Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, mediaSlug, episodeKey])
+  @@index([userId])
+  @@map("playback_progress")
 }
 
 model Bookmark {
