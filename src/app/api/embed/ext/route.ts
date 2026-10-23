@@ -1,11 +1,12 @@
 import { NextRequest } from "next/server";
 import {
   EXT_BRIDGE_PATH,
-  EXT_PROXY_PREFIX,
   EMBED_USER_AGENT,
   isEmbedAssetPath,
   isExternalEmbedHost,
   partnerReferer,
+  rememberRuntimeHost,
+  runtimeHostList,
 } from "@/lib/embed-ext";
 
 /**
@@ -24,6 +25,70 @@ import {
  */
 
 const UA = EMBED_USER_AGENT;
+
+/** URLs absolues, proto-relatives et mêmes-origine présentes dans le document. */
+const URL_REF = /(?:https?:)?\/\/[^"'\s)>,]+|\/(?!\/)[^"'\s)>,]+/g;
+
+/** Hôtes distincts référencés par le document d'embed. */
+function collectTargetHosts(html: string, embedHost: string): Set<string> {
+  const out = new Set<string>();
+  for (const m of html.matchAll(URL_REF)) {
+    const raw = m[0];
+    if (/^(data:|blob:|javascript:|mailto:|tel:|#)/i.test(raw)) continue;
+    let abs: URL;
+    try {
+      abs = raw.startsWith("//")
+        ? new URL(`https:${raw}`)
+        : new URL(raw, `https://${embedHost}`);
+    } catch {
+      continue;
+    }
+    if (abs.protocol !== "http:" && abs.protocol !== "https:") continue;
+    out.add(abs.hostname);
+  }
+  return out;
+}
+
+/**
+ * Mémorise les hôtes externes du document (flux vidéo) et expose la table au
+ * bootstrap, afin que les requêtes runtime vers ces hôtes (ex. HLS) soient
+ * rejouées via le bridge avec le bon référent au lieu de partir en direct.
+ */
+function applyRuntimeHosts(html: string, embedHost: string): string {
+  for (const host of collectTargetHosts(html, embedHost)) {
+    if (host !== embedHost) rememberRuntimeHost(host);
+  }
+  const table = JSON.stringify(runtimeHostList());
+  const inject = (m: string) =>
+    `${m}<script>window.__EMBED_RUNTIME_HOSTS__=${table};</script>`;
+  return /<head[^>]*>/i.test(html)
+    ? html.replace(/<head[^>]*>/i, inject)
+    : inject("") + html;
+}
+
+/**
+ * jwplayer retrouve son dossier d'installation via un tag `<script>` dont le
+ * `src` contient littéralement `/jwplayer.js`. Nos URLs de bridge encodent ce
+ * chemin, ce qui fait échouer `setup()` (« Could not locate jwplayer.js script
+ * tag »). On ajoute un tag inerte portant l'URL d'origine pour que la détection
+ * fonctionne, sans recharger le script.
+ */
+function injectJwplayerBase(html: string, sourceHtml: string, embedHost: string): string {
+  const m = sourceHtml.match(
+    /<script[^>]+src\s*=\s*["']([^"']*\/jwplayer\.js(?:[?#][^"']*)?)["']/i,
+  );
+  if (!m) return html;
+  let abs: URL;
+  try {
+    abs = new URL(m[1], `https://${embedHost}`);
+  } catch {
+    return html;
+  }
+  const tag = `<script type="application/x-embed-base" src="${abs.origin}${abs.pathname}"></script>`;
+  return /<head[^>]*>/i.test(html)
+    ? html.replace(/<head[^>]*>/i, (h) => `${h}${tag}`)
+    : `${tag}${html}`;
+}
 
 export async function GET(request: NextRequest) {
   const raw = request.nextUrl.searchParams.get("u");
@@ -50,11 +115,19 @@ export async function GET(request: NextRequest) {
 
   const embedHost = fetched.host;
   const documentPath = fetched.path;
+  // Les URLs du bridge doivent être absolues : le document proxifié porte un
+  // `<base href="https://hébergeur/...">`, donc un chemin racine relatif
+  // (`/api/embed/ext/proxy`) serait résolu contre le domaine de l'hébergeur.
+  const proxyOrigin = request.nextUrl.origin;
   const bridge = (path: string): string =>
-    `${EXT_BRIDGE_PATH}?h=${encodeURIComponent(embedHost)}&p=${encodeURIComponent(path)}&r=${encodeURIComponent(documentPath)}`;
+    `${proxyOrigin}${EXT_BRIDGE_PATH}?h=${encodeURIComponent(embedHost)}&p=${encodeURIComponent(path)}&r=${encodeURIComponent(documentPath)}`;
 
-  const html = rewriteHtml(fetched.html, bridge);
-  const bootstrap = buildBootstrap(embedHost, documentPath);
+  const html = injectJwplayerBase(
+    applyRuntimeHosts(rewriteHtml(fetched.html, bridge, embedHost), embedHost),
+    fetched.html,
+    embedHost,
+  );
+  const bootstrap = buildBootstrap(embedHost, documentPath, proxyOrigin);
   const baseTag = `<base href="https://${embedHost}${documentPath}">`;
   const body = /<head[^>]*>/i.test(html)
     ? html.replace(/<head[^>]*>/i, (m) => `${m}${baseTag}${bootstrap}`)
@@ -111,10 +184,25 @@ async function fetchExternalDocumentSafe(
  *  - les URLs absolues vers l'hébergeur passent aussi par le bridge ;
  *  - les autres URLs restent inchangées.
  */
-function rewriteHtml(html: string, bridge: (path: string) => string): string {
+function rewriteHtml(
+  html: string,
+  bridge: (path: string) => string,
+  embedHost: string,
+): string {
   const rewriteValue = (value: string): string | null => {
     if (!value || /^(data:|blob:|about:|javascript:|mailto:|tel:|#)/i.test(value)) return null;
-    if (value.startsWith("//")) return null;
+    if (value.startsWith("//")) {
+      // URL proto-relative vers l'hébergeur : le navigateur la chargerait avec
+      // notre référent ; on la fait passer par le bridge comme les autres.
+      try {
+        const protoRelative = new URL(`https:${value}`);
+        return protoRelative.hostname === embedHost
+          ? bridge(protoRelative.pathname + protoRelative.search)
+          : null;
+      } catch {
+        return null;
+      }
+    }
     let abs: URL;
     try {
       abs = new URL(value, "https://x");
@@ -125,6 +213,11 @@ function rewriteHtml(html: string, bridge: (path: string) => string): string {
     // ressources/API connues sont réécrites ; le reste est laissé tel quel.
     if (abs.origin === "https://x") {
       return isEmbedAssetPath(abs.pathname) ? bridge(abs.pathname + abs.search) : null;
+    }
+    // URL absolue vers l'hébergeur (ex. video.js servi depuis fsvid) : même
+    // traitement, sinon elle repart avec notre référent et peut être bloquée.
+    if (abs.hostname === embedHost) {
+      return bridge(abs.pathname + abs.search);
     }
     return null;
   };
@@ -140,13 +233,16 @@ function rewriteHtml(html: string, bridge: (path: string) => string): string {
 }
 
 /** Injecte le stockage mémoire + le bootstrap de réécriture runtime. */
-function buildBootstrap(embedHost: string, documentPath: string): string {
+function buildBootstrap(embedHost: string, documentPath: string, proxyOrigin: string): string {
   return `${STORAGE_SHIM}<script>(function(){
 var HOST=${JSON.stringify(embedHost)};
 var PATH=${JSON.stringify(documentPath)};
+var ORIGIN=${JSON.stringify(proxyOrigin)};
 var BH="https://"+HOST;
-var PROXY=${JSON.stringify(EXT_PROXY_PREFIX)};
-var BRIDGE=${JSON.stringify(EXT_BRIDGE_PATH)};
+var PROXY=ORIGIN+"/api/embed/ext/proxy?u=";
+var BRIDGE=ORIGIN+"/api/embed/ext/proxy";
+var RHOSTS=window.__EMBED_RUNTIME_HOSTS__||[];
+function isRuntimeHost(h){return h===HOST||RHOSTS.indexOf(h)>=0;}
 function bridge(p,q){
   var r=BRIDGE+"?h="+encodeURIComponent(HOST)+"&p="+encodeURIComponent(p)+(q?"&q="+encodeURIComponent(q):"")+"&r="+encodeURIComponent(PATH);
   return r;
@@ -156,12 +252,21 @@ function map(u){
   if(u.charAt(0)==="/"&&u.charAt(1)==="/")return null;
   var a;try{a=new URL(u,BH+PATH);}catch(e){return null;}
   if(a.protocol!=="http:"&&a.protocol!=="https:")return null;
-  if(a.origin===location.origin){
-    if(a.pathname.indexOf("/api/embed/ext/proxy")===0)return a.pathname+a.search;
-    return bridge(a.pathname,a.search.slice(1));
-  }
-  if(a.hostname!==HOST)return null;
-  return bridge(a.pathname,a.search.slice(1));
+  // URL de bridge déjà absolue : ne pas la réécrire une seconde fois.
+  if(a.pathname.indexOf("/api/embed/ext/proxy")===0)return a.href;
+  if(a.hostname===location.hostname)return null;
+  if(a.origin===location.origin)return bridge(a.pathname,a.search.slice(1));
+  if(isRuntimeHost(a.hostname))return bridge(a.pathname,a.search.slice(1));
+  return null;
+}
+// Corps de requête (joueurs protégés style filemoon/voe) : réécrit les URLs
+// absolues de l'hébergeur ou des hôtes runtime qu'il contient.
+function mapBody(body){
+  if(typeof body!=="string"||body.indexOf("http")<0)return body;
+  return body.replace(/https?:\\/\\/[^"'\\s&<]+/g,function(u){
+    try{var a=new URL(u);if(isRuntimeHost(a.hostname))return PROXY+encodeURIComponent(u);}catch(e){}
+    return u;
+  });
 }
 var of_=window.fetch;
 if(of_)window.fetch=function(input,init){
@@ -181,16 +286,26 @@ if(of_)window.fetch=function(input,init){
         }catch(e){return of_.call(this,m2,init);}
       }
     }
+    if(init&&typeof init.body==="string"){
+      var nb=mapBody(init.body);
+      if(nb!==init.body){var ni={};for(var k in init)ni[k]=init[k];ni.body=nb;return of_.call(this,input,ni);}
+    }
   }catch(e){}
   return of_.apply(this,arguments);
 };
-var XP=XMLHttpRequest.prototype,oo=XP.open;
+var XP=XMLHttpRequest.prototype,oo=XP.open,os=XP.send;
 XP.open=function(){
   var args=Array.prototype.slice.call(arguments);
   try{
     if(typeof args[1]==="string"){var m=map(args[1]);if(m)args[1]=m;}
   }catch(e){}
   return oo.apply(this,args);
+};
+XP.send=function(body){
+  try{
+    if(typeof body==="string"){var nb=mapBody(body);if(nb!==body)body=nb;}
+  }catch(e){}
+  return os.call(this,body);
 };
 if(navigator.sendBeacon){
   var ob=navigator.sendBeacon.bind(navigator);

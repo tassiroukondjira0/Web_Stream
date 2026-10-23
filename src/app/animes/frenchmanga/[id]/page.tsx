@@ -13,10 +13,17 @@ import {
   fetchTmdbOverviewByTitle,
   fetchTvSeason,
   fetchTvSeasonsPosters,
+  resolveTmdbMatch,
   type TmdbSeason,
 } from "@/lib/tmdb";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
 import { providerSources, vidzySources } from "@/lib/player-sources";
+import {
+  episodeNumbersForSeason,
+  pickActiveSeason,
+  resolveDisplayedEpisodes,
+  seasonNumberFromTitle,
+} from "@/lib/episode-list";
 import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
 import {
   fetchMangaDetail,
@@ -69,24 +76,43 @@ export default async function FrenchMangaAnimePage({ params, searchParams }: Fre
   const titleBase = asset?.title ?? "Manga";
 
   // Synopsis + lecture Vidzy + détail fournisseur (hosts).
-  const [overview, playback, detail, fiche] = await Promise.all([
+  const [overview, playback, detail, fiche, tmdbMatch] = await Promise.all([
     fetchTmdbOverviewByTitle(titleBase),
     resolveCatalogPlayback(titleBase, "ANIME", asset?.releaseYear ?? null),
     fetchMangaDetail(id).catch(() => null),
     fetchMangaMeta(id),
+    resolveTmdbMatch(titleBase, "tv", asset?.releaseYear ?? null).catch(() => null),
   ]);
 
   const fullTitle = asset?.title ?? detail?.title ?? titleBase;
   const synopsis = overview ?? fiche.synopsis;
 
+  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+  const allSeasons = playback?.seasons ?? [];
+  const titleSeason = seasonNumberFromTitle(fullTitle);
+  const activeSeason = pickActiveSeason(
+    requestedSeason,
+    allSeasons.map((season) => season.season),
+    titleSeason,
+  );
+  const ficheSeason = titleSeason ?? activeSeason;
+
   // Repli : le manga n'est pas toujours servi par son site partenaire. On
   // complète avec les flux du catalogue FRENCHSTREAM (même lecteur, même
-  // reclassement en animés) pour que le titre reste lisible.
+  // reclassement en animés) pour que le titre reste lisible. La fiche manga ne
+  // contient que les épisodes de SA saison.
   const [mangaSources, partnerSources] = await Promise.all([
-    Promise.resolve(detail ? providerSources(detail.streams, 1) : []),
-    resolvePartnerPlaybackSources(fullTitle, "ANIME", asset?.releaseYear ?? null).catch(
-      () => [],
+    Promise.resolve(
+      detail && ficheSeason === activeSeason
+        ? providerSources(detail.streams, ficheSeason)
+        : [],
     ),
+    resolvePartnerPlaybackSources(
+      fullTitle,
+      "ANIME",
+      asset?.releaseYear ?? null,
+      activeSeason,
+    ).catch(() => []),
   ]);
 
   const sources = [
@@ -120,20 +146,17 @@ export default async function FrenchMangaAnimePage({ params, searchParams }: Fre
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
-  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
-  const seasons = playback?.seasons ?? [];
-  const activeSeason = requestedSeason && seasons.some((s) => s.season === requestedSeason)
-    ? requestedSeason
-    : seasons.length > 0
-      ? seasons[0].season
-      : 1;
-
+  const seasons = allSeasons;
   const activeEpisode = Number.parseInt(sp.ep ?? "", 10) || 1;
 
+  const tmdbId = playback?.tmdbId ?? tmdbMatch?.id ?? null;
   let seasonDetail: TmdbSeason | null = null;
   let posterMap = new Map<number, string | null>();
-  if (playback?.tmdbId) {
-    const raw = await fetchTvSeasonsPosters(playback.tmdbId, seasons.map((s) => s.season)).catch(() => null);
+  if (tmdbId) {
+    const raw = await fetchTvSeasonsPosters(
+      tmdbId,
+      seasons.map((s) => s.season),
+    ).catch(() => null);
     if (raw instanceof Map) posterMap = raw;
   }
   const seasonsWithPosters: { season: number; episodes: number[]; posterUrl: string | null }[] =
@@ -142,17 +165,16 @@ export default async function FrenchMangaAnimePage({ params, searchParams }: Fre
       episodes: s.episodes,
       posterUrl: posterMap.get(s.season) ?? null,
     }));
-  if (playback?.tmdbId && activeSeason) {
-    seasonDetail = await fetchTvSeason(playback.tmdbId, activeSeason).catch(() => null);
+  if (tmdbId) {
+    seasonDetail = await fetchTvSeason(tmdbId, activeSeason).catch(() => null);
   }
 
-  const fallbackEpisodes = (seasonNumbers: number[]) =>
-    seasonNumbers.map((epNum) => ({
-      episode_number: epNum,
-      name: `Épisode ${epNum}`,
-      overview: null,
-      still_path: null,
-    }));
+  const listSeason = activeSeason;
+  const displayedEpisodes = resolveDisplayedEpisodes({
+    tmdbEpisodes: seasonDetail?.episodes,
+    gridEpisodes: seasons.find((season) => season.season === listSeason)?.episodes ?? [],
+    sourceEpisodes: episodeNumbersForSeason(sources, listSeason),
+  });
 
   const hrefFor = ({
     lang,
@@ -196,14 +218,10 @@ export default async function FrenchMangaAnimePage({ params, searchParams }: Fre
       />
 
       {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
-      {seasonDetail && (
+      {displayedEpisodes.length > 0 && (
         <EpisodeList
-          seasonNumber={activeSeason}
-          episodes={
-            seasonDetail.episodes?.length > 0
-              ? seasonDetail.episodes
-              : fallbackEpisodes(seasons.find((s) => s.season === activeSeason)?.episodes ?? [])
-          }
+          seasonNumber={listSeason}
+          episodes={displayedEpisodes}
           activeEpisode={activeEpisode}
           hrefFor={({ season, episode, lang: episodeLang }) =>
             hrefFor({

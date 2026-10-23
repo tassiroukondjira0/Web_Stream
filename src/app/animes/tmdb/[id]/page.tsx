@@ -12,12 +12,18 @@ import { EpisodeList } from "@/components/EpisodeList";
 import { prisma } from "@/lib/prisma";
 import {
   fetchTmdbOverviewById,
+  fetchTvDetails,
   fetchTvSeason,
   fetchTvSeasonsPosters,
   type TmdbSeason,
 } from "@/lib/tmdb";
 import { resolvePlaybackByTmdbId } from "@/lib/vidzy";
 import { vidzySources } from "@/lib/player-sources";
+import {
+  episodeNumbersForSeason,
+  pickActiveSeason,
+  resolveDisplayedEpisodes,
+} from "@/lib/episode-list";
 import { resolvePartnerPlaybackSources } from "@/lib/partner-playback";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
 
@@ -65,19 +71,21 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
 
   const title = asset?.title ?? "Animé";
 
-  const [overview, playback] = await Promise.all([
-    fetchTmdbOverviewById(id, "tv"),
+  const [details, playback] = await Promise.all([
+    fetchTvDetails(Number(id)).catch(() => null),
     resolvePlaybackByTmdbId(id, "tv"),
   ]);
+  const overview = details?.overview?.trim() || null;
 
   const seasons = playback?.seasons ?? [];
+  const availableSeasons =
+    seasons.length > 0
+      ? seasons.map((season) => season.season)
+      : details
+        ? Array.from({ length: details.number_of_seasons }, (_, index) => index + 1)
+        : [];
   const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
-  const activeSeason =
-    requestedSeason !== null && seasons.some((s) => s.season === requestedSeason)
-      ? requestedSeason
-      : seasons.length > 0
-        ? seasons[0].season
-        : (requestedSeason ?? 1);
+  const activeSeason = pickActiveSeason(requestedSeason, availableSeasons);
 
   const activeEpisode = Number.parseInt(sp.ep ?? "", 10) || 1;
 
@@ -107,32 +115,32 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
   const year = asset?.releaseYear ?? playback?.year ?? null;
   const totalEpisodes = Math.max(
     asset?.totalEpisodes ?? 0,
+    details?.number_of_episodes ?? 0,
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
+  const tmdbId = playback?.tmdbId ?? details?.id ?? Number(id);
   let seasonDetail: TmdbSeason | null = null;
   let posterMap = new Map<number, string | null>();
-  if (playback?.tmdbId) {
-    const raw = await fetchTvSeasonsPosters(playback.tmdbId, seasons.map((s) => s.season)).catch(() => null);
-    if (raw instanceof Map) posterMap = raw;
-  }
+  const raw = await fetchTvSeasonsPosters(
+    tmdbId,
+    seasons.map((season) => season.season),
+  ).catch(() => null);
+  if (raw instanceof Map) posterMap = raw;
   const seasonsWithPosters: { season: number; episodes: number[]; posterUrl: string | null }[] =
     seasons.map((s) => ({
       season: s.season,
       episodes: s.episodes,
       posterUrl: posterMap.get(s.season) ?? null,
     }));
-  if (playback?.tmdbId && activeSeason) {
-    seasonDetail = await fetchTvSeason(playback.tmdbId, activeSeason).catch(() => null);
-  }
+  seasonDetail = await fetchTvSeason(tmdbId, activeSeason).catch(() => null);
 
-  const fallbackEpisodes = (seasonNumbers: number[]) =>
-    seasonNumbers.map((epNum) => ({
-      episode_number: epNum,
-      name: `Épisode ${epNum}`,
-      overview: null,
-      still_path: null,
-    }));
+  const listSeason = activeSeason;
+  const displayedEpisodes = resolveDisplayedEpisodes({
+    tmdbEpisodes: seasonDetail?.episodes,
+    gridEpisodes: seasons.find((season) => season.season === listSeason)?.episodes ?? [],
+    sourceEpisodes: episodeNumbersForSeason(sources, listSeason),
+  });
 
   const hrefFor = ({
     lang,
@@ -176,14 +184,10 @@ export default async function TmdbAnimePage({ params, searchParams }: TmdbAnimeP
       />
 
       {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
-      {seasonDetail && (
+      {displayedEpisodes.length > 0 && (
         <EpisodeList
-          seasonNumber={activeSeason}
-          episodes={
-            seasonDetail.episodes?.length > 0
-              ? seasonDetail.episodes
-              : fallbackEpisodes(seasons.find((s) => s.season === activeSeason)?.episodes ?? [])
-          }
+          seasonNumber={listSeason}
+          episodes={displayedEpisodes}
           activeEpisode={activeEpisode}
           hrefFor={({ season, episode, lang: episodeLang }) =>
             hrefFor({

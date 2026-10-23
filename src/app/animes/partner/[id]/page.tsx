@@ -16,9 +16,16 @@ import {
   fetchTvDetails,
   fetchTvSeasonsPosters,
   fetchTvSeason,
+  resolveTmdbMatch,
   type TmdbEpisode,
 } from "@/lib/tmdb";
 import { PARTNER_PROVIDER } from "@/modules/providers/partner/partner.client";
+import {
+  episodeNumbersForSeason,
+  pickActiveSeason,
+  resolveDisplayedEpisodes,
+  seasonNumberFromTitle,
+} from "@/lib/episode-list";
 
 interface PartnerAnimePageProps {
   params: Promise<{ id: string }>;
@@ -85,14 +92,19 @@ export default async function PartnerAnimePage({
   const posterUrl = asset?.posterUrl ?? null;
   const totalEpisodes = asset?.totalEpisodes ?? 0;
 
-  const playback = await resolveCatalogPlayback(title, "ANIME", year).catch(() => null);
+  const [playback, tmdbMatch] = await Promise.all([
+    resolveCatalogPlayback(title, "ANIME", year).catch(() => null),
+    resolveTmdbMatch(title, "tv", year).catch(() => null),
+  ]);
 
   const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
   const playbackSeasons = playback?.seasons ?? [];
-  const activeSeason =
-    requestedSeason !== null && playbackSeasons.some((s) => s.season === requestedSeason)
-      ? requestedSeason
-      : (playbackSeasons[0]?.season ?? requestedSeason ?? 1);
+  const titleSeason = seasonNumberFromTitle(title);
+  const activeSeason = pickActiveSeason(
+    requestedSeason,
+    playbackSeasons.map((season) => season.season),
+    titleSeason,
+  );
   const activeEpisode = Number.parseInt(sp.ep ?? "", 10) || 1;
 
   // Le partenaire publie une fiche par saison : on résout les flux de la
@@ -112,16 +124,17 @@ export default async function PartnerAnimePage({
   let seriesOverview: string | null = null;
   let seasonsPosterMap = new Map<number, string | null>();
 
-  // L'identifiant TMDB vient de la résolution Vidzy (par titre)
-  const tmdbId = playback?.tmdbId ?? null;
+  // L'identifiant TMDB vient de Vidzy, sinon de la correspondance par titre :
+  // sans lui, les fiches fournisseur n'avaient aucune liste d'épisodes.
+  const tmdbId = playback?.tmdbId ?? tmdbMatch?.id ?? null;
   if (tmdbId) {
     const details = await fetchTvDetails(tmdbId).catch(() => null);
     seriesOverview = details?.overview ?? null;
 
-    const seasonNumbers = Array.from(
-      { length: details?.number_of_seasons ?? 0 },
-      (_, i) => i + 1,
-    );
+    const seasonNumbers =
+      playbackSeasons.length > 0
+        ? playbackSeasons.map((season) => season.season)
+        : Array.from({ length: details?.number_of_seasons ?? 0 }, (_, i) => i + 1);
     seasonsPosterMap = await fetchTvSeasonsPosters(tmdbId, seasonNumbers).catch(() => new Map());
 
     const seasonDetail =
@@ -133,13 +146,22 @@ export default async function PartnerAnimePage({
 
     seasonCards = seasonNumbers.map((n) => ({
       season: n,
-      episodes: Array.from(
-        { length: details?.number_of_episodes ?? 0 },
-        (_, i) => i + 1,
-      ),
+      episodes:
+        playbackSeasons.find((season) => season.season === n)?.episodes ??
+        Array.from(
+          { length: details?.number_of_episodes ?? 0 },
+          (_, i) => i + 1,
+        ),
       posterUrl: seasonsPosterMap.get(n) ?? null,
     }));
   }
+
+  const listSeason = activeSeason;
+  const displayedEpisodes = resolveDisplayedEpisodes({
+    tmdbEpisodes: currentEpisodes,
+    gridEpisodes: playbackSeasons.find((season) => season.season === listSeason)?.episodes ?? [],
+    sourceEpisodes: episodeNumbersForSeason(sources, listSeason),
+  });
 
   const quality = "HD 1080p";
   const langLabel = (sp.lang ?? "vf").toUpperCase();
@@ -192,6 +214,24 @@ export default async function PartnerAnimePage({
         )}
       </div>
 
+      {/* Liste des épisodes de la saison active juste après le lecteur */}
+      {displayedEpisodes.length > 0 && (
+        <EpisodeList
+          seasonNumber={listSeason}
+          episodes={displayedEpisodes}
+          activeEpisode={activeEpisode}
+          hrefFor={({ season, episode }) => {
+            const query = new URLSearchParams();
+            query.set("season", String(season));
+            query.set("ep", String(episode));
+            if (sp.lang) query.set("lang", sp.lang);
+            if (sp.host) query.set("host", sp.host);
+            const qs = query.toString();
+            return `/animes/partner/${id}${qs ? `?${qs}` : ""}`;
+          }}
+        />
+      )}
+
       {/* Ligne info : badges + boutons d'action */}
       <div className="flex flex-col lg:flex-row gap-4 items-start justify-between mb-6">
         <div className="flex flex-wrap gap-2.5 items-center">
@@ -238,24 +278,6 @@ export default async function PartnerAnimePage({
           seriesPoster={posterUrl}
         />
       )}
-
-      {/* Liste des épisodes avec l'épisode en cours au top */}
-      <div className="mt-8">
-        <EpisodeList
-          seasonNumber={activeSeason}
-          episodes={currentEpisodes}
-          activeEpisode={activeEpisode}
-          hrefFor={({ season, episode }) => {
-            const query = new URLSearchParams();
-            query.set("season", String(season));
-            query.set("ep", String(episode));
-            if (sp.lang) query.set("lang", sp.lang);
-            if (sp.host) query.set("host", sp.host);
-            const qs = query.toString();
-            return `/animes/partner/${id}${qs ? `?${qs}` : ""}`;
-          }}
-        />
-      </div>
     </div>
   );
 }

@@ -48,11 +48,23 @@ function hostLabel(host: string, url: string): string {
     }
   })();
 
+  // Certains embeds de films arrivent avec le domaine en guise de slug
+  // (`uqload.vc`, `fsvid.lol`) : on les ramène aux mêmes libellés que les
+  // slugs du partenaire.
+  if (hostname) {
+    const domain = hostname.toLowerCase();
+    if (/^uqload\./.test(domain)) return "Uqload";
+    if (/^fsvid\./.test(domain)) return "Premium";
+  }
+
   // Slugs sémantiques du partenaire (« premium », « voe », « uqload »…) : on
   // affiche le nom plutôt que le domaine. Le slug « vidzy » devient son
   // domaine pour le distinguer de notre lecteur Vidzy hébergé (« Vidzy »).
   if (!host.includes(".")) {
     if (host.toLowerCase().startsWith("vidzy")) return hostname ?? "Vidzy";
+    // Le flux « premium » du fournisseur est servi par fsvid : même libellé
+    // quel que soit le slug utilisé par la fiche (premium ou fsvid).
+    if (host.toLowerCase() === "premium" || host.toLowerCase() === "fsvid") return "Premium";
     return host.charAt(0).toUpperCase() + host.slice(1);
   }
   return hostname ?? host;

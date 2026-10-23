@@ -15,10 +15,17 @@ import {
   fetchTmdbOverviewByTitle,
   fetchTvSeason,
   fetchTvSeasonsPosters,
+  resolveTmdbMatch,
   type TmdbSeason,
 } from "@/lib/tmdb";
 import { resolveCatalogPlayback } from "@/lib/vidzy";
 import { providerSources, vidzySources } from "@/lib/player-sources";
+import {
+  episodeNumbersForSeason,
+  pickActiveSeason,
+  resolveDisplayedEpisodes,
+  seasonNumberFromTitle,
+} from "@/lib/episode-list";
 import {
   fetchSeriesDetail,
   PARTNER_PROVIDER,
@@ -90,15 +97,32 @@ export default async function PartnerSeriesPage({
 
   const title = asset?.title ?? "Série";
 
-  const [overview, playback, detail] = await Promise.all([
+  const [overview, playback, detail, tmdbMatch] = await Promise.all([
     fetchTmdbOverviewByTitle(title),
     resolveCatalogPlayback(title, "SERIES", asset?.releaseYear ?? null),
     fetchSeriesDetail(id).catch(() => null),
+    resolveTmdbMatch(title, "tv", asset?.releaseYear ?? null).catch(() => null),
   ]);
 
+  const allSeasons = playback?.seasons ?? [];
+  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
+  const titleSeason = seasonNumberFromTitle(title);
+  const activeSeason = pickActiveSeason(
+    requestedSeason,
+    allSeasons.map((season) => season.season),
+    titleSeason,
+  );
+
+  // La fiche fournisseur ne contient que les épisodes de SA saison : ses flux
+  // ne doivent être proposés que lorsque la saison active est bien celle-là.
+  const ficheSeason = titleSeason ?? activeSeason;
+  const providerSrcs =
+    detail && ficheSeason === activeSeason
+      ? providerSources(detail.streams, ficheSeason, "frenchstream")
+      : [];
   const sources = [
     ...(playback?.available ? vidzySources(playback) : []),
-    ...(detail ? providerSources(detail.streams, 1, "frenchstream") : []),
+    ...providerSrcs,
   ];
 
   if (sources.length === 0) {
@@ -116,15 +140,13 @@ export default async function PartnerSeriesPage({
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
-  // Saison active : celle demandée par l'URL si elle existe, sinon la première.
-  const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
-  const allSeasons = playback?.seasons ?? [];
+  const tmdbId = playback?.tmdbId ?? tmdbMatch?.id ?? null;
 
   // Affiches de saison depuis TMDB (fallback silencieux si pas de credentials)
-  const seasonPosters = playback?.tmdbId
+  const seasonPosters = tmdbId
     ? await fetchTvSeasonsPosters(
-        playback.tmdbId,
-        playback.seasons.map((s) => s.season),
+        tmdbId,
+        allSeasons.map((s) => s.season),
       ).catch(() => new Map())
     : new Map();
 
@@ -133,29 +155,22 @@ export default async function PartnerSeriesPage({
     posterUrl: seasonPosters.get(s.season) ?? null,
   }));
 
-  const activeSeason =
-    requestedSeason !== null && allSeasons.some((s) => s.season === requestedSeason)
-      ? requestedSeason
-      : (allSeasons[0]?.season ?? null);
-
   const activeEpisode = Number.parseInt(sp.ep ?? "", 10) || 1;
   const seasonToShow = allSeasons.find((s) => s.season === activeSeason) ?? null;
 
-  // Détails de la saison active depuis TMDB (nom, synopsis, image par épisode).
-  let seasonDetail: TmdbSeason | null = null;
-  if (playback?.tmdbId && seasonToShow) {
-    seasonDetail = await fetchTvSeason(playback.tmdbId, seasonToShow.season).catch(
-      () => null,
-    );
-  }
+  // Détails de la saison active depuis TMDB (nom, synopsis, image par épisode),
+  // chargés même sans grille Vidzy pour garantir la liste d'épisodes.
+  const seasonDetail: TmdbSeason | null = tmdbId
+    ? await fetchTvSeason(tmdbId, activeSeason).catch(() => null)
+    : null;
 
-  const fallbackEpisodes = (seasonNumbers: number[]) =>
-    seasonNumbers.map((epNum) => ({
-      episode_number: epNum,
-      name: `Épisode ${epNum}`,
-      overview: null,
-      still_path: null,
-    }));
+  const listSeason = activeSeason;
+  const displayedEpisodes = resolveDisplayedEpisodes({
+    tmdbEpisodes: seasonDetail?.episodes,
+    gridEpisodes: seasonToShow?.episodes ?? [],
+    sourceEpisodes: episodeNumbersForSeason(sources, listSeason),
+    meta: detail?.info,
+  });
 
   const hrefFor = ({
     lang,
@@ -200,14 +215,10 @@ export default async function PartnerSeriesPage({
       />
 
       {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
-      {seasonToShow && (
+      {displayedEpisodes.length > 0 && (
         <EpisodeList
-          seasonNumber={seasonToShow.season}
-          episodes={
-            seasonDetail && seasonDetail.episodes?.length > 0
-              ? seasonDetail.episodes
-              : fallbackEpisodes(seasonToShow.episodes)
-          }
+          seasonNumber={listSeason}
+          episodes={displayedEpisodes}
           activeEpisode={activeEpisode}
           hrefFor={({ season, episode, lang: episodeLang }) =>
             hrefFor({

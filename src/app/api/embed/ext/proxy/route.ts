@@ -5,6 +5,7 @@ import {
   EMBED_USER_AGENT,
   isAllowedProxyUrl,
   isExternalEmbedHost,
+  isRuntimeHost,
   partnerReferer,
 } from "@/lib/embed-ext";
 
@@ -174,7 +175,7 @@ async function forward(
 ): Promise<Response> {
   let current = target;
   for (let i = 0; i <= MAX_REDIRECTS; i++) {
-    if (!isAllowedProxyUrl(current.href)) {
+    if (!isAllowedProxyUrl(current.href, isRuntimeHost)) {
       return new Response("Domaine non autorisé", { status: 403, headers: ACAO });
     }
     const headers: Record<string, string> = {
@@ -234,11 +235,20 @@ async function handle(request: NextRequest): Promise<Response> {
   if (!target) {
     return new Response("Paramètre manquant", { status: 400, headers: ACAO });
   }
-  if (!isAllowedProxyUrl(target.href)) {
+
+  // Référent transmis à la cible : celui du fournisseur pour les ressources de
+  // l'embed, mais un flux externe (CDN HLS) attend le référent de l'hébergeur.
+  const runtime = isRuntimeHost(target.hostname) && !isExternalEmbedHost(target.href);
+  const referer = runtime
+    ? `https://${target.hostname}/`
+    : refererPath
+      ? `${partnerReferer()}${refererPath}`
+      : partnerReferer();
+
+  if (!isAllowedProxyUrl(target.href, isRuntimeHost)) {
     return new Response("Domaine non autorisé", { status: 403, headers: ACAO });
   }
 
-  const referer = refererPath ? `${partnerReferer()}${refererPath}` : partnerReferer();
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
   const body = hasBody ? Buffer.from(await request.arrayBuffer()) : undefined;
 

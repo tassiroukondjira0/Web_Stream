@@ -23,7 +23,8 @@ export async function VidzyPlayer({
   year: number | null;
   searchParams: { lang?: string; season?: string; ep?: string; host?: string };
 }) {
-  const playback = await resolveCatalogPlayback(title, contentType, year);
+  const cleanTitle = title.replace(/\s*-\s*Épisode\s+\d+.*$/i, "").trim();
+  const playback = await resolveCatalogPlayback(cleanTitle, contentType, year);
 
   const requestedSeason = Number.parseInt(searchParams.season ?? "", 10) || null;
   const allSeasons = playback?.seasons ?? [];
@@ -34,7 +35,7 @@ export async function VidzyPlayer({
 
   // Sources partenaire : une fiche par saison, récupérée pour la saison active.
   const partnerSources = await resolvePartnerPlaybackSources(
-    title,
+    cleanTitle,
     contentType,
     year,
     activeSeason,
@@ -45,7 +46,7 @@ export async function VidzyPlayer({
   const fallbackSources =
     partnerSources.length > 0
       ? []
-      : await resolveFStreamTvPlaybackSources(title, contentType, year, activeSeason).catch(
+      : await resolveFStreamTvPlaybackSources(cleanTitle, contentType, year, activeSeason).catch(
           () => [],
         );
 

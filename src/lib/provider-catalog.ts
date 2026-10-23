@@ -383,6 +383,7 @@ export function seededShuffle<T>(items: T[], seed: number): T[] {
 }
 
 type FeaturedItem = {
+  provider: string;
   externalId: string;
   contentType: "MOVIE" | "SERIES" | "ANIME";
   title: string;
@@ -435,6 +436,7 @@ export async function getFeaturedPartner(
     const items: FeaturedItem[] = seededShuffle(pool, seed)
       .slice(0, Math.max(1, limit))
       .map((item) => ({
+        provider: item.provider,
         externalId: item.externalId,
         contentType: item.contentType,
         title: item.title,

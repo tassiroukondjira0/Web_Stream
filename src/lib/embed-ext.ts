@@ -35,19 +35,22 @@ export function isExternalEmbedHost(url: string): boolean {
 
 /**
  * Vrai si l'URL peut être rejouée par un proxy d'hébergeur : un domaine
- * reconnu, ou une URL « sentinelle » construite par le bootstrap (chemin
- * brut relatif, sans domaine) que la route résout elle-même.
+ * reconnu, un CDN de diffusion connu, une URL « sentinelle » construite par le
+ * bootstrap (chemin brut relatif), ou un hôte mémorisé par le proxy document
+ * (flux HLS externes résolus par le document d'embed).
  */
-export function isAllowedProxyUrl(url: string): boolean {
+export function isAllowedProxyUrl(url: string, isRuntimeHost?: (h: string) => boolean): boolean {
   if (isExternalEmbedHost(url)) return true;
   try {
     const u = new URL(url);
     if (u.hostname === "x") return true;
+    if (isRuntimeHost?.(u.hostname)) return true;
     // Autorise les CDNs de diffusion vidéo des hébergeurs connus
     if (
       /(voe|dood|streamtape|uqload|filemoon|mixdrop|streamwish|vidmoly|hqq|waaw|netu|cdn|delivery|stream)/i.test(
         u.hostname,
-      )
+      ) &&
+      (u.protocol === "https:" || u.protocol === "http:")
     ) {
       return true;
     }
@@ -115,4 +118,30 @@ export function documentRefererPath(url: string): string {
   } catch {
     return url;
   }
+}
+
+/**
+ * Hôtes externes (ex. `strm5.uqload.vc`) que les documents d'embed ont résolu
+ * à l'exécution. Le proxy runtime les autorise tant qu'ils sont mémorisés,
+ * afin de relayer les flux (HLS/DASH) qu'aucune allowlist statique ne couvre.
+ */
+const runtimeEmbedHosts = new Map<string, number>();
+const RUNTIME_HOST_TTL = 10 * 60 * 1000;
+
+export function rememberRuntimeHost(host?: string | null): void {
+  if (!host) return;
+  runtimeEmbedHosts.set(host, Date.now() + RUNTIME_HOST_TTL);
+  if (runtimeEmbedHosts.size > 200) {
+    const now = Date.now();
+    for (const [h, exp] of runtimeEmbedHosts) if (exp < now) runtimeEmbedHosts.delete(h);
+  }
+}
+
+export function isRuntimeHost(host?: string | null): boolean {
+  const exp = host ? runtimeEmbedHosts.get(host) : undefined;
+  return typeof exp === "number" && exp > Date.now();
+}
+
+export function runtimeHostList(): string[] {
+  return [...runtimeEmbedHosts.keys()];
 }

@@ -263,7 +263,7 @@ async function FeaturedSection() {
           <PosterCarousel
             size="lg"
             items={items.map((item) => ({
-              key: `featured-${item.externalId}`,
+              key: `featured-${item.provider}-${item.contentType}-${item.externalId}`,
               href: item.href,
               posterUrl: item.posterUrl,
               title: item.title,

@@ -380,7 +380,9 @@ export async function fetchAutoRepairDetail(externalId: string): Promise<Partner
 /** Hôtes connus du partenaire, associés à leur champ `*_url` dans la réponse. */
 const AUTO_REPAIR_HOSTS: readonly { field: string; host: string }[] = [
   { field: "vidzy_url", host: "vidzy" },
-  { field: "fsvid_url", host: "fsvid" },
+  // `fsvid_url` est le flux « Premium » du fournisseur (la clé `premium` de
+  // `ep-data.php` pointe exactement sur la même URL) : on l'expose sous ce nom.
+  { field: "fsvid_url", host: "premium" },
   { field: "uqload_url", host: "uqload" },
   { field: "voe_url", host: "voe" },
   { field: "netu_url", host: "netu" },

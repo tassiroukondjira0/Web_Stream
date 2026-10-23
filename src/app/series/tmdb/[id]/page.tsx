@@ -13,12 +13,18 @@ import { EpisodeList } from "@/components/EpisodeList";
 import { prisma } from "@/lib/prisma";
 import {
   fetchTmdbOverviewById,
+  fetchTvDetails,
   fetchTvSeason,
   fetchTvSeasonsPosters,
   type TmdbSeason,
 } from "@/lib/tmdb";
 import { resolvePlaybackByTmdbId } from "@/lib/vidzy";
 import { vidzySources } from "@/lib/player-sources";
+import {
+  episodeNumbersForSeason,
+  pickActiveSeason,
+  resolveDisplayedEpisodes,
+} from "@/lib/episode-list";
 import {
   resolveFStreamTvPlaybackSources,
   resolvePartnerPlaybackSources,
@@ -86,19 +92,24 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
 
   const title = asset?.title ?? "Série";
 
-  const [overview, playback] = await Promise.all([
-    fetchTmdbOverviewById(id, "tv"),
+  const [details, playback] = await Promise.all([
+    fetchTvDetails(Number(id)).catch(() => null),
     resolvePlaybackByTmdbId(id, "tv"),
   ]);
+  const overview = details?.overview?.trim() || null;
 
   const allSeasons = playback?.seasons ?? [];
+  const availableSeasons =
+    allSeasons.length > 0
+      ? allSeasons.map((season) => season.season)
+      : details
+        ? Array.from({ length: details.number_of_seasons }, (_, index) => index + 1)
+        : [];
 
-  // Saison active : celle demandée par l'URL si elle existe, sinon la première.
+  // Saison active : celle demandée par l'URL, sinon la première saison réelle
+  // (les spéciaux TMDB « saison 0 » ne doivent pas être choisis par défaut).
   const requestedSeason = sp.season ? Number.parseInt(sp.season, 10) : null;
-  const activeSeason =
-    requestedSeason !== null && allSeasons.some((s) => s.season === requestedSeason)
-      ? requestedSeason
-      : (allSeasons[0]?.season ?? requestedSeason ?? 1);
+  const activeSeason = pickActiveSeason(requestedSeason, availableSeasons);
 
   // Épisode actif
   const requestedEpisode = sp.ep ? Number.parseInt(sp.ep, 10) : null;
@@ -110,7 +121,7 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
     title,
     "SERIES",
     asset?.releaseYear ?? null,
-    activeSeason ?? 1,
+    activeSeason,
   ).catch(() => []);
 
   // Repli : fournisseur secondaire si le partenaire n'expose aucune source.
@@ -121,7 +132,7 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
           title,
           "SERIES",
           asset?.releaseYear ?? null,
-          activeSeason ?? 1,
+          activeSeason,
         ).catch(() => []);
 
   const sources = [
@@ -142,16 +153,20 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
   const year = asset?.releaseYear ?? playback?.year ?? null;
   const totalEpisodes = Math.max(
     asset?.totalEpisodes ?? 0,
+    details?.number_of_episodes ?? 0,
     playback?.seasons.reduce((n, s) => n + s.episodes.length, 0) ?? 0,
   );
 
+  const tmdbId = playback?.tmdbId ?? details?.id ?? Number(id);
+
   // Affiches de saison depuis TMDB (fallback silencieux si pas de credentials)
-  const seasonPosters = playback?.tmdbId
-    ? await fetchTvSeasonsPosters(
-        playback.tmdbId,
-        playback.seasons.map((s) => s.season),
-      ).catch(() => new Map())
-    : new Map();
+  const seasonPosters =
+    allSeasons.length > 0
+      ? await fetchTvSeasonsPosters(
+          tmdbId,
+          allSeasons.map((season) => season.season),
+        ).catch(() => new Map())
+      : new Map();
 
   const seasonsWithPosters = allSeasons.map((s) => ({
     ...s,
@@ -160,21 +175,18 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
 
   const seasonToShow = allSeasons.find((s) => s.season === activeSeason) ?? null;
 
-  // Détails de la saison active depuis TMDB (nom, synopsis, image par épisode).
-  let seasonDetail: TmdbSeason | null = null;
-  if (playback?.tmdbId && seasonToShow) {
-    seasonDetail = await fetchTvSeason(playback.tmdbId, seasonToShow.season).catch(
-      () => null,
-    );
-  }
+  // Détails de la saison active depuis TMDB, même quand Vidzy ne fournit pas
+  // de grille : c'est ce qui garantit la liste d'épisodes sur toutes les fiches.
+  const seasonDetail: TmdbSeason | null = await fetchTvSeason(tmdbId, activeSeason).catch(
+    () => null,
+  );
 
-  const fallbackEpisodes = (seasonNumbers: number[]) =>
-    seasonNumbers.map((epNum) => ({
-      episode_number: epNum,
-      name: `Épisode ${epNum}`,
-      overview: null,
-      still_path: null,
-    }));
+  const listSeason = activeSeason;
+  const displayedEpisodes = resolveDisplayedEpisodes({
+    tmdbEpisodes: seasonDetail?.episodes,
+    gridEpisodes: seasonToShow?.episodes ?? [],
+    sourceEpisodes: episodeNumbersForSeason(sources, listSeason),
+  });
 
   const hrefFor = ({
     lang,
@@ -219,14 +231,10 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
       />
 
       {/* Liste des épisodes de la saison active juste après le lecteur avec l'épisode en cours au top */}
-      {seasonToShow && (
+      {displayedEpisodes.length > 0 && (
         <EpisodeList
-          seasonNumber={seasonToShow.season}
-          episodes={
-            seasonDetail && seasonDetail.episodes?.length > 0
-              ? seasonDetail.episodes
-              : fallbackEpisodes(seasonToShow.episodes)
-          }
+          seasonNumber={listSeason}
+          episodes={displayedEpisodes}
           activeEpisode={activeEpisode}
           hrefFor={({ season, episode, lang: episodeLang }) =>
             hrefFor({
