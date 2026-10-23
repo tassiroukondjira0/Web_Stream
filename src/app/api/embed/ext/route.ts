@@ -242,10 +242,34 @@ var BH="https://"+HOST;
 var PROXY=ORIGIN+"/api/embed/ext/proxy?u=";
 var BRIDGE=ORIGIN+"/api/embed/ext/proxy";
 var RHOSTS=window.__EMBED_RUNTIME_HOSTS__||[];
+// fsvid chiffre sa source HLS avec une clé dérivée de location.hostname.
+// Servie depuis notre origine, la page ne peut pas la déchiffrer et retombe
+// sur la démo /troll/. On corrige le code dépaqueté avant son eval.
+if(${JSON.stringify(/(^|\.)fsvid\./i.test(embedHost))}){
+  var _ev=window.eval;
+  window.eval=function(c){
+    if(typeof c==="string"&&c.indexOf("location&&location.hostname")>=0){
+      c=c.replace(/\\(location&&location\\.hostname\\)/g,JSON.stringify(HOST));
+    }
+    return _ev.call(this,c);
+  };
+}
+var BASE=HOST.split(".").slice(-2).join(".");
 function isRuntimeHost(h){return h===HOST||RHOSTS.indexOf(h)>=0;}
+function isFamilyHost(h){return h===HOST||h.slice(-(BASE.length+1))==="."+BASE;}
+function proxyUrl(u){return PROXY+encodeURIComponent(u)+"&h="+encodeURIComponent(HOST);}
 function bridge(p,q){
   var r=BRIDGE+"?h="+encodeURIComponent(HOST)+"&p="+encodeURIComponent(p)+(q?"&q="+encodeURIComponent(q):"")+"&r="+encodeURIComponent(PATH);
   return r;
+}
+function withGk(u){
+  try{
+    if(!window.__vzgk||!/(^|\.)fsvid\./i.test(HOST))return u;
+    var a=new URL(u);
+    if(a.pathname.indexOf("/api/embed/ext/proxy")!==0)return u;
+    if(!a.searchParams.get("gk"))a.searchParams.set("gk",window.__vzgk);
+    return a.href;
+  }catch(e){return u;}
 }
 function map(u){
   if(typeof u!=="string"||!u)return null;
@@ -253,10 +277,13 @@ function map(u){
   var a;try{a=new URL(u,BH+PATH);}catch(e){return null;}
   if(a.protocol!=="http:"&&a.protocol!=="https:")return null;
   // URL de bridge déjà absolue : ne pas la réécrire une seconde fois.
-  if(a.pathname.indexOf("/api/embed/ext/proxy")===0)return a.href;
+  if(a.pathname.indexOf("/api/embed/ext/proxy")===0)return withGk(a.href);
   if(a.hostname===location.hostname)return null;
   if(a.origin===location.origin)return bridge(a.pathname,a.search.slice(1));
-  if(isRuntimeHost(a.hostname))return bridge(a.pathname,a.search.slice(1));
+  if(a.hostname===HOST)return bridge(a.pathname,a.search.slice(1));
+  // Sous-domaines du fournisseur (ex. s1.fsvid.lol, strm5.uqload.vc) : on
+  // conserve l'hôte d'origine pour que le proxy rejoue la bonne URL.
+  if(isFamilyHost(a.hostname)||isRuntimeHost(a.hostname))return withGk(proxyUrl(a.href));
   return null;
 }
 // Corps de requête (joueurs protégés style filemoon/voe) : réécrit les URLs
@@ -264,7 +291,7 @@ function map(u){
 function mapBody(body){
   if(typeof body!=="string"||body.indexOf("http")<0)return body;
   return body.replace(/https?:\\/\\/[^"'\\s&<]+/g,function(u){
-    try{var a=new URL(u);if(isRuntimeHost(a.hostname))return PROXY+encodeURIComponent(u);}catch(e){}
+    try{var a=new URL(u);if(isFamilyHost(a.hostname)||isRuntimeHost(a.hostname))return withGk(proxyUrl(u));}catch(e){}
     return u;
   });
 }

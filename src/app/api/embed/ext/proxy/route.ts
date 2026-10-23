@@ -165,6 +165,53 @@ function toResponse(raw: RawResponse): Response {
   return new Response(new Uint8Array(raw.body), { status: raw.status, headers: out });
 }
 
+/** Enveloppe une URL de playlist/segment vers notre proxy absolu. */
+function playlistProxyUrl(
+  raw: string,
+  base: URL,
+  origin: string,
+  contextHost: string | null,
+): string | null {
+  let abs: URL;
+  try {
+    abs = new URL(raw, base);
+  } catch {
+    return null;
+  }
+  if (abs.protocol !== "http:" && abs.protocol !== "https:") return null;
+  const params = new URLSearchParams({ u: abs.href });
+  if (contextHost) params.set("h", contextHost);
+  return `${origin}/api/embed/ext/proxy?${params.toString()}`;
+}
+
+/**
+ * Réécrit une playlist HLS : les segments/playlists enfants sont relatifs au
+ * manifeste distant, mais le navigateur les résout contre notre URL de proxy
+ * (d'où des 404 `/api/embed/ext/seg0.ts`). On les remplace par des URLs
+ * absolues de notre proxy afin de conserver l'hôte d'origine.
+ */
+function rewritePlaylist(
+  text: string,
+  base: URL,
+  origin: string,
+  contextHost: string | null,
+): string {
+  return text
+    .split(/\r?\n/)
+    .map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return line;
+      if (trimmed.startsWith("#")) {
+        return line.replace(/URI="([^"]*)"/g, (m, uri) => {
+          const proxied = playlistProxyUrl(uri, base, origin, contextHost);
+          return proxied ? `URI="${proxied}"` : m;
+        });
+      }
+      return playlistProxyUrl(trimmed, base, origin, contextHost) ?? line;
+    })
+    .join("\n");
+}
+
 async function forward(
   method: string,
   target: URL,
@@ -236,11 +283,27 @@ async function handle(request: NextRequest): Promise<Response> {
     return new Response("Paramètre manquant", { status: 400, headers: ACAO });
   }
 
+  // fsvid exige un jeton `gk` (obtenu via /gk) sur les segments au-delà des
+  // premières secondes. Le bootstrap l'ajoute à nos URLs proxy ; on le reporte
+  // sur l'URL amont.
+  const gk = sp.get("gk");
+  if (gk && /(^|\.)fsvid\./i.test(target.hostname) && !target.searchParams.has("gk")) {
+    target.searchParams.set("gk", gk);
+  }
+
   // Référent transmis à la cible : celui du fournisseur pour les ressources de
-  // l'embed, mais un flux externe (CDN HLS) attend le référent de l'hébergeur.
-  const runtime = isRuntimeHost(target.hostname) && !isExternalEmbedHost(target.href);
+  // l'embed, mais un flux externe (sous-domaine CDN/HLS) attend le référent de
+  // l'hébergeur du document, pas celui de notre site partenaire.
+  const contextHost = host && isExternalEmbedHost(`https://${host}/`) ? host : null;
+  const familyBase = contextHost ? contextHost.split(".").slice(-2).join(".") : "";
+  const sameFamily =
+    !!contextHost &&
+    (target.hostname === contextHost || target.hostname.endsWith(`.${familyBase}`));
+  const runtime =
+    (sameFamily && target.hostname !== contextHost) ||
+    (isRuntimeHost(target.hostname) && !isExternalEmbedHost(target.href));
   const referer = runtime
-    ? `https://${target.hostname}/`
+    ? `https://${contextHost ?? target.hostname}/`
     : refererPath
       ? `${partnerReferer()}${refererPath}`
       : partnerReferer();
@@ -253,7 +316,7 @@ async function handle(request: NextRequest): Promise<Response> {
   const body = hasBody ? Buffer.from(await request.arrayBuffer()) : undefined;
 
   try {
-    return await forward(
+    const response = await forward(
       request.method,
       target,
       referer,
@@ -261,6 +324,22 @@ async function handle(request: NextRequest): Promise<Response> {
       request.headers.get("content-type"),
       request.headers.get("range"),
     );
+    const contentType = response.headers.get("content-type") ?? "";
+    const isPlaylist =
+      response.ok &&
+      request.method !== "HEAD" &&
+      (/mpegurl/i.test(contentType) || /\.m3u8$/i.test(target.pathname));
+    if (!isPlaylist) return response;
+    const rewritten = rewritePlaylist(
+      await response.text(),
+      target,
+      request.nextUrl.origin,
+      contextHost,
+    );
+    const headers = new Headers(response.headers);
+    headers.delete("content-length");
+    headers.set("content-length", String(Buffer.byteLength(rewritten)));
+    return new Response(rewritten, { status: response.status, headers });
   } catch {
     return new Response("Origine indisponible", { status: 502, headers: ACAO });
   }
