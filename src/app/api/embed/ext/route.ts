@@ -9,6 +9,7 @@ import {
   runtimeHostList,
 } from "@/lib/embed-ext";
 import { PLAYER_BRIDGE_SCRIPT } from "@/lib/player-bridge";
+import { publicOrigin } from "@/lib/public-origin";
 
 /**
  * Proxy document pour les embeds externes du fournisseur (uqload, voe,
@@ -119,7 +120,7 @@ export async function GET(request: NextRequest) {
   // Les URLs du bridge doivent être absolues : le document proxifié porte un
   // `<base href="https://hébergeur/...">`, donc un chemin racine relatif
   // (`/api/embed/ext/proxy`) serait résolu contre le domaine de l'hébergeur.
-  const proxyOrigin = request.nextUrl.origin;
+  const proxyOrigin = publicOrigin(request);
   const bridge = (path: string): string =>
     `${proxyOrigin}${EXT_BRIDGE_PATH}?h=${encodeURIComponent(embedHost)}&p=${encodeURIComponent(path)}&r=${encodeURIComponent(documentPath)}`;
 

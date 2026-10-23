@@ -452,7 +452,6 @@ export function EmbedFrame({
           src={src}
           title={title}
           className="h-full w-full"
-          allowFullScreen
           allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
           referrerPolicy="strict-origin-when-cross-origin"
           sandbox={sandboxPolicy}

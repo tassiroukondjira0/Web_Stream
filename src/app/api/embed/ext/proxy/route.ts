@@ -8,6 +8,7 @@ import {
   isRuntimeHost,
   partnerReferer,
 } from "@/lib/embed-ext";
+import { publicOrigin } from "@/lib/public-origin";
 
 /**
  * Proxy runtime des embeds externes (`/api/embed/ext`).
@@ -333,7 +334,7 @@ async function handle(request: NextRequest): Promise<Response> {
     const rewritten = rewritePlaylist(
       await response.text(),
       target,
-      request.nextUrl.origin,
+      publicOrigin(request),
       contextHost,
     );
     const headers = new Headers(response.headers);
