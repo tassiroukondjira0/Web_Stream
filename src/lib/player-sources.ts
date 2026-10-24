@@ -9,7 +9,7 @@
  */
 
 import { vidzyMovieUrl, vidzySeriesUrl, type CatalogPlayback } from "./vidzy";
-import { externalEmbedUrl, isExternalEmbedHost } from "./embed-ext";
+import { canSignExternalEmbeds, externalEmbedUrl, isExternalEmbedHost } from "./embed-ext";
 
 /** Identifiant d'hébergeur de notre lecteur TMDB (distinct des slugs fournisseur). */
 export const VIDZY_HOST = "vidzy-org";
@@ -138,9 +138,15 @@ export function providerSources(
     lang: s.lang,
     season,
     episode: s.episode > 0 ? s.episode : 1,
-    url: isVidzyUrl(s.url)
+    // Vidara redirige ses embeds vers un domaine de lecture (ex. gaqghe.com).
+    // Son API /api/stream doit être appelée sur ce domaine final : le proxy
+    // reconstruit actuellement ce chemin sur vidara.to et reçoit un 400.
+    // Laisser l'iframe suivre la redirection conserve l'origine attendue.
+    url: isVidaraUrl(s.url)
+      ? s.url
+      : isVidzyUrl(s.url)
       ? proxiedVidzyUrl(s.url)
-      : isExternalEmbedHost(s.url)
+      : canSignExternalEmbeds() || isExternalEmbedHost(s.url)
         ? externalEmbedUrl(s.url)
         : s.url,
   }));
@@ -150,6 +156,14 @@ export function providerSources(
 function isVidzyUrl(url: string): boolean {
   try {
     return /(^|\.)vidzy\./i.test(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+function isVidaraUrl(url: string): boolean {
+  try {
+    return /(^|\.)vidara\./i.test(new URL(url).hostname);
   } catch {
     return false;
   }

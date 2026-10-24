@@ -141,6 +141,34 @@ export function providerItemHref(
   return `/animes/frenchmanga/${item.externalId}`;
 }
 
+export function providerSlugHref(slug: string): string {
+  const m = slug.match(/^(partner|frenchmanga|tmdb|fstreamtv)-(movie|series|anime)-(.+)$/i);
+  if (!m) {
+    return `/films/${slug}`;
+  }
+
+  const [, provider, kind, id] = m;
+  const normalizedProvider = provider.toLowerCase();
+
+  if (kind.toLowerCase() === "anime") {
+    return `/animes/${normalizedProvider === "frenchstream" ? "partner" : normalizedProvider}/${id}`;
+  }
+
+  if (normalizedProvider === "frenchmanga") {
+    return `/series/frenchmanga/${id}`;
+  }
+
+  const isSeries = kind.toLowerCase() === "series";
+  if (normalizedProvider === "tmdb") {
+    return isSeries ? `/series/tmdb/${id}` : `/films/tmdb/${id}`;
+  }
+  if (normalizedProvider === "fstreamtv") {
+    return isSeries ? `/series/fstreamtv/${id}` : `/films/fstreamtv/${id}`;
+  }
+
+  return isSeries ? `/series/partner/${id}` : `/films/partner/${id}`;
+}
+
 const ASSET_SELECT = {
   externalId: true,
   provider: true,

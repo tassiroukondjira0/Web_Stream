@@ -286,7 +286,18 @@ export function parseVideoIframes(html: string): { host: string; url: string }[]
     try {
       const parsed = new URL(url);
       if ((parsed.protocol !== "http:" && parsed.protocol !== "https:") || seen.has(url)) continue;
-      const videoHosts = ["vidzy", "voe", "uqload", "luluvido", "netu", "stream", "embed", "player"];
+      const videoHosts = [
+        "vidzy",
+        "voe",
+        "uqload",
+        "luluvido",
+        "netu",
+        "kokoflix",
+        "vidara",
+        "stream",
+        "embed",
+        "player",
+      ];
       if (!videoHosts.some((h) => parsed.hostname.includes(h))) continue;
       seen.add(url);
       iframes.push({ host: parsed.hostname, url });
@@ -377,17 +388,6 @@ export async function fetchAutoRepairDetail(externalId: string): Promise<Partner
   }
 }
 
-/** Hôtes connus du partenaire, associés à leur champ `*_url` dans la réponse. */
-const AUTO_REPAIR_HOSTS: readonly { field: string; host: string }[] = [
-  { field: "vidzy_url", host: "vidzy" },
-  // `fsvid_url` est le flux « Premium » du fournisseur (la clé `premium` de
-  // `ep-data.php` pointe exactement sur la même URL) : on l'expose sous ce nom.
-  { field: "fsvid_url", host: "premium" },
-  { field: "uqload_url", host: "uqload" },
-  { field: "voe_url", host: "voe" },
-  { field: "netu_url", host: "netu" },
-];
-
 /** Convertit la réponse `auto_repair.php` en détail (flux + infos épisodes). */
 export function mapAutoRepair(externalId: string, data: unknown): PartnerDetail {
   const streams: PartnerStream[] = [];
@@ -403,12 +403,18 @@ export function mapAutoRepair(externalId: string, data: unknown): PartnerDetail 
     const lang = (typeof r.lang === "string" ? r.lang : "vf").toLowerCase();
     const episode = typeof r.ep === "number" ? r.ep : 1;
 
-    for (const { field, host } of AUTO_REPAIR_HOSTS) {
-      const url = r[field];
-      if (typeof url === "string" && /^https?:\/\//.test(url)) {
-        streams.push({ lang, episode, host, url });
-      }
-    }
+    // Le partenaire renvoie un champ `<host>_url` par hébergeur disponible
+  // (vidzy_url, fsvid_url, uqload_url, voe_url, netu_url, luluvido_url…).
+  // On extrait dynamiquement tous ces champs au lieu d'une liste figée, pour
+  // que tout nouveau lecteur bénéficie du même traitement que Premium/uqload.
+  for (const [key, value] of Object.entries(r)) {
+    if (!key.endsWith("_url")) continue;
+    if (typeof value !== "string" || !/^https?:\/\//.test(value)) continue;
+    const host = key.slice(0, -4); // retire le suffixe "_url"
+    // `fsvid_url` est le flux « Premium » du fournisseur.
+    const normalizedHost = host === "fsvid" ? "premium" : host;
+    streams.push({ lang, episode, host: normalizedHost, url: value });
+  }
   }
 
   return { externalId, streams, info };

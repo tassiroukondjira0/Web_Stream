@@ -5,6 +5,8 @@
 
 import { hashPassword, verifyPassword, signSessionToken, verifySessionToken } from "../src/lib/auth";
 import { getAllMedias } from "../src/lib/catalog";
+import { EXT_DOC_PREFIX, isExternalEmbedHost, originalEmbedUrl } from "../src/lib/embed-ext";
+import { providerSlugHref } from "../src/lib/provider-catalog";
 import { parseMovieEmbeds } from "../src/modules/providers/partner/partner.client";
 
 /** Slugs des anciens contenus de démonstration (désormais supprimés). */
@@ -43,6 +45,13 @@ async function runValidationTests() {
       movieEmbeds.map((embed) => embed.host).join(",") === "uqload.to,voe.sx,luluvid.com" &&
       movieEmbeds[0].url === "https://uqload.to/embed/movie?a=1&b=2",
     "Lecture : Les embeds Uqload, Voe et Luluvido déclarés par la fiche sont disponibles",
+  );
+
+  assert(
+    providerSlugHref("fstreamtv-movie-15113851") === "/films/fstreamtv/15113851" &&
+      providerSlugHref("tmdb-series-550") === "/series/tmdb/550" &&
+      providerSlugHref("partner-anime-42") === "/animes/partner/42",
+    "Routes : les slugs fournisseurs reconduisent vers les fiches correctes (TMDB, partner, FStreamTV)",
   );
 
   // TEST 1 : Inscription & Sécurité des données sensibles (Mots de passe hachés)
@@ -152,6 +161,30 @@ async function runValidationTests() {
     assert(explicitConsent, "Newsletter : Le consentement exprès est validé");
   } catch (e) {
     assert(false, `Test Newsletter en erreur : ${e}`);
+  }
+
+  // TEST 10 : Proxy document des hébergeurs externes (nouveaux domaines + signature)
+  try {
+    const hosts = [
+      "https://1.multiup.us/player/embed_player.php?vid=x",
+      "https://flixeo.xyz/viper/newplayer.php?id=x",
+      "https://do7go.com/e/x",
+      "https://kakaflix.lol/viper/newplayer.php?id=x",
+      "https://96ar.com/e/x",
+      "https://evoload.io/e/x",
+    ];
+    assert(
+      hosts.every((url) => isExternalEmbedHost(url)),
+      "Proxy : Les nouveaux hébergeurs du partenaire sont reconnus",
+    );
+    const source = "https://exemple.test/e/abc?x=1&y=2";
+    const proxied = `${EXT_DOC_PREFIX}${encodeURIComponent(source)}&s=signature`;
+    assert(
+      originalEmbedUrl(proxied) === source,
+      "Proxy : L'URL d'origine est restituée malgré la signature",
+    );
+  } catch (e) {
+    assert(false, `Test Proxy hébergeurs en erreur : ${e}`);
   }
 
   console.log("\n==================================================================");

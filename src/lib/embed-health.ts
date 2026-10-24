@@ -1,6 +1,7 @@
 import type { PlayerSource } from "@/lib/player-sources";
 import {
   EMBED_USER_AGENT,
+  isDeadEmbedDocument,
   originalEmbedUrl,
   partnerReferer,
 } from "@/lib/embed-ext";
@@ -18,10 +19,6 @@ import {
 const REQUEST_TIMEOUT_MS = 4_000;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const MAX_CACHE_ENTRIES = 500;
-
-/** Corps caractéristiques d'un fichier mort ou verrouillé. */
-const DEAD_BODY_RE =
-  /file (?:was )?locked|locked by administrator|file (?:was )?(?:deleted|removed)|no longer available|has expired|expired or has been deleted|video (?:is )?(?:not available|removed|supprim)|vid[ée]o supprim|404 not found|page not found/i;
 
 /** Statuts considérés comme définitifs (le fichier n'existe plus). */
 const DEAD_STATUSES = new Set([403, 404, 410, 451]);
@@ -53,8 +50,7 @@ async function probe(url: string): Promise<boolean> {
     });
     if (DEAD_STATUSES.has(res.status)) return false;
     if (!res.ok) return true;
-    const text = (await res.text()).slice(0, 8_000);
-    return !DEAD_BODY_RE.test(text);
+    return !isDeadEmbedDocument(await res.text());
   } catch {
     return true;
   }

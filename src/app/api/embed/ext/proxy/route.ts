@@ -231,8 +231,12 @@ async function forward(
       Accept: "*/*",
       "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
       Referer: referer,
+      Origin: referer.replace(/\/+$/, ""),
       "Accept-Encoding": "identity",
     };
+    if (/cdn-cgi/i.test(current.pathname)) {
+      // Host conservé par défaut
+    }
     if (contentType) headers["Content-Type"] = contentType;
     if (range) headers.Range = range;
 
@@ -261,7 +265,10 @@ async function handle(request: NextRequest): Promise<Response> {
   const path = sp.get("p");
   let target: URL | null = null;
   if (host && path) {
-    if (!isExternalEmbedHost(`https://${host}/`) || !path.startsWith("/")) {
+    if (
+      (!isExternalEmbedHost(`https://${host}/`) && !isRuntimeHost(host)) ||
+      !path.startsWith("/")
+    ) {
       return new Response("Cible non autorisée", { status: 403, headers: ACAO });
     }
     const query = sp.get("q");
@@ -295,7 +302,8 @@ async function handle(request: NextRequest): Promise<Response> {
   // Référent transmis à la cible : celui du fournisseur pour les ressources de
   // l'embed, mais un flux externe (sous-domaine CDN/HLS) attend le référent de
   // l'hébergeur du document, pas celui de notre site partenaire.
-  const contextHost = host && isExternalEmbedHost(`https://${host}/`) ? host : null;
+  const contextHost =
+    host && (isExternalEmbedHost(`https://${host}/`) || isRuntimeHost(host)) ? host : null;
   const familyBase = contextHost ? contextHost.split(".").slice(-2).join(".") : "";
   const sameFamily =
     !!contextHost &&
@@ -303,11 +311,16 @@ async function handle(request: NextRequest): Promise<Response> {
   const runtime =
     (sameFamily && target.hostname !== contextHost) ||
     (isRuntimeHost(target.hostname) && !isExternalEmbedHost(target.href));
-  const referer = runtime
+  let referer = runtime
     ? `https://${contextHost ?? target.hostname}/`
-    : refererPath
+    : refererPath && contextHost
+      ? `https://${contextHost}${refererPath}`
+      : refererPath
       ? `${partnerReferer()}${refererPath}`
       : partnerReferer();
+  if (contextHost && /cdn-cgi/i.test(target.pathname)) {
+    referer = `https://${contextHost}/`;
+  }
 
   if (!isAllowedProxyUrl(target.href, isRuntimeHost)) {
     return new Response("Domaine non autorisé", { status: 403, headers: ACAO });
@@ -326,6 +339,22 @@ async function handle(request: NextRequest): Promise<Response> {
       request.headers.get("range"),
     );
     const contentType = response.headers.get("content-type") ?? "";
+    // Certains lecteurs (kokoflix/ykfrtza) chargent un script qui detecte
+    // l'attribut sandbox de notre iframe et redirige vers /sandboxed.html
+    // (404). Ce script ne sert qu'a cette detection : on le neutralise.
+    if (/\.(?:m?js)$/i.test(target.pathname) || /javascript|ecmascript/i.test(contentType)) {
+      const js = await response.clone().text();
+      if (/detectSandbox/i.test(js) && /sandboxed\.html/i.test(js)) {
+        return new Response("/* sandbox detection disabled by CinéMax proxy */", {
+          status: 200,
+          headers: {
+            "Content-Type": "text/javascript; charset=utf-8",
+            "Cache-Control": "no-store",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
+    }
     const isPlaylist =
       response.ok &&
       request.method !== "HEAD" &&

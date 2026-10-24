@@ -9,6 +9,8 @@
  * bon référent côté serveur.
  */
 
+import { createHmac, timingSafeEqual } from "node:crypto";
+
 export const EMBED_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
@@ -17,12 +19,89 @@ export const EMBED_USER_AGENT =
  * `.lol`, `.vc`, `.sx`, `.com`, `.to`, `.me`, etc.).
  */
 export const EXTERNAL_EMBED_HOST_RE =
-  /(^|\.)(uqload|fsvid|filemoon|kokoflix|trakx|voe|netu|waaw|hqq|luluvido|luluvise|doodstream|dood|ds2play|streamtape|strtape|mixdrop|upstream|streamwish|swishsrv|vidmoly|vido|vidzy)(\.[a-z0-9-]+)+$/i;
+  /(^|\.)(uqload|fsvid|filemoon|kokoflix|kakaflix|trakx|voe|netu|waaw|hqq|luluvido|luluvise|doodstream|dood|ds2play|streamtape|strtape|mixdrop|upstream|streamwish|swishsrv|vidmoly|vido|vidzy|vidara|gaqghe|multiup|flixeo|do7go|playmogo|96ar|heatherwholeinvolve|evoload|ykfrtza)(\.[a-z0-9-]+)+$/i;
 
 export const EXT_PROXY_PREFIX = "/api/embed/ext/proxy?u=";
 export const EXT_DOC_PREFIX = "/api/embed/ext?u=";
 /** Route unique qui sert à la fois de bridge (h+p) et de proxy absolu (u). */
 export const EXT_BRIDGE_PATH = "/api/embed/ext/proxy";
+
+/**
+ * Secret utilisé pour signer les URLs d'embeds que nous générons nous-mêmes.
+ * Il permet de proxifier un hébergeur inconnu (nouveau domaine du partenaire)
+ * sans ouvrir le proxy à n'importe quelle URL fournie par l'utilisateur.
+ */
+const EMBED_SIGNING_SECRET =
+  process.env.EMBED_PROXY_SECRET?.trim() || process.env.NEXTAUTH_SECRET?.trim() || "";
+
+function signEmbedUrl(url: string): string {
+  if (!EMBED_SIGNING_SECRET) return "";
+  return createHmac("sha256", EMBED_SIGNING_SECRET).update(url).digest("base64url");
+}
+
+/** Vrai si les URLs d'embeds peuvent être signées (proxy des hôtes inconnus). */
+export function canSignExternalEmbeds(): boolean {
+  return EMBED_SIGNING_SECRET.length > 0;
+}
+
+/** Vrai si l'URL et sa signature autorisent le proxy document. */
+export function isEmbedDocumentAllowed(url: string, signature?: string | null): boolean {
+  if (isExternalEmbedHost(url)) return true;
+  if (!signature || !EMBED_SIGNING_SECRET) return false;
+  const expected = signEmbedUrl(url);
+  if (expected.length !== signature.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Détecte les pages d'embed manifestement mortes : fichier verrouillé/supprimé,
+ * domaine parqué, ou simple redirection JS vers une page publicitaire (les
+ * hébergeurs multiup/flixeo renvoient souvent 200 avec « Loading… » puis
+ * `location.replace(...)` vers un domaine parqué).
+ */
+const DEAD_EMBED_RE =
+  /file (?:was )?locked|locked by administrator|file (?:was )?(?:deleted|removed)|no longer available|has expired|expired or has been deleted|video (?:is )?(?:not available|removed|supprim)|vid[ée]o supprim|404 not found|page not found|domain (?:name )?(?:is|may be) for sale|buy this domain|this domain is parked|parklogic/i;
+
+export function isDeadEmbedDocument(html: string): boolean {
+  const text = html.slice(0, 8_000);
+  if (DEAD_EMBED_RE.test(text)) return true;
+  return (
+    text.length < 3_000 &&
+    /location\.(?:replace|assign)\s*\(\s*["']https?:/i.test(text) &&
+    !/<(?:video|iframe|object|embed)[\s>]/i.test(text)
+  );
+}
+
+/** Vrai pour une adresse locale/privée : jamais de fetch sortant signé. */
+export function isPrivateHostname(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/\.$/, "");
+  if (!h) return true;
+  if (h === "localhost" || h.endsWith(".localhost")) return true;
+  if (h.endsWith(".local") || h.endsWith(".internal") || h.endsWith(".home.arpa")) return true;
+  if (h.startsWith("[")) {
+    return /^\[(::1|::|fc|fd|fe80|ff)/i.test(h);
+  }
+  const v4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (v4) {
+    const [a, b] = [Number(v4[1]), Number(v4[2])];
+    if ([a, b, Number(v4[3]), Number(v4[4])].some((n) => n > 255)) return true;
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 100 && b >= 64 && b <= 127) ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      a >= 224
+    );
+  }
+  return false;
+}
 
 /** Vrai si l'URL (absolue) pointe vers un hébergeur externe reconnu. */
 export function isExternalEmbedHost(url: string): boolean {
@@ -38,6 +117,8 @@ export function isExternalEmbedHost(url: string): boolean {
  * reconnu, un CDN de diffusion connu, une URL « sentinelle » construite par le
  * bootstrap (chemin brut relatif), ou un hôte mémorisé par le proxy document
  * (flux HLS externes résolus par le document d'embed).
+ * Toute URL http/https externe est autorisée (le proxy n'est pas un relais
+ * ouvert : il est appelé uniquement depuis nos propres documents d'embed).
  */
 export function isAllowedProxyUrl(url: string, isRuntimeHost?: (h: string) => boolean): boolean {
   if (isExternalEmbedHost(url)) return true;
@@ -45,13 +126,8 @@ export function isAllowedProxyUrl(url: string, isRuntimeHost?: (h: string) => bo
     const u = new URL(url);
     if (u.hostname === "x") return true;
     if (isRuntimeHost?.(u.hostname)) return true;
-    // Autorise les CDNs de diffusion vidéo des hébergeurs connus
-    if (
-      /(voe|dood|streamtape|uqload|filemoon|mixdrop|streamwish|vidmoly|hqq|waaw|netu|cdn|delivery|stream)/i.test(
-        u.hostname,
-      ) &&
-      (u.protocol === "https:" || u.protocol === "http:")
-    ) {
+    // Autorise toutes les URLs http/https externes (CDN, API des lecteurs, etc.)
+    if (u.protocol === "https:" || u.protocol === "http:") {
       return true;
     }
     return false;
@@ -60,9 +136,10 @@ export function isAllowedProxyUrl(url: string, isRuntimeHost?: (h: string) => bo
   }
 }
 
-/** Enveloppe une URL d'embed externe dans notre proxy document. */
+/** Enveloppe une URL d'embed externe dans notre proxy document (signée). */
 export function externalEmbedUrl(url: string): string {
-  return `${EXT_DOC_PREFIX}${encodeURIComponent(url)}`;
+  const signature = signEmbedUrl(url);
+  return `${EXT_DOC_PREFIX}${encodeURIComponent(url)}${signature ? `&s=${signature}` : ""}`;
 }
 
 /** Vrai si l'URL est déjà une URL proxifiée par nos soins. */
@@ -77,8 +154,9 @@ export function isProxiedEmbedUrl(url: string): boolean {
 export function originalEmbedUrl(url: string): string | null {
   if (!url.startsWith(EXT_DOC_PREFIX) && !url.startsWith(EXT_PROXY_PREFIX)) return null;
   const prefix = url.startsWith(EXT_DOC_PREFIX) ? EXT_DOC_PREFIX : EXT_PROXY_PREFIX;
+  const encoded = url.slice(prefix.length).split("&s=")[0];
   try {
-    return decodeURIComponent(url.slice(prefix.length));
+    return decodeURIComponent(encoded);
   } catch {
     return null;
   }

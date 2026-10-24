@@ -14,6 +14,7 @@ import {
   Play,
   X,
 } from "lucide-react";
+import { providerSlugHref } from "@/lib/provider-catalog";
 
 interface UserProfile {
   id: string;
@@ -395,24 +396,7 @@ export default function AccountPage() {
 
 /** Route de fiche correspondant à un slug (local ou partenaire externe). */
 function slugToHref(slug: string): string {
-  const m = slug.match(/^(partner|frenchmanga|tmdb)-(movie|series|anime)-(.+)$/);
-  if (m) {
-    const [, provider, kind, id] = m;
-    // FrenchManga : lecteur dédié (films d'animation comme séries, épisode unique).
-    // Les animés sont classés dans la section « Animes », pas dans « Séries ».
-    if (kind === "anime") {
-      return `/animes/${provider}/${id}`;
-    }
-    if (provider === "frenchmanga") {
-      return `/series/frenchmanga/${id}`;
-    }
-    const isSeries = kind === "series";
-    if (provider === "tmdb") {
-      return isSeries ? `/series/tmdb/${id}` : `/films/tmdb/${id}`;
-    }
-    return isSeries ? `/series/partner/${id}` : `/films/partner/${id}`;
-  }
-  return `/films/${slug}`;
+  return providerSlugHref(slug);
 }
 
 /** Lien de reprise : fiche + saison/épisode exacts. */
@@ -438,7 +422,7 @@ function formatTime(seconds: number): string {
 
 /** Libellé lisible à partir d'un slug (sans appel réseau). */
 function prettyTitle(slug: string): string {
-  const m = slug.match(/^(partner|frenchmanga|tmdb)-(movie|series|anime)-(.+)$/);
+  const m = slug.match(/^(partner|frenchmanga|tmdb|fstreamtv)-(movie|series|anime)-(.+)$/);
   if (m) {
     const [, , kind, id] = m;
     return `${humanize(id)} ${kind === "movie" ? "· Film" : kind === "series" ? "· Série" : "· Animé"}`;

@@ -115,6 +115,11 @@ export function EmbedFrame({
 
   const isProxiedEmbed = src.startsWith("/api/embed?src=");
   const isExtEmbed = src.startsWith("/api/embed/ext?u=");
+  // Kokoflix/ykfrtza détectent l'attribut sandbox et se redirigent vers
+  // sandboxed.html. Le parent doit donc éviter allow-same-origin pour ce
+  // sous-domaine tout en laissant les autres hébergeurs fonctionner.
+  const isKokoflixLike =
+    isExtEmbed && /[?&]u=https?%3A%2F%2F(?:[^/]*kokoflix[^/]*|[^/]*ykfrtza[^/]*)/i.test(src);
   const progressKey = mediaSlug
     ? localKey(mediaSlug, season ?? null, episode ?? null)
     : null;
@@ -128,7 +133,9 @@ export function EmbedFrame({
   const sandboxPolicy = isProxiedEmbed
     ? "allow-scripts allow-forms allow-popups allow-presentation"
     : isExtEmbed
-    ? "allow-scripts allow-same-origin allow-forms allow-popups allow-presentation allow-downloads"
+    ? isKokoflixLike
+      ? "allow-scripts allow-forms allow-popups allow-presentation allow-downloads allow-popups-to-escape-sandbox"
+      : "allow-scripts allow-same-origin allow-forms allow-popups allow-presentation allow-downloads allow-popups-to-escape-sandbox"
     : undefined;
 
   // Réinitialiser l'état quand la source change (pattern React :
