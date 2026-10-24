@@ -114,7 +114,7 @@ export function PosterCarousel({
   if (items.length === 0) return null;
 
   return (
-    <div className="group/carousel relative">
+    <div className="group/carousel relative w-full min-w-0">
       <div
         ref={scroller}
         className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"

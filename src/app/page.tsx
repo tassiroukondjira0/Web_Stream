@@ -243,13 +243,13 @@ async function FeaturedSection() {
   if (items.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="rounded-2xl border border-fuchsia-500/20 bg-gradient-to-r from-zinc-900 via-zinc-900 to-fuchsia-950/30 p-6 sm:p-8">
+    <section className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="min-w-0 rounded-2xl border border-fuchsia-500/20 bg-gradient-to-r from-zinc-900 via-zinc-900 to-fuchsia-950/30 p-4 sm:p-6 lg:p-8">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-lg shadow-purple-600/30">
             <Flame className="h-5 w-5 text-white" />
           </span>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
               À la une
             </h2>
@@ -259,7 +259,7 @@ async function FeaturedSection() {
           </div>
         </div>
 
-        <div className="mt-6">
+        <div className="mt-6 min-w-0">
           <PosterCarousel
             size="lg"
             items={items.map((item) => ({
