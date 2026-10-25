@@ -128,6 +128,17 @@ function fixDecoderHostname(html: string): string {
     .join('var h="vidzy.cc"');
 }
 
+/** Répare l'URL native des pistes VTT créée par les embeds Vidzy. */
+function fixSubtitleShardHostname(html: string, embedOrigin: string): string {
+  const embedHostname = new URL(embedOrigin).hostname;
+  return html
+    // Keep native Video.js <track> URLs on Vidzy; location.host points to our app.
+    .split("return location.protocol+'//'+location.host+u.slice(j);")
+    .join("return fssVtt(u);")
+    .split("location.protocol+'//'+qp.srv+'.'+location.host+'/vtt/")
+    .join(`location.protocol+'//'+qp.srv+'.${embedHostname}/vtt/`);
+}
+
 /**
  * Supprime les tags de scripts publicitaires injectés par l'embed :
  * popunder (vidzy.cc/js/popunder-inject.js), réseaux (runative-syndicate,
@@ -190,10 +201,14 @@ try{
   //    `display:none` — le skin est là mais replié, et peut se redéplier par
   //   -dessus le skin legacy au premier survol/interaction.
   // Résultat à l'écran : deux lecteurs superposés (deux barres de contrôle,
-  // deux boutons play). On masque donc le chrome video.js et on ne garde que
-  // le skin legacy, qui est le seul à réagir aux clics ; video.js conserve
-  // la gestion du flux HLS (le <video> lui appartient toujours).
-  const playerUiShim = `<style>.vjs-control-bar,.vjs-big-play-button,.vjs-poster,.vjs-overlay,.vjs-modal-dialog{display:none!important}</style>`;
+  // deux boutons play). On garde le skin legacy et on expose seulement le
+  // contrôle vidéo.js des sous-titres pour choisir les pistes texte du flux.
+  const playerUiShim = `<style>
+.vjs-control-bar{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important;height:36px!important;width:auto!important;left:auto!important;right:12px!important;bottom:12px!important;padding:0 4px!important;background:rgba(0,0,0,.78)!important;border-radius:6px!important}
+.vjs-control-bar>*:not(.vjs-subs-caps-button):not(.vjs-captions-button){display:none!important}
+.vjs-subs-caps-button,.vjs-captions-button{display:flex!important;visibility:visible!important;opacity:1!important;pointer-events:auto!important}
+.vjs-big-play-button,.vjs-poster,.vjs-overlay,.vjs-modal-dialog{display:none!important}
+</style>`;
   // Bootstrap : le document d'embed tourne sur notre origine, alors que son
   // code suppose être sur vidzy.xx. On réécrit les appels runtime :
   //  - URLs root-relative (`/js/domain.txt`) → origine de l'embed ;
@@ -211,6 +226,31 @@ function map(u){
   var a;try{a=new URL(u,location.href);}catch(e){return null;}
   if(a.protocol!=="http:"&&a.protocol!=="https:")return null;
   if(a.origin===location.origin){try{a=new URL(a.pathname+a.search+a.hash,EMB);}catch(e){return null;}}
+  // Nuevo ajoute ensuite les pistes via XHR sur /srtproxy/ directement.
+  // Cet endpoint répond par une redirection sans CORS ; convertir la piste
+  // vers l'URL VTT du shard avant que fetch/XHR ne soit envoyé.
+  if(a.pathname.indexOf("/srtproxy/")>=0&&isVidzy(a.hostname)){
+    var trackName=a.pathname.slice(a.pathname.lastIndexOf("/")+1);
+    var srv=a.searchParams.get("srv"),disk=a.searchParams.get("disk"),dx=a.searchParams.get("dx");
+    if(srv&&disk&&dx&&/^[a-z0-9-]+$/i.test(srv)&&/^[a-z0-9-]+$/i.test(disk)&&/^[a-z0-9-]+$/i.test(dx)&&/^[a-z0-9._-]+$/i.test(trackName)){
+      try{a.hostname=srv+"."+new URL(EMB).hostname;a.pathname="/vtt/"+disk+"/"+dx+"/"+trackName;a.port="";}catch(e){return null;}
+    }
+  }
+  // L'embed Vidzy réécrit ses sous-titres /srtproxy/ en
+  // https://<srv>.<location.host>/vtt/... . Sous notre iframe proxifiée,
+  // cela produit un sous-domaine de l'application au lieu de Vidzy.
+  // Renvoyer uniquement ces requêtes VTT vers le même shard sur l'origine
+  // réelle de l'embed ; les autres domaines restent inchangés.
+  if(!isVidzy(a.hostname)&&a.pathname.indexOf("/vtt/")>=0){
+    var suffix="."+location.hostname.toLowerCase();
+    var hostname=a.hostname.toLowerCase();
+    if(hostname.endsWith(suffix)){
+      var shard=hostname.slice(0,-suffix.length);
+      if(/^[a-z0-9-]+$/i.test(shard)){
+        try{a.hostname=shard+"."+new URL(EMB).hostname;a.port="";}catch(e){return null;}
+      }
+    }
+  }
   if(!isVidzy(a.hostname))return null;
   if(MEDIA.test(a.pathname))return{u:a.href,nc:1};
   return{u:PROXY+encodeURIComponent(a.href),nc:0};
@@ -385,6 +425,7 @@ export async function GET(request: NextRequest) {
   html = stripAdScripts(html);
   html = fixDecoderHostname(html);
   const embOrigin = new URL(embedUrl).origin;
+  html = fixSubtitleShardHostname(html, embOrigin);
   html = injectBootstrap(html, embOrigin, gk);
 
   return new Response(html, {
