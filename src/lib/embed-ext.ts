@@ -121,16 +121,12 @@ export function isExternalEmbedHost(url: string): boolean {
  * ouvert : il est appelé uniquement depuis nos propres documents d'embed).
  */
 export function isAllowedProxyUrl(url: string, isRuntimeHost?: (h: string) => boolean): boolean {
-  if (isExternalEmbedHost(url)) return true;
   try {
     const u = new URL(url);
+    if (u.protocol !== "https:" || u.username || u.password || isPrivateHostname(u.hostname)) return false;
+    if (isExternalEmbedHost(url)) return true;
     if (u.hostname === "x") return true;
-    if (isRuntimeHost?.(u.hostname)) return true;
-    // Autorise toutes les URLs http/https externes (CDN, API des lecteurs, etc.)
-    if (u.protocol === "https:" || u.protocol === "http:") {
-      return true;
-    }
-    return false;
+    return isRuntimeHost?.(u.hostname) ?? false;
   } catch {
     return false;
   }

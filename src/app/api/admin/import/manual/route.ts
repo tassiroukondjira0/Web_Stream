@@ -97,7 +97,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  let items: any[] = [];
+  let items: unknown[] = [];
 
   // Détecte le type de requête : multipart (fichier) ou JSON pur.
   const contentType = request.headers.get("content-type") ?? "";
@@ -152,37 +152,39 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   let created = 0;
-  let updated = 0;
+  const updated = 0;
   let skipped = 0;
   const errors: string[] = [];
 
   for (let i = 0; i < items.length; i++) {
-    const raw = items[i];
+    const raw = items[i] && typeof items[i] === "object"
+      ? (items[i] as Record<string, unknown>)
+      : {};
     const line = i + 1;
 
     try {
-      const title: string = raw?.title?.trim();
+      const title = typeof raw.title === "string" ? raw.title.trim() : "";
       if (!title) {
         errors.push(`Ligne ${line} : titre manquant`);
         continue;
       }
 
-      const synopsis: string = raw?.synopsis?.trim() ?? "";
-      const type: "MOVIE" | "SERIES" = raw?.type === "SERIES" ? "SERIES" : "MOVIE";
-      const releaseYear: number = Number.parseInt(String(raw?.releaseYear ?? 0), 10) || new Date().getFullYear();
+      const synopsis = typeof raw.synopsis === "string" ? raw.synopsis.trim() : "";
+      const type: "MOVIE" | "SERIES" = raw.type === "SERIES" ? "SERIES" : "MOVIE";
+      const releaseYear: number = Number.parseInt(String(raw.releaseYear ?? 0), 10) || new Date().getFullYear();
       const durationMinutes: number | null =
         raw?.durationMinutes != null ? Number.parseInt(String(raw.durationMinutes), 10) || null : null;
-      const posterUrl: string | null = raw?.posterUrl ?? null;
-      const backdropUrl: string | null = raw?.backdropUrl ?? null;
-      const videoUrl: string | null = raw?.videoUrl ?? null;
-      const accessLevel: "FREE" | "PREMIUM" = raw?.accessLevel === "PREMIUM" ? "PREMIUM" : "FREE";
+      const posterUrl = typeof raw.posterUrl === "string" ? raw.posterUrl : null;
+      const backdropUrl = typeof raw.backdropUrl === "string" ? raw.backdropUrl : null;
+      const videoUrl = typeof raw.videoUrl === "string" ? raw.videoUrl : null;
+      const accessLevel: "FREE" | "PREMIUM" = raw.accessLevel === "PREMIUM" ? "PREMIUM" : "FREE";
       const categorySlugs: string[] = Array.isArray(raw?.categories)
-        ? raw.categories.filter((s: string) => typeof s === "string")
+        ? raw.categories.filter((s): s is string => typeof s === "string")
         : raw?.categories
-          ? String(raw.categories).split(/[,;]/).map((s: string) => s.trim()).filter(Boolean)
+          ? String(raw.categories).split(/[,;]/).map((s) => s.trim()).filter(Boolean)
           : [];
 
-      const slug: string = raw?.slug?.trim() || slugify(title);
+      const slug: string = (typeof raw.slug === "string" ? raw.slug.trim() : "") || slugify(title);
 
       // Anti-doublon : titre + année (et slug si présent).
       const existingBySlug = await prisma.media.findUnique({ where: { slug } });
@@ -235,14 +237,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   });
 }
 
-function parseCsv(text: string): any[] {
+function parseCsv(text: string): Record<string, unknown>[] {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) return [];
 
   const header = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
   const idx = (name: string) => header.indexOf(name);
 
-  const items: any[] = [];
+  const items: Record<string, unknown>[] = [];
   for (let i = 1; i < lines.length; i++) {
     const fields = parseCsvLine(lines[i]);
     if (fields.length < header.length) continue;

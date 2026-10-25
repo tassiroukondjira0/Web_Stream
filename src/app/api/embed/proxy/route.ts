@@ -17,11 +17,42 @@ import { NextRequest } from "next/server";
 
 const ALLOWED_HOST = /(^|\.)vidzy\./i;
 const REQUEST_TIMEOUT_MS = 10_000;
+const MAX_REQUEST_BYTES = 1_000_000;
+const MAX_RESPONSE_BYTES = 4_000_000;
+const MAX_REDIRECTS = 3;
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
 
 const ACAO = { "Access-Control-Allow-Origin": "*" };
+
+async function readLimited(stream: ReadableStream<Uint8Array> | null, limit: number): Promise<ArrayBuffer | null> {
+  if (!stream) return new ArrayBuffer(0);
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > limit) {
+        await reader.cancel();
+        return null;
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const result = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return result.buffer as ArrayBuffer;
+}
 
 async function handle(request: NextRequest): Promise<Response> {
   const raw = request.nextUrl.searchParams.get("u");
@@ -35,7 +66,7 @@ async function handle(request: NextRequest): Promise<Response> {
   } catch {
     return new Response("URL invalide", { status: 400, headers: ACAO });
   }
-  if (!/^https?:$/.test(target.protocol) || !ALLOWED_HOST.test(target.hostname)) {
+  if (target.protocol !== "https:" || target.username || target.password || !ALLOWED_HOST.test(target.hostname)) {
     return new Response("Domaine non autorisé", { status: 403, headers: ACAO });
   }
 
@@ -47,7 +78,10 @@ async function handle(request: NextRequest): Promise<Response> {
   }
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
-  const body = hasBody ? await request.arrayBuffer() : undefined;
+  const contentLength = Number(request.headers.get("content-length") || 0);
+  if (contentLength > MAX_REQUEST_BYTES) return new Response("Requête trop volumineuse", { status: 413, headers: ACAO });
+  const body = hasBody ? await readLimited(request.body, MAX_REQUEST_BYTES) : undefined;
+  if (body === null) return new Response("Requête trop volumineuse", { status: 413, headers: ACAO });
 
   try {
     const headers: Record<string, string> = {
@@ -59,16 +93,32 @@ async function handle(request: NextRequest): Promise<Response> {
     const contentType = request.headers.get("content-type");
     if (contentType) headers["Content-Type"] = contentType;
 
-    const res = await fetch(target.href, {
-      method: request.method,
-      headers,
-      body,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      cache: "no-store",
-      redirect: "follow",
-    });
+    let current = target;
+    let res: Response | undefined;
+    for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
+      if (current.protocol !== "https:" || !ALLOWED_HOST.test(current.hostname)) {
+        return new Response("Redirection non autorisée", { status: 403, headers: ACAO });
+      }
+      res = await fetch(current.href, {
+        method: request.method,
+        headers,
+        body,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        cache: "no-store",
+        redirect: "manual",
+      });
+      if (res.status < 300 || res.status >= 400) break;
+      const location = res.headers.get("location");
+      if (!location || redirect === MAX_REDIRECTS) return new Response("Redirection refusée", { status: 502, headers: ACAO });
+      current = new URL(location, current);
+    }
+    if (!res) return new Response("Origine indisponible", { status: 502, headers: ACAO });
 
-    const buf = await res.arrayBuffer();
+    const declaredLength = Number(res.headers.get("content-length") || 0);
+    if (declaredLength > MAX_RESPONSE_BYTES) return new Response("Réponse trop volumineuse", { status: 502, headers: ACAO });
+
+    const buf = await readLimited(res.body, MAX_RESPONSE_BYTES);
+    if (buf === null) return new Response("Réponse trop volumineuse", { status: 502, headers: ACAO });
     const outType =
       res.headers.get("content-type") ?? "application/octet-stream";
     return new Response(buf, {

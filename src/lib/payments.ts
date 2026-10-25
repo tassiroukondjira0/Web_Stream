@@ -384,6 +384,11 @@ export async function activatePremium(input: ActivationInput): Promise<Activatio
   const rawPayload = toJson(input.rawPayload);
 
   return prisma.$transaction(async (tx) => {
+    const existingEvent = await tx.paymentEvent.findUnique({ where: { eventRef } });
+    if (existingEvent?.processed) {
+      return { activated: false, alreadyProcessed: true };
+    }
+
     const existingPayment = await tx.payment.findUnique({ where: { providerRef } });
 
     // Déjà validé (IPN rejoué, ou IPN + vérification return_url).
@@ -459,5 +464,5 @@ export async function activatePremium(input: ActivationInput): Promise<Activatio
     });
 
     return { activated: true, alreadyProcessed: false };
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 }

@@ -17,6 +17,10 @@ export async function POST(request: Request) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    if (process.env.DATABASE_READY !== "true") {
+      return NextResponse.json({ error: "Inscription indisponible." }, { status: 503 });
+    }
+
     const hashedPassword = await hashPassword(password);
 
     let user: { id: string; email: string; name: string; role: "USER" | "SUBSCRIBER" | "ADMIN" };
@@ -33,16 +37,12 @@ export async function POST(request: Request) {
         );
       }
 
-      // Le tout premier compte créé devient automatiquement administrateur.
-      const userCount = await prisma.user.count();
-      const role: "USER" | "ADMIN" = userCount === 0 ? "ADMIN" : "USER";
-
       const created = await prisma.user.create({
         data: {
           name: name?.trim() || "Utilisateur",
           email: normalizedEmail,
           passwordHash: hashedPassword,
-          role,
+          role: "USER",
         },
       });
 
@@ -60,8 +60,7 @@ export async function POST(request: Request) {
         );
       }
 
-      // Le tout premier compte créé devient automatiquement administrateur.
-      const role: "USER" | "ADMIN" = memoryUsers.size === 0 ? "ADMIN" : "USER";
+      const role = "USER" as const;
       const id = `usr-${Date.now()}`;
       const newUser = {
         id,

@@ -140,7 +140,7 @@ export async function POST(request: Request) {
 
     // 3. Créer les médias en brouillon (upsert sur le slug, jamais de republication auto).
     let created = 0;
-    let updated = 0;
+    const updated = 0;
     let skipped = 0;
     let seasonsImported = 0;
     let episodesImported = 0;
