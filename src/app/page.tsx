@@ -255,9 +255,6 @@ async function FeaturedSection() {
             <p className="text-xs text-zinc-400 sm:text-sm">
               Les films les plus tendance du moment.
             </p>
-            <p className="mt-1 text-[11px] text-zinc-500">
-              Prochain renouvellement le {renewalLabel}.
-            </p>
           </div>
         </div>
 
