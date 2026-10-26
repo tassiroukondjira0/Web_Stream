@@ -24,8 +24,8 @@ export type PaymentMethod = "CARD" | "WAVE" | "ORANGE_MONEY" | "FREE_MONEY" | "M
 
 /** Tarifs du Pass Premium (montants en unités mineures XOF, exposant 0). */
 export const PREMIUM_PLANS: Record<PremiumPlan, { amount: number; label: string; months: number }> = {
-  MONTHLY: { amount: 2500, label: "Abonnement Mensuel", months: 1 },
-  YEARLY: { amount: 25000, label: "Abonnement Annuel", months: 12 },
+  MONTHLY: { amount: 1500, label: "Abonnement Mensuel", months: 1 },
+  YEARLY: { amount: 15000, label: "Abonnement Annuel", months: 12 },
 };
 
 /**
