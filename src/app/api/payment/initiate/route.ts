@@ -50,26 +50,8 @@ export async function POST(request: Request) {
     const currency = getPaymentCurrency().toUpperCase();
     const appUrl = getAppUrl();
 
-    // Canaux PayDunya à forcer sur la facture selon le pays et le moyen choisi.
-    // Quand aucun moyen n'est précisé, tous les canaux disponibles pour le pays sont transmis.
-    let channels: string[] | undefined =
-      countryCode && paymentMethod
-        ? getChannelsForSelection(countryCode, paymentMethod as PaymentMethod)
-        : countryCode
-          ? getChannelsForSelection(countryCode)
-          : undefined;
-
-    // Ne jamais envoyer un tableau vide à PayDunya (cela pourrait faire échouer la création).
-    if (channels?.length === 0) {
-      channels = undefined;
-    }
-
-    // Ne pas forcer le canal pour Wave Sénégal si requis par le compte
-    // On laisse le comportement par défaut si ça cause des rejets
-    // (déjà désactivé plus haut, mais on s'assure pour SN)
-    if (paymentMethod === "WAVE" && countryCode === "SN") {
-      channels = undefined;
-    }
+    // Laisser PayDunya afficher les canaux activés sur le compte marchand
+    let channels: string[] | undefined = undefined;
 
     const invoice = await createPremiumInvoice({
       amount,
