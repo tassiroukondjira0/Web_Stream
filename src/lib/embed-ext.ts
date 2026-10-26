@@ -176,6 +176,24 @@ export function partnerReferer(): string {
 }
 
 /**
+ * Retourne le Referer approprié pour récupérer un document d'embed.
+ *
+ * Certains hébergeurs (uqload) rejettent le referer du partenaire et exigent
+ * leur propre origine comme Referer, sinon ils servent une page « fichier
+ * verrouillé » au lieu du player. Pour tous les autres hébergeurs, on conserve
+ * le referer partenaire configuré.
+ */
+export function embedReferer(targetUrl: string): string {
+  try {
+    const u = new URL(targetUrl);
+    if (/uqload/i.test(u.hostname)) return `${u.protocol}//${u.host}/`;
+    return partnerReferer();
+  } catch {
+    return partnerReferer();
+  }
+}
+
+/**
  * Chemins « same-origin » de l'hébergeur qu'un remplacement en masse vers le
  * bridge est sûr de traiter : les ressources statiques et l'API de
  * l'hébergeur. Les autres chemins racine absolus sont laissés intacts (le

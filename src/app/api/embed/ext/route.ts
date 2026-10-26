@@ -8,6 +8,7 @@ import {
   isEmbedDocumentAllowed,
   isExternalEmbedHost,
   isPrivateHostname,
+  embedReferer,
   partnerReferer,
   rememberRuntimeHost,
   runtimeHostList,
@@ -306,7 +307,7 @@ async function fetchExternalDocumentSafe(
           "User-Agent": ua,
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
           "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
-          Referer: partnerReferer(),
+          Referer: embedReferer(current.href),
         },
         lookup: ((_hostname: string, _options: unknown, callback: (error: NodeJS.ErrnoException | null, address: string, family: number) => void) => {
           callback(null, addresses[0], isIP(addresses[0]));
