@@ -3,6 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
 import { Play, Tv } from "lucide-react";
+import Image from "next/image";
+import { shouldOptimizeImage } from "@/lib/image";
 
 interface SeasonCard {
   season: number;
@@ -68,9 +70,12 @@ export function SeasonSelector({
             >
               <div className="aspect-[3/4] bg-zinc-800/40 relative overflow-hidden rounded-lg">
                 {poster ? (
-                  <img
+                  <Image
                     src={poster}
                     alt={`Saison ${s.season}`}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 20vw"
+                    unoptimized={!shouldOptimizeImage(poster)}
                     className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                 ) : (

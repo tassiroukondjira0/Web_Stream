@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ListPlus, Check } from "lucide-react";
 
 interface WishlistButtonProps {
@@ -8,6 +9,7 @@ interface WishlistButtonProps {
 }
 
 export function WishlistButton({ mediaSlug }: WishlistButtonProps) {
+  const router = useRouter();
   const [inWishlist, setInWishlist] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +38,7 @@ export function WishlistButton({ mediaSlug }: WishlistButtonProps) {
       });
 
       if (res.status === 401) {
-        window.location.href = "/connexion";
+        router.push("/connexion");
         return;
       }
 

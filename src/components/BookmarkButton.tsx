@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Bookmark, Check } from "lucide-react";
 
 interface BookmarkButtonProps {
@@ -8,6 +9,7 @@ interface BookmarkButtonProps {
 }
 
 export function BookmarkButton({ mediaSlug }: BookmarkButtonProps) {
+  const router = useRouter();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +38,7 @@ export function BookmarkButton({ mediaSlug }: BookmarkButtonProps) {
       });
 
       if (res.status === 401) {
-        window.location.href = "/connexion";
+        router.push("/connexion");
         return;
       }
 

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Play } from "lucide-react";
+import Image from "next/image";
 import type { TmdbEpisode } from "@/lib/tmdb";
 import { TMDB_IMG } from "@/lib/tmdb";
+import { shouldOptimizeImage } from "@/lib/image";
 
 interface EpisodeListProps {
   /** Numéro de la saison affichée (pour l'en-tête de section). */
@@ -77,11 +79,13 @@ export function EpisodeList({
               }`}
             >
               {still ? (
-                // eslint-disable-next-line @next/next/no-img-element
                 <div className="relative shrink-0">
-                  <img
+                  <Image
                     src={still}
                     alt={`S${seasonNumber}E${ep.episode_number}`}
+                    width={160}
+                    height={90}
+                    unoptimized={!shouldOptimizeImage(still)}
                     className="h-[5.625rem] w-40 rounded-lg object-cover bg-zinc-800"
                   />
                   {isCurrent && (

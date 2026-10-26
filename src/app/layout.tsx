@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import Image from "next/image";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -66,7 +67,7 @@ function NavbarFallback() {
           href="/"
           className="flex min-w-0 items-center gap-2 text-lg font-bold tracking-tight text-white sm:text-xl"
         >
-          <img src="/logo.svg" alt="CinéMax" className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
+          <Image src="/logo.svg" alt="CinéMax" width={36} height={36} className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
           <span className="truncate bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
             CinéMax
           </span>

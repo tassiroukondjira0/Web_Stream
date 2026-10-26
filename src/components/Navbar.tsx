@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X, Home, Film, Tv, Sparkles, Clock } from "lucide-react";
 import { NavSearch } from "@/components/NavSearch";
@@ -106,7 +107,7 @@ export function Navbar() {
             href="/"
             className="flex min-w-0 items-center gap-2 text-lg font-bold tracking-tight text-white sm:text-xl"
           >
-            <img src="/logo.svg" alt="CinéMax" className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
+          <Image src="/logo.svg" alt="CinéMax" width={36} height={36} className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
             <span className="truncate bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
               CinéMax
             </span>

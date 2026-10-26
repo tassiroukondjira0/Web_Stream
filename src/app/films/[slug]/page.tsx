@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import { shouldOptimizeImage } from "@/lib/image";
 import { getMediaBySlug, getSimilarMedias } from "@/lib/catalog";
 import { getAppUrl } from "@/lib/env";
 import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
@@ -233,9 +235,12 @@ async function FilmContent({ params, searchParams }: PageProps) {
                 href={`/films/${sim.slug}`}
                 className="group flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-white/5"
               >
-                <img
+                <Image
                   src={sim.posterUrl}
                   alt={sim.title}
+                  width={48}
+                  height={64}
+                  unoptimized={!shouldOptimizeImage(sim.posterUrl)}
                   className="h-16 w-12 rounded-md object-cover bg-zinc-800 flex-shrink-0"
                 />
                 <div className="flex-1 min-w-0">

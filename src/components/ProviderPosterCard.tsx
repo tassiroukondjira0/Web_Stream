@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import { shouldOptimizeImage } from "@/lib/image";
 import { PosterPlaceholder } from "./PosterPlaceholder";
 
 /** Carte de catalogue générique utilisée partout (homepage, catalogue, recherche). */
@@ -30,9 +32,12 @@ export function ProviderPosterCard({
       className="group relative block overflow-hidden rounded-xl bg-zinc-800/60"
     >
       {imgSrc ? (
-        <img
+        <Image
           src={imgSrc}
           alt={displayTitle}
+          width={300}
+          height={450}
+          unoptimized={!shouldOptimizeImage(imgSrc)}
           loading="lazy"
           className="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />

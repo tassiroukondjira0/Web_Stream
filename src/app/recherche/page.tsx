@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { shouldOptimizeImage } from "@/lib/image";
 import { getAllMedias } from "@/lib/catalog";
 import { searchPartnerAssets, providerItemHref } from "@/lib/provider-catalog";
 import type { ProviderCatalogItem } from "@/lib/provider-catalog";
@@ -122,9 +124,12 @@ async function SearchContent({ searchParams }: SearchPageProps) {
                     </div>
 
                     <div className="relative aspect-[2/3] w-full overflow-hidden bg-zinc-800">
-                      <img
+                      <Image
                         src={item.posterUrl}
                         alt={item.title}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 20vw"
+                        unoptimized={!shouldOptimizeImage(item.posterUrl)}
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                       />

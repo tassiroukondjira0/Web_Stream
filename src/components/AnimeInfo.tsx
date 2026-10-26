@@ -1,8 +1,9 @@
-import Link from "next/link";
+import Image from "next/image";
 import { Film, Play } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
+import { shouldOptimizeImage } from "@/lib/image";
 
 /** Badge affichant la qualité de lecture. */
 function QualityBadge({ quality }: { quality: string }) {
@@ -88,10 +89,12 @@ export function AnimeInfo({
       {/* Affiche + synopsis + métadonnées */}
       <div className="mt-4 flex flex-col sm:flex-row gap-6">
         {posterUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={posterUrl}
             alt={`Affiche ${title}`}
+            width={320}
+            height={480}
+            unoptimized={!shouldOptimizeImage(posterUrl)}
             className="w-full max-w-xs rounded-xl object-cover bg-zinc-900 shadow-lg border border-white/10"
           />
         ) : (

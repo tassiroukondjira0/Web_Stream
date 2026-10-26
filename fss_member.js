@@ -19,7 +19,7 @@
       u.searchParams.set('fmt', String(tokenState.fmt));
       u.searchParams.set('fms', tokenState.fms);
       return u.toString();
-    } catch (e) {
+    } catch {
       return url;
     }
   }
@@ -39,7 +39,7 @@
               newVal = appendToken(v);
             }
           }
-        } catch (e) {}
+        } catch {}
         return origSrcDesc.set.call(this, newVal);
       }
     });
@@ -57,7 +57,7 @@
         if (isVidzyHost(u.hostname) && !u.searchParams.has('fms')) {
           origSrcDesc.set.call(ifr, appendToken(src));
         }
-      } catch (e) {}
+      } catch {}
     }
   }
 

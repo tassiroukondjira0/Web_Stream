@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Bookmark, Heart, ListPlus, Sparkles, AlertCircle, X } from "lucide-react";
+import { User, ListPlus, Sparkles } from "lucide-react";
 import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 import { providerSlugHref } from "@/lib/provider-catalog";
 
@@ -51,34 +51,6 @@ export default function SouhaitsPage() {
       setPosterMap({});
     });
   }, [user]);
-
-  const handleLogout = async () => {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-    router.push("/");
-    router.refresh();
-  };
-
-  const removeWishlist = async (slug: string) => {
-    const res = await fetch("/api/wishlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mediaSlug: slug }),
-    });
-    if (res.ok) {
-      // Rafraîchir depuis le serveur pour synchroniser l'état
-      fetch("/api/wishlist", {
-        credentials: "include",
-      }).then((r) => (r.ok ? r.json() : { wishlist: [] })).then((data) => {
-        setWishlist(Array.isArray(data.wishlist) ? data.wishlist : []);
-        setPosterMap(data.posterMap || {});
-      });
-      // Mise à jour locale immédiate pour feedback visuel rapide
-      setWishlist((prev) => prev.filter((s) => s !== slug));
-    }
-  };
 
   if (loading) {
     return (

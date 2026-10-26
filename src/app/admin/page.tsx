@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ShieldCheck, Plus, Trash2, Film, CheckCircle2, AlertTriangle, Eye, EyeOff, Lock, Download, Pencil, RefreshCw, Database, Library } from "lucide-react";
+import Image from "next/image";
+import { shouldOptimizeImage } from "@/lib/image";
+import { ShieldCheck, Plus, Trash2, CheckCircle2, AlertTriangle, Eye, EyeOff, Lock, Download, Pencil, RefreshCw, Database, Library } from "lucide-react";
 import { TrafficCharts } from "@/components/admin/TrafficCharts";
 
 interface SyncRunRecord {
@@ -52,8 +54,8 @@ export default function AdminDashboardPage() {
   const [slug, setSlug] = useState("");
   const [synopsis, setSynopsis] = useState("");
   const [accessLevel, setAccessLevel] = useState("FREE");
-  const [releaseYear, setReleaseYear] = useState(2026);
-  const [durationMinutes, setDurationMinutes] = useState(15);
+  const [releaseYear] = useState(2026);
+  const [durationMinutes] = useState(15);
   const [rightsValidUntil, setRightsValidUntil] = useState("2030-12-31");
   const [message, setMessage] = useState("");
 
@@ -708,9 +710,12 @@ export default function AdminDashboardPage() {
                   a.isPublished ? "border-white/10 bg-zinc-900/60" : "border-amber-500/20 bg-amber-500/5"
                 }`}
               >
-                <img
+                <Image
                   src={a.posterUrl || "/placeholder-poster.svg"}
                   alt=""
+                  width={44}
+                  height={64}
+                  unoptimized={!shouldOptimizeImage(a.posterUrl || "/placeholder-poster.svg")}
                   className="h-16 w-11 flex-shrink-0 rounded-lg object-cover bg-zinc-800"
                   loading="lazy"
                 />

@@ -9,7 +9,6 @@ import {
   getPartnerMovies,
   getPartnerSeries,
   providerItemHref,
-  FEATURED_PERIOD_DAYS,
 } from "@/lib/provider-catalog";
 import { PosterCarousel } from "@/components/PosterCarousel";
 import { ProviderPosterCard } from "@/components/ProviderPosterCard";
@@ -233,7 +232,7 @@ async function MangaSection() {
 /**
  * « À la une » — vitrine horizontale glissable des films les plus tendance.
  * La sélection suit l'ordre « popular » du fournisseur et se renouvelle
- * automatiquement toutes les FEATURED_PERIOD_DAYS (2 semaines) : sélection
+ * automatiquement à intervalles réguliers : sélection
  * déterministe calculée côté données (getFeaturedPartner) — aucun cron requis.
  */
 async function FeaturedSection() {
@@ -255,6 +254,9 @@ async function FeaturedSection() {
             </h2>
             <p className="text-xs text-zinc-400 sm:text-sm">
               Les films les plus tendance du moment.
+            </p>
+            <p className="mt-1 text-[11px] text-zinc-500">
+              Prochain renouvellement le {renewalLabel}.
             </p>
           </div>
         </div>
