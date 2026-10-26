@@ -64,9 +64,10 @@ export async function POST(request: Request) {
       channels = undefined;
     }
 
-    // Pour Wave en mode live, certains marchands rencontrent des rejets
-    // si le canal est forcé. On laisse PayDunya choisir le canal disponible.
-    if (paymentMethod === "WAVE") {
+    // Ne pas forcer le canal pour Wave Sénégal si requis par le compte
+    // On laisse le comportement par défaut si ça cause des rejets
+    // (déjà désactivé plus haut, mais on s'assure pour SN)
+    if (paymentMethod === "WAVE" && countryCode === "SN") {
       channels = undefined;
     }
 
