@@ -240,7 +240,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
                   </h3>
                   <p className="mt-1 text-xs text-zinc-400">Sans engagement, résiliable à tout moment</p>
                   <div className="mt-6 flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-white">2 500</span>
+                    <span className="text-4xl font-black text-white">1 500</span>
                     <span className="text-sm font-semibold text-zinc-400">FCFA / mois</span>
                   </div>
                   <ul className="mt-8 space-y-3 text-xs text-zinc-300">
@@ -287,7 +287,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
                   </h3>
                   <p className="mt-1 text-xs text-zinc-400">Le pass le plus avantageux</p>
                   <div className="mt-6 flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-amber-400">25 000</span>
+                    <span className="text-4xl font-black text-amber-400">15 000</span>
                     <span className="text-sm font-semibold text-zinc-400">FCFA / an</span>
                   </div>
                   <ul className="mt-8 space-y-3 text-xs text-zinc-200">

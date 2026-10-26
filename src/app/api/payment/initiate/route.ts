@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
     // Canaux PayDunya à forcer sur la facture selon le pays et le moyen choisi.
     // Quand aucun moyen n'est précisé, tous les canaux disponibles pour le pays sont transmis.
-    let channels =
+    let channels: string[] | undefined =
       countryCode && paymentMethod
         ? getChannelsForSelection(countryCode, paymentMethod as PaymentMethod)
         : countryCode
@@ -61,6 +61,12 @@ export async function POST(request: Request) {
 
     // Ne jamais envoyer un tableau vide à PayDunya (cela pourrait faire échouer la création).
     if (channels?.length === 0) {
+      channels = undefined;
+    }
+
+    // Pour Wave en mode live, certains marchands rencontrent des rejets
+    // si le canal est forcé. On laisse PayDunya choisir le canal disponible.
+    if (paymentMethod === "WAVE") {
       channels = undefined;
     }
 
