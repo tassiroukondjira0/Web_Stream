@@ -223,6 +223,39 @@ export function runtimeHostList(): string[] {
   return [...runtimeEmbedHosts.keys()];
 }
 
+const PUBLIC_SUFFIXES = new Set([
+  "co.uk",
+  "org.uk",
+  "ac.uk",
+  "gov.uk",
+  "net.uk",
+  "com.au",
+  "net.au",
+  "org.au",
+  "co.jp",
+  "ne.jp",
+  "or.jp",
+  "co.nz",
+  "net.nz",
+  "org.nz",
+  "com.br",
+  "com.mx",
+  "com.sg",
+  "com.hk",
+  "co.za",
+]);
+
+function getRegistrableDomain(host: string): string {
+  const h = host.toLowerCase().replace(/\.$/, "");
+  const parts = h.split(".");
+  if (parts.length <= 2) return h;
+  const lastTwo = parts.slice(-2).join(".");
+  if (PUBLIC_SUFFIXES.has(lastTwo) && parts.length >= 3) {
+    return parts.slice(-3).join(".");
+  }
+  return lastTwo;
+}
+
 export function isRuntimeHostAllowedForContext(
   runtimeHost?: string | null,
   contextHost?: string | null,
@@ -232,11 +265,13 @@ export function isRuntimeHostAllowedForContext(
   const ch = contextHost.toLowerCase().replace(/\.$/, "");
   if (isPrivateHostname(rh) || isIP(rh)) return false;
   if (!isRuntimeHost(rh)) return false;
-  const rhParts = rh.split(".");
-  const rhBase = rhParts.length < 2 ? rh : rhParts.slice(-2).join(".");
-  const chParts = ch.split(".");
-  const chBase = chParts.length < 2 ? ch : chParts.slice(-2).join(".");
-  if (rhBase === chBase) return true;
+  if (rh === ch) return true;
   if (rh.endsWith("." + ch)) return true;
+  const rhReg = getRegistrableDomain(rh);
+  const chReg = getRegistrableDomain(ch);
+  if (rhReg !== chReg) return false;
+  if (rh.endsWith("." + rhReg) && ch.endsWith("." + chReg)) {
+    return true;
+  }
   return false;
 }
