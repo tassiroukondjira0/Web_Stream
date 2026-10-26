@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { NextResponse } from "next/server";
 import { activatePremium, confirmInvoice, getPaydunyaHash, PREMIUM_PLANS, isPremiumPlan } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
+import { readRequestBodyLimited } from "@/lib/request-body";
 
 /**
  * IPN de paiement PayDunya (CDC §13).
@@ -41,13 +42,17 @@ function parseNotification(rawBody: string): Record<string, unknown> | null {
 
 /** Contrôle d'intégrité (facultatif) : le hash doit valoir SHA-512 du Master Key. */
 function isAuthenticHash(hash: unknown, expected: string): boolean {
-  if (typeof hash !== "string" || hash.length !== expected.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(hash), Buffer.from(expected));
+  if (typeof hash !== "string" || !/^[a-f0-9]{128}$/i.test(hash)) return false;
+  const received = Buffer.from(hash.toLowerCase(), "ascii");
+  const expectedBytes = Buffer.from(expected.toLowerCase(), "ascii");
+  return received.length === expectedBytes.length && crypto.timingSafeEqual(received, expectedBytes);
 }
 
 export async function POST(request: Request) {
   try {
-    const rawBody = await request.text();
+    const body = await readRequestBodyLimited(request, 32 * 1024);
+    if (!body) return NextResponse.json({ error: "Notification trop volumineuse." }, { status: 413 });
+    const rawBody = new TextDecoder().decode(body);
     const payload = parseNotification(rawBody);
 
     if (!payload) {
@@ -63,19 +68,18 @@ export async function POST(request: Request) {
 
     // Contrôle d'origine (le statut reste reconfirmé ci-dessous).
     const masterKey = process.env.PAYDUNYA_MASTER_KEY?.trim();
-    if (masterKey) {
-      let expected = "";
-      try {
-        expected = getPaydunyaHash();
-      } catch {
-        expected = "";
-      }
-      if (expected && payload.hash != null && !isAuthenticHash(payload.hash, expected)) {
-        return NextResponse.json({ error: "Hash de notification invalide." }, { status: 401 });
-      }
-    } else if (process.env.NODE_ENV === "production") {
-      console.error("PAYDUNYA_MASTER_KEY manquant : IPN refusé en production.");
+    if (!masterKey) {
+      console.error("PAYDUNYA_MASTER_KEY manquant : IPN refusé.");
       return NextResponse.json({ error: "Configuration de paiement incomplète." }, { status: 500 });
+    }
+    let expected = "";
+    try {
+      expected = getPaydunyaHash();
+    } catch {
+      expected = "";
+    }
+    if (!expected || !isAuthenticHash(payload.hash, expected)) {
+      return NextResponse.json({ error: "Hash de notification invalide." }, { status: 401 });
     }
 
     // Statut autoritatif : on ne fait jamais confiance au corps de l'IPN.

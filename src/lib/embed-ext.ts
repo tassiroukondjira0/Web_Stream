@@ -10,6 +10,8 @@
  */
 
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { isIP } from "node:net";
+import { isPublicIp } from "@/lib/outbound-network";
 
 export const EMBED_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -78,13 +80,11 @@ export function isDeadEmbedDocument(html: string): boolean {
 
 /** Vrai pour une adresse locale/privée : jamais de fetch sortant signé. */
 export function isPrivateHostname(hostname: string): boolean {
-  const h = hostname.toLowerCase().replace(/\.$/, "");
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
   if (!h) return true;
   if (h === "localhost" || h.endsWith(".localhost")) return true;
   if (h.endsWith(".local") || h.endsWith(".internal") || h.endsWith(".home.arpa")) return true;
-  if (h.startsWith("[")) {
-    return /^\[(::1|::|fc|fd|fe80|ff)/i.test(h);
-  }
+  if (isIP(h)) return !isPublicIp(h);
   const v4 = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
   if (v4) {
     const [a, b] = [Number(v4[1]), Number(v4[2])];
@@ -123,7 +123,10 @@ export function isExternalEmbedHost(url: string): boolean {
 export function isAllowedProxyUrl(url: string, isRuntimeHost?: (h: string) => boolean): boolean {
   try {
     const u = new URL(url);
-    if (u.protocol !== "https:" || u.username || u.password || isPrivateHostname(u.hostname)) return false;
+    if (
+      u.protocol !== "https:" || u.username || u.password ||
+      (u.port !== "" && u.port !== "443") || isPrivateHostname(u.hostname)
+    ) return false;
     if (isExternalEmbedHost(url)) return true;
     if (u.hostname === "x") return true;
     return isRuntimeHost?.(u.hostname) ?? false;

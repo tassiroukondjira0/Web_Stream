@@ -38,11 +38,43 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           {
+            key: "X-Content-Type-Options",
+            value: "nosniff",
+          },
+          {
+            key: "Referrer-Policy",
+            value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
+          ...(process.env.NODE_ENV === "production"
+            ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }]
+            : []),
+          {
             key: "Permissions-Policy",
             // `light-sensor` n'est pas une directive reconnue par Chrome :
-            // sa présence déclenche « Unrecognized feature » dans la console.
+            // sa présence déclenche �� Unrecognized feature �� dans la console.
             value:
               "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()",
+          },
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https: blob:",
+              "media-src 'self' https: blob:",
+              "connect-src 'self' https:",
+              "frame-src 'self' https:",
+              "font-src 'self' data:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'self'",
+            ].join("; "),
           },
         ],
       },

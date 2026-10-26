@@ -9,6 +9,9 @@ import {
   partnerReferer,
 } from "@/lib/embed-ext";
 import { publicOrigin } from "@/lib/public-origin";
+import { resolvePublicAddresses } from "@/lib/outbound-network";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { readRequestBodyLimited } from "@/lib/request-body";
 
 /**
  * Proxy runtime des embeds externes (`/api/embed/ext`).
@@ -30,8 +33,9 @@ import { publicOrigin } from "@/lib/public-origin";
 
 const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_REDIRECTS = 3;
-const MAX_BODY_BYTES = 32 * 1024 * 1024;
-const ACAO = { "Access-Control-Allow-Origin": "*" };
+const MAX_BODY_BYTES = 16 * 1024 * 1024;
+const MAX_REQUEST_BYTES = 1024 * 1024;
+const ACAO = { "Access-Control-Allow-Origin": "null" };
 
 interface RawResponse {
   status: number;
@@ -64,6 +68,10 @@ function requestRawOnce(
   headers: Record<string, string>,
   body: Buffer | undefined,
 ): Promise<RawResponse> {
+  return (async () => {
+    const addresses = await resolvePublicAddresses(url.hostname);
+    if (!addresses.length) throw new Error("destination address is not public");
+    const address = addresses[0];
   const isHttps = url.protocol === "https:";
   const port = url.port ? Number(url.port) : isHttps ? 443 : 80;
   const path = url.pathname + url.search;
@@ -74,8 +82,12 @@ function requestRawOnce(
     let settled = false;
 
     const sock: net.Socket = isHttps
-      ? tls.connect({ host: url.hostname, port, servername: url.hostname })
-      : net.connect({ host: url.hostname, port });
+      ? tls.connect({
+          host: address,
+          port,
+          ...(net.isIP(url.hostname.replace(/^\[|\]$/g, "")) ? {} : { servername: url.hostname }),
+        })
+      : net.connect({ host: address, port });
 
     const done = (fn: () => void) => {
       if (settled) return;
@@ -118,9 +130,9 @@ function requestRawOnce(
       return { res: { status, headers: hdrs, body: bodyOut }, complete };
     };
 
-    sock.on("connect", () => {
+    sock.once(isHttps ? "secureConnect" : "connect", () => {
       let req = `${method} ${path} HTTP/1.1\r\n`;
-      req += `Host: ${url.hostname}\r\n`;
+      req += `Host: ${url.host}\r\n`;
       for (const [k, v] of Object.entries(headers)) req += `${k}: ${v}\r\n`;
       if (body) req += `Content-Length: ${body.byteLength}\r\n`;
       req += "Connection: close\r\n\r\n";
@@ -149,16 +161,16 @@ function requestRawOnce(
     sock.on("error", (e) => done(() => reject(e)));
     sock.setTimeout(REQUEST_TIMEOUT_MS, () => done(() => reject(new Error("timeout"))));
   });
+  })();
 }
 
 function toResponse(raw: RawResponse): Response {
   const out: Record<string, string> = {
     "Content-Type": raw.headers["content-type"] ?? "application/octet-stream",
-    "Access-Control-Allow-Origin": "*",
+    ...ACAO,
     "Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges",
     "Cache-Control": "no-store",
   };
-  if (raw.headers["set-cookie"]) out["Set-Cookie"] = raw.headers["set-cookie"];
   if (raw.headers["content-range"]) out["Content-Range"] = raw.headers["content-range"];
   if (raw.headers["accept-ranges"]) out["Accept-Ranges"] = raw.headers["accept-ranges"];
   if (raw.headers["content-length"]) out["Content-Length"] = raw.headers["content-length"];
@@ -257,6 +269,8 @@ async function forward(
 }
 
 async function handle(request: NextRequest): Promise<Response> {
+  const retryAfter = rateLimit(request, "embed-proxy", 120, 60_000);
+  if (retryAfter) return tooManyRequests(retryAfter);
   const sp = request.nextUrl.searchParams;
   const refererPath = sp.get("r");
 
@@ -266,6 +280,8 @@ async function handle(request: NextRequest): Promise<Response> {
   let target: URL | null = null;
   if (host && path) {
     if (
+      host.length > 253 || !/^(?:[a-z0-9-]+\.)+[a-z0-9-]+$/i.test(host) ||
+      path.length > 4096 || /[\u0000-\u001f\u007f]/.test(path) ||
       (!isExternalEmbedHost(`https://${host}/`) && !isRuntimeHost(host)) ||
       !path.startsWith("/")
     ) {
@@ -279,7 +295,7 @@ async function handle(request: NextRequest): Promise<Response> {
     }
   } else {
     const u = sp.get("u");
-    if (u) {
+    if (u && u.length <= 4096) {
       try {
         target = new URL(u);
       } catch {
@@ -311,12 +327,16 @@ async function handle(request: NextRequest): Promise<Response> {
   const runtime =
     (sameFamily && target.hostname !== contextHost) ||
     (isRuntimeHost(target.hostname) && !isExternalEmbedHost(target.href));
+  const safeRefererPath = refererPath && refererPath.startsWith("/") &&
+    refererPath.length <= 2048 && !/[\u0000-\u001f\u007f]/.test(refererPath)
+    ? refererPath
+    : null;
   let referer = runtime
     ? `https://${contextHost ?? target.hostname}/`
-    : refererPath && contextHost
-      ? `https://${contextHost}${refererPath}`
-      : refererPath
-      ? `${partnerReferer()}${refererPath}`
+    : safeRefererPath && contextHost
+      ? `https://${contextHost}${safeRefererPath}`
+      : safeRefererPath
+      ? `${partnerReferer()}${safeRefererPath}`
       : partnerReferer();
   if (contextHost && /cdn-cgi/i.test(target.pathname)) {
     referer = `https://${contextHost}/`;
@@ -327,7 +347,12 @@ async function handle(request: NextRequest): Promise<Response> {
   }
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
-  const body = hasBody ? Buffer.from(await request.arrayBuffer()) : undefined;
+  let body: Buffer | undefined;
+  if (hasBody) {
+    const limitedBody = await readRequestBodyLimited(request, MAX_REQUEST_BYTES);
+    if (!limitedBody) return new Response("Corps de requête trop volumineux", { status: 413, headers: ACAO });
+    body = Buffer.from(limitedBody);
+  }
 
   try {
     const response = await forward(
@@ -350,7 +375,7 @@ async function handle(request: NextRequest): Promise<Response> {
           headers: {
             "Content-Type": "text/javascript; charset=utf-8",
             "Cache-Control": "no-store",
-            "Access-Control-Allow-Origin": "*",
+            ...ACAO,
           },
         });
       }
@@ -385,7 +410,7 @@ export async function OPTIONS() {
   return new Response(null, {
     status: 204,
     headers: {
-      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Origin": "null",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Accept, X-Requested-With, Range",
       "Access-Control-Max-Age": "86400",

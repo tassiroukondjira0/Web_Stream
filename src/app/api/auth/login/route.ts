@@ -1,16 +1,41 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, signSessionToken, COOKIE_NAME, sessionCookieOptions } from "@/lib/auth";
+import { readRequestBodyLimited } from "@/lib/request-body";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    // Plus strict : 10 tentatives par 15 min par IP
+    const retryAfter = rateLimit(request, "auth-login", 10, 15 * 60_000);
+    if (retryAfter) return tooManyRequests(retryAfter);
 
-    if (!email || !password) {
+    const body = await readRequestBodyLimited(request, 8 * 1024);
+    if (!body) return NextResponse.json({ error: "Requête trop volumineuse." }, { status: 413 });
+    let input: unknown;
+    try {
+      input = JSON.parse(new TextDecoder().decode(body));
+    } catch {
+      return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+    }
+    if (!input || typeof input !== "object") {
+      return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+    }
+    const { email, password } = input as Record<string, unknown>;
+
+    if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
       return NextResponse.json({ error: "E-mail et mot de passe requis." }, { status: 400 });
+    }
+    if (email.length > 254 || password.length > 128) {
+      return NextResponse.json({ error: "Identifiants invalides." }, { status: 400 });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return NextResponse.json({ error: "Identifiants invalides." }, { status: 400 });
+    }
+    const emailRetryAfter = rateLimit(request, `auth-login-email:${normalizedEmail}`, 8, 15 * 60_000);
+    if (emailRetryAfter) return tooManyRequests(emailRetryAfter);
 
     if (process.env.DATABASE_READY === "true") {
       const dbUser = await prisma.user.findUnique({

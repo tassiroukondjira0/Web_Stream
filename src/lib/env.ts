@@ -7,7 +7,7 @@
  * Ordre de résolution :
  *   1. NEXT_PUBLIC_APP_URL          → contrôle explicite (domaine personnalisé)
  *   2. VERCEL_PROJECT_PRODUCTION_URL → injecté par Vercel, domaine stable
- *   3. http://localhost:3000        → développement
+ *   3. http://localhost:3000        → développement uniquement
  *
  * ⚠️ VERCEL_URL n'est volontairement PAS utilisé : c'est l'URL du déploiement
  * courant, suffixée d'un hash unique. S'en servirait à générer des URL
@@ -28,13 +28,27 @@ export function getAppUrl(): string {
   const explicit = firstNonEmpty(process.env.NEXT_PUBLIC_APP_URL);
 
   if (explicit) {
-    return explicit.replace(/\/+$/, "");
+    const url = new URL(explicit);
+    if (url.username || url.password || (process.env.NODE_ENV === "production" && url.protocol !== "https:")) {
+      throw new Error("NEXT_PUBLIC_APP_URL doit être une URL publique HTTPS en production.");
+    }
+    return url.origin;
   }
 
   const vercelProd = firstNonEmpty(process.env.VERCEL_PROJECT_PRODUCTION_URL);
 
   if (vercelProd) {
     return `https://${vercelProd}`;
+  }
+
+  const renderUrl = firstNonEmpty(process.env.RENDER_EXTERNAL_URL);
+  if (renderUrl) {
+    const url = new URL(renderUrl);
+    if (url.protocol === "https:" && !url.username && !url.password) return url.origin;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("NEXT_PUBLIC_APP_URL (ou RENDER_EXTERNAL_URL) doit définir l'URL publique de production.");
   }
 
   return "http://localhost:3000";

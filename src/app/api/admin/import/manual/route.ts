@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { readRequestBodyLimited } from "@/lib/request-body";
 
 /**
  * Import manuel de titres depuis un fichier JSON ou CSV (upload ou body JSON).
@@ -30,6 +31,7 @@ import { prisma } from "@/lib/prisma";
  */
 
 const MAX_IMPORT = 200; // garde-fou pour éviter les imports massifs accidentels
+const MAX_IMPORT_BODY_BYTES = 5 * 1024 * 1024;
 
 function slugify(title: string): string {
   return title
@@ -98,13 +100,25 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   let items: unknown[] = [];
+  const rawBody = await readRequestBodyLimited(request, MAX_IMPORT_BODY_BYTES);
+  if (!rawBody) {
+    return NextResponse.json({ error: "Fichier trop volumineux (5 Mo maximum)." }, { status: 413 });
+  }
+  if (rawBody.byteLength > MAX_IMPORT_BODY_BYTES) {
+    return NextResponse.json({ error: "Fichier trop volumineux (5 Mo maximum)." }, { status: 413 });
+  }
+  const bufferedRequest = new Request(request.url, {
+    method: "POST",
+    headers: request.headers,
+    body: Buffer.from(rawBody),
+  });
 
   // Détecte le type de requête : multipart (fichier) ou JSON pur.
   const contentType = request.headers.get("content-type") ?? "";
   const isMultipart = contentType.includes("multipart/form-data");
 
   if (isMultipart) {
-    const formData = await request.formData();
+    const formData = await bufferedRequest.formData();
     const file = formData.get("file");
     if (!file || !(file instanceof File)) {
       return NextResponse.json(
@@ -116,7 +130,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     const name = file.name.toLowerCase();
 
     if (name.endsWith(".json")) {
-      items = JSON.parse(text);
+      try {
+        const parsed: unknown = JSON.parse(text);
+        if (!Array.isArray(parsed)) throw new Error("not an array");
+        items = parsed;
+      } catch {
+        return NextResponse.json({ error: "Fichier JSON invalide." }, { status: 400 });
+      }
     } else if (name.endsWith(".csv")) {
       items = parseCsv(text);
     } else {
@@ -127,7 +147,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
   } else {
     // Body JSON direct.
-    const body = await request.json().catch(() => null);
+    const body: unknown = await bufferedRequest.json().catch(() => null);
     if (!Array.isArray(body)) {
       return NextResponse.json(
         { error: "BAD_BODY", message: "Le corps doit être un tableau JSON d'objets." },

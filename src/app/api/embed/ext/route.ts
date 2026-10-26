@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
+import https from "node:https";
+import { isIP } from "node:net";
 import {
   EXT_BRIDGE_PATH,
   EMBED_USER_AGENT,
   isDeadEmbedDocument,
   isEmbedDocumentAllowed,
+  isExternalEmbedHost,
   isPrivateHostname,
   partnerReferer,
   rememberRuntimeHost,
@@ -11,6 +14,8 @@ import {
 } from "@/lib/embed-ext";
 import { PLAYER_BRIDGE_SCRIPT } from "@/lib/player-bridge";
 import { publicOrigin } from "@/lib/public-origin";
+import { resolvePublicAddresses } from "@/lib/outbound-network";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 /**
  * Proxy document pour les embeds externes du fournisseur (uqload, voe,
@@ -157,6 +162,9 @@ function injectJwplayerBase(html: string, sourceHtml: string, embedHost: string)
 }
 
 export async function GET(request: NextRequest) {
+  const retryAfter = rateLimit(request, "embed-document", 30, 60_000);
+  if (retryAfter) return tooManyRequests(retryAfter);
+
   const raw = request.nextUrl.searchParams.get("u");
   if (!raw) {
     return new Response("Paramètre manquant : u", { status: 400 });
@@ -169,14 +177,18 @@ export async function GET(request: NextRequest) {
     return new Response("URL invalide", { status: 400 });
   }
   if (
-    !/^https?:$/.test(target.protocol) ||
+    target.protocol !== "https:" ||
+    (target.port !== "" && target.port !== "443") ||
+    target.username !== "" || target.password !== "" ||
     isPrivateHostname(target.hostname) ||
     !isEmbedDocumentAllowed(target.href, request.nextUrl.searchParams.get("s"))
   ) {
     return new Response("Domaine non autorisé", { status: 403 });
   }
 
-  const fetched = await fetchExternalDocumentSafe(target.href, UA);
+  const signature = request.nextUrl.searchParams.get("s");
+  const signedUnknownHost = !isExternalEmbedHost(target.href) && isEmbedDocumentAllowed(target.href, signature);
+  const fetched = await fetchExternalDocumentSafe(target, UA, signedUnknownHost);
   if (!fetched) {
     return unavailablePage(
       "L'hébergeur ne répond pas. Choisissez une autre source dans le menu.",
@@ -214,52 +226,121 @@ export async function GET(request: NextRequest) {
     ? html.replace(/<head[^>]*>/i, (m) => `${m}${AD_HIDE_CSS}${baseTag}${bootstrap}`)
     : `${AD_HIDE_CSS}${baseTag}${bootstrap}${html}`;
 
-  const requestOrigin = request.headers.get("origin");
-const allowedOrigin = requestOrigin && requestOrigin !== "null" ? requestOrigin : request.nextUrl.origin;
-
 return new Response(body, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
       "X-Embed-Host": embedHost,
       "Referrer-Policy": "no-referrer",
-      "Access-Control-Allow-Origin": allowedOrigin,
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Security-Policy": [
+        "default-src https: data: blob:",
+        "script-src https: 'unsafe-inline' blob:",
+        "style-src https: 'unsafe-inline'",
+        "img-src https: data: blob:",
+        "media-src https: data: blob:",
+        "connect-src https: blob:",
+        "font-src https: data:",
+        "worker-src https: blob:",
+        "frame-src https:",
+        "object-src 'none'",
+        "base-uri https:",
+        "form-action https:",
+        "frame-ancestors 'self'",
+        "sandbox allow-scripts allow-forms allow-popups allow-presentation allow-downloads",
+      ].join("; "),
     },
   });
 }
 
 /** Récupère le document d'embed (texte HTML) avec le bon référent. */
 async function fetchExternalDocumentSafe(
-  url: string,
+  initialUrl: URL,
   ua: string,
+  signedUnknownHost: boolean,
 ): Promise<{
   html: string;
   host: string;
   path: string;
 } | null> {
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": ua,
-        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
-        Referer: partnerReferer(),
-      },
-      redirect: "follow",
-      signal: AbortSignal.timeout(12_000),
-      cache: "no-store",
+  let current = initialUrl;
+  for (let redirects = 0; redirects <= 3; redirects++) {
+    // Valider strictement à chaque hop
+    if (
+      current.protocol !== "https:" ||
+      (current.port !== "" && current.port !== "443") ||
+      current.username !== "" ||
+      current.password !== "" ||
+      isPrivateHostname(current.hostname)
+    ) {
+      return null;
+    }
+    const allowedByAllowlist = isEmbedDocumentAllowed(current.href);
+    const allowedByKnownHost = isExternalEmbedHost(current.href);
+    if (!allowedByAllowlist && !allowedByKnownHost) {
+      if (!signedUnknownHost) {
+        return null;
+      }
+      // Source signée mais redirige vers un hôte inconnu
+      return null;
+    }
+    // A signed source may redirect to its CDN; every hop still undergoes DNS
+    // classification and the socket is pinned to a validated public address.
+    const addresses = await resolvePublicAddresses(current.hostname);
+    if (!addresses.length) return null;
+
+    const result = await new Promise<{ status: number; location?: string; html: string } | null>((resolve) => {
+      const chunks: Buffer[] = [];
+      let total = 0;
+      const req = https.request(current, {
+        headers: {
+          "User-Agent": ua,
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
+          Referer: partnerReferer(),
+        },
+        lookup: ((_hostname: string, _options: unknown, callback: (error: NodeJS.ErrnoException | null, address: string, family: number) => void) => {
+          callback(null, addresses[0], isIP(addresses[0]));
+        }) as never,
+        servername: current.hostname,
+        timeout: 12_000,
+      }, (res) => {
+        const status = res.statusCode ?? 0;
+        const location = res.headers.location;
+        if (status >= 300 && status < 400) {
+          res.resume();
+          res.on("end", () => resolve({ status, location, html: "" }));
+          return;
+        }
+        res.on("data", (chunk: Buffer) => {
+          total += chunk.byteLength;
+          if (total > 2 * 1024 * 1024) {
+            req.destroy();
+            resolve(null);
+            return;
+          }
+          chunks.push(chunk);
+        });
+        res.on("end", () => resolve({ status, location, html: Buffer.concat(chunks).toString("utf8") }));
+      });
+      req.on("timeout", () => req.destroy(new Error("timeout")));
+      req.on("error", () => resolve(null));
+      req.end();
     });
-    if (!res.ok) return null;
-    const finalUrl = res.url || url;
-    const html = await res.text();
-    if (html.length < 100 || isDeadEmbedDocument(html)) return null;
-    const u = new URL(finalUrl);
-    return { html, host: u.hostname, path: u.pathname + u.search };
-  } catch {
-    return null;
+    if (!result) return null;
+    if (result.status >= 300 && result.status < 400) {
+      if (!result.location || redirects === 3) return null;
+      try {
+        current = new URL(result.location, current);
+      } catch {
+        return null;
+      }
+      continue;
+    }
+    if (result.status < 200 || result.status >= 300) return null;
+    if (result.html.length < 100 || isDeadEmbedDocument(result.html)) return null;
+    return { html: result.html, host: current.hostname, path: current.pathname + current.search };
   }
+  return null;
 }
 
 /**

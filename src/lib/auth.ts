@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Clé de signature des sessions.
@@ -93,5 +94,19 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
-  return verifySessionToken(token);
+  const claims = await verifySessionToken(token);
+  if (!claims || process.env.DATABASE_READY !== "true") return null;
+
+  // JWT roles can outlive a revocation; use the database role for authorization.
+  const current = await prisma.user.findUnique({
+    where: { id: claims.id },
+    select: { id: true, email: true, name: true, role: true },
+  }).catch(() => null);
+  if (!current) return null;
+  return {
+    id: current.id,
+    email: current.email,
+    name: current.name || "Utilisateur",
+    role: current.role,
+  };
 }
