@@ -332,11 +332,14 @@ export async function confirmInvoice(token: string): Promise<PaydunyaConfirm> {
   const invoice = (data?.invoice ?? {}) as Record<string, unknown>;
   const amountRaw = invoice.total_amount;
   const amount = amountRaw != null && amountRaw !== "" ? Number(amountRaw) : null;
+  const currencyValue = invoice.currency ?? data?.currency;
 
   return {
     status: String(data?.status ?? "").toUpperCase(),
     amount: amount != null && Number.isFinite(amount) ? amount : null,
-    currency: getPaymentCurrency(),
+    currency: typeof currencyValue === "string" && currencyValue.trim()
+      ? currencyValue.trim().toUpperCase()
+      : getPaymentCurrency().toUpperCase(),
     token: typeof invoice.token === "string" ? invoice.token : token,
     customData: (data?.custom_data as Record<string, unknown> | undefined) ?? {},
     raw: data,
@@ -379,8 +382,11 @@ export interface ActivationResult {
 export async function activatePremium(input: ActivationInput): Promise<ActivationResult> {
   const { providerRef, eventRef, eventType, userId, plan } = input;
   const provider = input.provider || "PAYDUNYA";
-  const amount = input.amount ?? PREMIUM_PLANS[plan].amount;
-  const currency = input.currency || getPaymentCurrency();
+  if (input.amount == null || !input.currency) {
+    throw new Error("La confirmation du paiement doit contenir le montant et la devise.");
+  }
+  const amount = input.amount;
+  const currency = input.currency.toUpperCase();
   const rawPayload = toJson(input.rawPayload);
 
   return prisma.$transaction(async (tx) => {
@@ -390,6 +396,23 @@ export async function activatePremium(input: ActivationInput): Promise<Activatio
     }
 
     const existingPayment = await tx.payment.findUnique({ where: { providerRef } });
+
+    if (!existingPayment) {
+      throw new Error("Aucun paiement initié ne correspond à cette facture.");
+    }
+    if (
+      existingPayment.provider !== provider ||
+      existingPayment.userId !== userId ||
+      existingPayment.plan !== plan ||
+      existingPayment.amount !== PREMIUM_PLANS[plan].amount ||
+      amount !== existingPayment.amount ||
+      currency !== existingPayment.currency.toUpperCase()
+    ) {
+      throw new Error("Les informations confirmées ne correspondent pas au paiement enregistré.");
+    }
+    if (existingPayment.status !== PaymentStatus.PENDING && existingPayment.status !== PaymentStatus.PAID) {
+      throw new Error("Le paiement n'est pas dans un état activable.");
+    }
 
     // Déjà validé (IPN rejoué, ou IPN + vérification return_url).
     if (existingPayment?.status === PaymentStatus.PAID) {
@@ -425,27 +448,11 @@ export async function activatePremium(input: ActivationInput): Promise<Activatio
       },
     });
 
-    const payment = await tx.payment.upsert({
-      where: { providerRef },
-      update: {
-        userId,
+    const payment = await tx.payment.update({
+      where: { id: existingPayment.id },
+      data: {
         subscriptionId: subscription.id,
-        provider,
-        amount,
-        currency,
         status: PaymentStatus.PAID,
-        plan: plan as SubscriptionPlan,
-        rawPayload,
-      },
-      create: {
-        userId,
-        subscriptionId: subscription.id,
-        provider,
-        providerRef,
-        amount,
-        currency,
-        status: PaymentStatus.PAID,
-        plan: plan as SubscriptionPlan,
         rawPayload,
       },
     });

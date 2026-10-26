@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { NextResponse } from "next/server";
-import { activatePremium, confirmInvoice, getPaydunyaHash, getPaymentCurrency, isPremiumPlan } from "@/lib/payments";
+import { activatePremium, confirmInvoice, getPaydunyaHash, PREMIUM_PLANS, isPremiumPlan } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -91,28 +91,37 @@ export async function POST(request: Request) {
     // Retrouve la ligne en attente créée à l'initiation.
     const payment = await prisma.payment.findUnique({ where: { providerRef: token } });
 
-    const customData = (confirmed.customData ?? {}) as Record<string, unknown>;
-    const userId =
-      payment?.userId ||
-      (customData.userId as string | undefined) ||
-      (payload.custom_data as Record<string, unknown> | undefined)?.userId as string | undefined;
-    const planCandidate = payment?.plan || customData.plan || (payload.custom_data as Record<string, unknown> | undefined)?.plan;
-
-    if (!userId || !isPremiumPlan(planCandidate)) {
+    if (!payment || payment.provider !== "PAYDUNYA" || !payment.userId) {
       return NextResponse.json(
-        { error: "Paiement non reconnu (utilisateur ou formule introuvable)." },
-        { status: 400 }
+        { error: "Aucun paiement PayDunya initié ne correspond à cette facture." },
+        { status: 409 }
       );
+    }
+    if (!isPremiumPlan(payment.plan) || !["PENDING", "PAID"].includes(payment.status)) {
+      return NextResponse.json({ error: "État du paiement non valide." }, { status: 409 });
+    }
+    const userId = payment.userId;
+    const planCandidate = payment.plan;
+    const expectedAmount = PREMIUM_PLANS[payment.plan].amount;
+    if (
+      confirmed.token !== token ||
+      confirmed.amount == null ||
+      payment.amount !== expectedAmount ||
+      confirmed.amount !== expectedAmount ||
+      confirmed.currency.toUpperCase() !== payment.currency.toUpperCase()
+    ) {
+      console.error("PayDunya invoice does not match the locally initiated payment.", { providerRef: token });
+      return NextResponse.json({ error: "Montant ou devise du paiement invalide." }, { status: 409 });
     }
 
     const { activated, alreadyProcessed } = await activatePremium({
       providerRef: token,
       eventRef: `paydunya_${token}`,
       eventType: "invoice.completed",
-      userId,
-      plan: planCandidate,
+      userId: payment.userId,
+      plan: payment.plan,
       amount: confirmed.amount,
-      currency: confirmed.currency || getPaymentCurrency(),
+      currency: confirmed.currency,
       provider: "PAYDUNYA",
       rawPayload: confirmed.raw,
     });

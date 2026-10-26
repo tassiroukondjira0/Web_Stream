@@ -5,7 +5,6 @@ import { getAppUrl } from "@/lib/env";
 import {
   createPremiumInvoice,
   getChannelsForSelection,
-  getCurrencyForCountry,
   getPaymentCurrency,
   isPremiumPlan,
   PAYMENT_CHANNELS_BY_COUNTRY,
@@ -45,7 +44,10 @@ export async function POST(request: Request) {
     }
 
     const { amount, label } = PREMIUM_PLANS[plan];
-    const currency = countryCode ? getCurrencyForCountry(countryCode) : getPaymentCurrency();
+    // PayDunya détermine la devise par la configuration marchande et ne
+    // documente pas de devise par facture. Ne pas déduire la devise du pays
+    // envoyé par le navigateur : enregistrer celle du compte marchand.
+    const currency = getPaymentCurrency().toUpperCase();
     const appUrl = getAppUrl();
 
     // Canaux PayDunya à forcer sur la facture selon le pays et le moyen choisi.

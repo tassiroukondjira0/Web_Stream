@@ -6,7 +6,7 @@ import {
   sessionCookieOptions,
   signSessionToken,
 } from "@/lib/auth";
-import { activatePremium, confirmInvoice, isPremiumPlan } from "@/lib/payments";
+import { activatePremium, confirmInvoice, isPremiumPlan, PREMIUM_PLANS } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -49,6 +49,9 @@ export async function GET(request: Request) {
     if (!payment || payment.userId !== user.id) {
       return NextResponse.json({ error: "Paiement introuvable." }, { status: 404 });
     }
+    if (payment.provider !== "PAYDUNYA" || !["PENDING", "PAID"].includes(payment.status)) {
+      return NextResponse.json({ error: "Paiement non vérifiable." }, { status: 409 });
+    }
 
     if (!isPremiumPlan(payment.plan)) {
       return NextResponse.json({ error: "Formule de paiement inconnue." }, { status: 409 });
@@ -84,14 +87,27 @@ export async function GET(request: Request) {
       );
     }
 
+    if (
+      confirmed.token !== payment.providerRef ||
+      confirmed.amount == null ||
+      payment.amount !== PREMIUM_PLANS[payment.plan].amount ||
+      confirmed.amount !== payment.amount ||
+      confirmed.currency.toUpperCase() !== payment.currency.toUpperCase()
+    ) {
+      console.error("PayDunya invoice does not match the locally initiated payment.", {
+        providerRef: payment.providerRef,
+      });
+      return NextResponse.json({ error: "Montant ou devise du paiement invalide." }, { status: 409 });
+    }
+
     await activatePremium({
       providerRef: confirmed.token || payment.providerRef,
       eventRef: `verify_${payment.providerRef}`,
       eventType: "invoice.verified",
       userId: user.id,
       plan: payment.plan,
-      amount: confirmed.amount ?? payment.amount,
-      currency: confirmed.currency ?? payment.currency,
+      amount: confirmed.amount,
+      currency: confirmed.currency,
       provider: "PAYDUNYA",
       rawPayload: confirmed.raw,
     });

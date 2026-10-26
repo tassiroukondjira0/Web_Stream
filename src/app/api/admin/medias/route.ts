@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MediaItem } from "@/lib/catalog";
+import { AccessLevel, MediaType } from "@prisma/client";
 
 const DB_READY = process.env.DATABASE_READY === "true";
 
@@ -66,10 +67,6 @@ function dbMediaToItem(m: {
   };
 }
 
-// Stockage modifiable en mémoire pour le back-office lorsque la base n'est pas active.
-// Vide au démarrage : aucun contenu de démonstration n'est préchargé.
-const adminCatalog: MediaItem[] = [];
-
 export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user || user.role !== "ADMIN") {
@@ -77,6 +74,10 @@ export async function GET(request: Request) {
       { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 }
     );
+  }
+
+  if (!DB_READY) {
+    return NextResponse.json({ error: "DB_NOT_READY" }, { status: 503 });
   }
 
   const requestedSlug = new URL(request.url).searchParams.get("slug");
@@ -122,13 +123,6 @@ export async function GET(request: Request) {
         partnerTotal = 0;
       }
 
-      if (requestedSlug) {
-        const media = adminCatalog.find((item) => item.slug === requestedSlug);
-        return media
-          ? NextResponse.json({ media })
-          : NextResponse.json({ error: "Média introuvable" }, { status: 404 });
-      }
-
       return NextResponse.json({
         medias: items,
         stats: {
@@ -141,21 +135,10 @@ export async function GET(request: Request) {
       });
     } catch (error) {
       console.error("Erreur lecture catalogue admin :", error);
-      // En cas d'erreur DB, on retombe sur le catalogue mémoire ci-dessous.
+      return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
     }
   }
-
-  return NextResponse.json({
-    medias: adminCatalog,
-    stats: {
-      totalMedias: adminCatalog.length,
-      published: adminCatalog.filter((m) => m.isPublished).length,
-      premium: adminCatalog.filter((m) => m.accessLevel === "PREMIUM").length,
-      free: adminCatalog.filter((m) => m.accessLevel === "FREE").length,
-      // Sans base, aucun titre partenaire n'est synchronisé.
-      partnerTotal: 0,
-    },
-  });
+  return NextResponse.json({ error: "DB_NOT_READY" }, { status: 503 });
 }
 
 export async function POST(request: Request) {
@@ -167,11 +150,15 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!DB_READY) {
+    return NextResponse.json({ error: "DB_NOT_READY" }, { status: 503 });
+  }
+
   try {
     const body = await request.json();
     const { title, slug, synopsis, accessLevel, type, releaseYear, durationMinutes, rightsValidUntil, videoUrl, isPublished } = body;
 
-    if (!title || !slug || !synopsis) {
+    if (typeof title !== "string" || !title.trim() || typeof slug !== "string" || !slug.trim() || typeof synopsis !== "string" || !synopsis.trim()) {
       return NextResponse.json({ error: "Champs requis manquants." }, { status: 400 });
     }
     if (typeof videoUrl === "string" && videoUrl.trim() && !isValidVideoUrl(videoUrl.trim())) {
@@ -181,34 +168,69 @@ export async function POST(request: Request) {
       );
     }
 
-    const existingIndex = adminCatalog.findIndex((m) => m.slug === slug);
-    const updatedRecord: MediaItem = {
-      id: existingIndex >= 0 ? adminCatalog[existingIndex].id : `med-${Date.now()}`,
-      title,
-      slug,
-      synopsis,
-      type: type || "MOVIE",
-      accessLevel: accessLevel || "FREE",
-      releaseYear: Number(releaseYear) || 2026,
-      durationMinutes: durationMinutes ? Number(durationMinutes) : null,
-      posterUrl: body.posterUrl || "https://images.unsplash.com/photo-1478760329108-5c3ed9d495a0?q=80&w=800",
-      backdropUrl: body.backdropUrl || "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=1600",
-      videoUrl: videoUrl || "",
-      isPublished: isPublished ?? true,
-      rightsValidUntil: rightsValidUntil || "2030-12-31",
-      categories: body.categories || [{ name: "Général", slug: "general" }],
-    };
-
-    if (existingIndex >= 0) {
-      adminCatalog[existingIndex] = updatedRecord;
-    } else {
-      adminCatalog.unshift(updatedRecord);
+    const mediaType = type === "SERIES" ? MediaType.SERIES : MediaType.MOVIE;
+    const mediaAccess = accessLevel === "PREMIUM" ? AccessLevel.PREMIUM : AccessLevel.FREE;
+    const parsedYear = Number(releaseYear);
+    const parsedDuration = durationMinutes == null || durationMinutes === "" ? null : Number(durationMinutes);
+    if (!Number.isInteger(parsedYear) || parsedYear < 1888 || parsedYear > 2200 || (parsedDuration !== null && (!Number.isInteger(parsedDuration) || parsedDuration < 1))) {
+      return NextResponse.json({ error: "INVALID_MEDIA", message: "Année ou durée invalide." }, { status: 400 });
     }
+    const rightsDate = rightsValidUntil ? new Date(rightsValidUntil) : null;
+    if (rightsDate && Number.isNaN(rightsDate.getTime())) {
+      return NextResponse.json({ error: "INVALID_RIGHTS_DATE" }, { status: 400 });
+    }
+
+    const rawCategories: unknown[] = Array.isArray(body.categories) ? body.categories : [{ name: "Général", slug: "general" }];
+    const categoryData = rawCategories.flatMap((value) => {
+      if (typeof value === "string") {
+        const categorySlug = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        return categorySlug ? [{ slug: categorySlug, name: value.trim() }] : [];
+      }
+      if (value && typeof value === "object" && "name" in value && "slug" in value && typeof value.name === "string" && typeof value.slug === "string") {
+        return [{ name: value.name.trim(), slug: value.slug.trim() }];
+      }
+      return [];
+    }).filter((category) => category.name && category.slug);
+
+    const savedMedia = await prisma.$transaction(async (tx) => {
+      const existed = await tx.media.findUnique({ where: { slug: slug.trim() }, select: { id: true } });
+      const categories = await Promise.all(categoryData.map((category) => tx.category.upsert({
+        where: { slug: category.slug },
+        update: { name: category.name },
+        create: category,
+      })));
+      const connections = categories.map((category) => ({ category: { connect: { id: category.id } } }));
+      const mediaData = {
+        title: title.trim(),
+        synopsis: synopsis.trim(),
+        type: mediaType,
+        accessLevel: mediaAccess,
+        releaseYear: parsedYear,
+        durationMinutes: parsedDuration,
+        posterUrl: typeof body.posterUrl === "string" && body.posterUrl.trim() ? body.posterUrl.trim() : null,
+        backdropUrl: typeof body.backdropUrl === "string" && body.backdropUrl.trim() ? body.backdropUrl.trim() : null,
+        videoUrl: typeof videoUrl === "string" && videoUrl.trim() ? videoUrl.trim() : null,
+        // Une fiche sans source ne doit pas apparaître comme publiée.
+        isPublished: isPublished === true && typeof videoUrl === "string" && Boolean(videoUrl.trim()),
+        rightsValidUntil: rightsDate,
+      };
+      await tx.media.upsert({
+        where: { slug: slug.trim() },
+        create: { ...mediaData, slug: slug.trim(), categories: { create: connections } },
+        update: { ...mediaData, categories: { deleteMany: {}, create: connections } },
+      });
+      const media = await tx.media.findUniqueOrThrow({
+        where: { slug: slug.trim() },
+        include: { categories: { include: { category: true } }, seasons: { include: { episodes: true } } },
+      });
+      return { media, created: !existed };
+    });
+    const updatedRecord = dbMediaToItem(savedMedia.media);
 
     return NextResponse.json({
       success: true,
       media: updatedRecord,
-      message: existingIndex >= 0 ? "Média mis à jour." : "Média créé avec succès.",
+      message: savedMedia.created ? "Média créé avec succès." : "Média mis à jour.",
     });
   } catch (error) {
     console.error("Erreur création média admin :", error);
@@ -225,6 +247,10 @@ export async function DELETE(request: Request) {
     );
   }
 
+  if (!DB_READY) {
+    return NextResponse.json({ error: "DB_NOT_READY" }, { status: 503 });
+  }
+
   const { searchParams } = new URL(request.url);
   const slug = searchParams.get("slug");
 
@@ -232,10 +258,14 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Slug requis" }, { status: 400 });
   }
 
-  const index = adminCatalog.findIndex((m) => m.slug === slug);
-  if (index >= 0) {
-    adminCatalog.splice(index, 1);
+  try {
+    const deleted = await prisma.media.deleteMany({ where: { slug } });
+    if (deleted.count > 0) {
     return NextResponse.json({ success: true, message: "Média retiré du catalogue." });
+    }
+  } catch (error) {
+    console.error("Erreur suppression média admin :", error);
+    return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 
   return NextResponse.json({ error: "Média introuvable" }, { status: 404 });
@@ -253,6 +283,10 @@ export async function PATCH(request: Request) {
       { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 }
     );
+  }
+
+  if (!DB_READY) {
+    return NextResponse.json({ error: "DB_NOT_READY" }, { status: 503 });
   }
 
   try {
@@ -354,9 +388,7 @@ export async function PATCH(request: Request) {
       const willHaveVideo =
         data.videoUrl !== undefined
           ? data.videoUrl
-          : DB_READY
-            ? existing?.videoUrl || null
-            : adminCatalog.find((m) => m.slug === slug)?.videoUrl || null;
+          : existing?.videoUrl || null;
       const projectedEpisodeUrls = new Map<string, string | null>();
       for (const season of existing?.seasons ?? []) {
         for (const episode of season.episodes) {
@@ -372,9 +404,7 @@ export async function PATCH(request: Request) {
           source.videoUrl
         );
       }
-      const hasEpisodeVideo =
-        [...projectedEpisodeUrls.values()].some(Boolean) ||
-        (!DB_READY && episodeSources.some((source) => source.videoUrl));
+      const hasEpisodeVideo = [...projectedEpisodeUrls.values()].some(Boolean);
       const requiresEpisodeVideo = existing?.type === "SERIES";
       if (
         (requiresEpisodeVideo && !hasEpisodeVideo) ||
@@ -449,42 +479,7 @@ export async function PATCH(request: Request) {
       }
     }
 
-    // Fallback mémoire
-    const idx = adminCatalog.findIndex((m) => m.slug === slug);
-    if (idx < 0) {
-      return NextResponse.json({ error: "Média introuvable" }, { status: 404 });
-    }
-    const current = adminCatalog[idx];
-    const merged: MediaItem = {
-      ...current,
-      ...(data.videoUrl !== undefined ? { videoUrl: data.videoUrl || "" } : {}),
-      ...(episodeSources.length
-        ? {
-            episodeSources: current.episodeSources?.map((episode) => {
-              const update = episodeSources.find(
-                (source) =>
-                  source.seasonNumber === episode.seasonNumber &&
-                  source.episodeNumber === episode.episodeNumber
-              );
-              return update ? { ...episode, videoUrl: update.videoUrl || "" } : episode;
-            }),
-          }
-        : {}),
-      ...(data.accessLevel ? { accessLevel: data.accessLevel } : {}),
-      ...(data.isPublished !== undefined ? { isPublished: data.isPublished } : {}),
-      ...(data.durationMinutes !== undefined ? { durationMinutes: data.durationMinutes } : {}),
-      ...(data.synopsis ? { synopsis: data.synopsis } : {}),
-      rightsValidUntil:
-        data.rightsValidUntil !== undefined
-          ? data.rightsValidUntil?.toISOString() || ""
-          : current.rightsValidUntil,
-    };
-    adminCatalog[idx] = merged;
-    return NextResponse.json({
-      success: true,
-      message: merged.isPublished ? "Média publié." : "Média mis à jour.",
-      media: merged,
-    });
+    return NextResponse.json({ error: "DB_NOT_READY" }, { status: 503 });
   } catch (error) {
     console.error("Erreur PATCH média admin :", error);
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
