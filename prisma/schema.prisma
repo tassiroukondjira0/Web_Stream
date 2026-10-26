@@ -60,8 +60,25 @@ model User {
   wishlist         WishlistItem[]
   pageViews        PageView[]
   playbackProgress PlaybackProgress[]
+  notifications    Notification[]
 
   @@map("users")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String   @db.Text
+  link      String?
+  read      Boolean  @default(false)
+  type      String   @default("INFO")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, read, createdAt])
+  @@map("notifications")
 }
 
 model Subscription {

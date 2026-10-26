@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, Home, Film, Tv, Sparkles, Clock } from "lucide-react";
 import { NavSearch } from "@/components/NavSearch";
 import { AccountMenu } from "@/components/AccountMenu";
+import { NotificationBell } from "@/components/NotificationBell";
 
 const NAV_LINKS = [
   { href: "/", label: "Accueil", icon: Home },
@@ -136,6 +137,7 @@ export function Navbar() {
         {/* Actions utilisateur & Recherche */}
         <div className="flex shrink-0 items-center gap-1 sm:gap-4">
           <NavSearch />
+          <NotificationBell />
           <AccountMenu />
         </div>
       </div>
