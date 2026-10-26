@@ -293,11 +293,19 @@ export async function createPremiumInvoice(input: CreateInvoiceInput): Promise<P
     },
   };
 
-  const response = await fetch(`${getPaydunyaBaseUrl()}/checkout-invoice/create`, {
-    method: "POST",
-    headers: getPaydunyaHeaders(),
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  let response: Response;
+  try {
+    response = await fetch(`${getPaydunyaBaseUrl()}/checkout-invoice/create`, {
+      method: "POST",
+      headers: getPaydunyaHeaders(),
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const data = (await response.json().catch(() => null)) as Record<string, unknown> | null;
 
