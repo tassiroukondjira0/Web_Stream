@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { AIChatSupport } from "@/components/AIChatSupport";
 
 export const metadata: Metadata = {
-  title: "Aide & Questions Fréquentes",
+  title: "Aide & Questions Fréquentess",
   description:
     "Trouvez les réponses à vos questions sur CinéMax : compte, abonnement, paiement, reprise de lecture et confidentialité.",
 };
@@ -76,6 +77,8 @@ export default function AidePage() {
           </section>
         ))}
       </div>
+
+      <AIChatSupport />
 
       <div className="mt-12 rounded-xl border border-white/10 bg-zinc-900/50 p-6 text-center">
         <p className="text-sm text-zinc-400">
