@@ -276,12 +276,22 @@ async function fetchExternalDocumentSafe(
     }
     const allowedByAllowlist = isEmbedDocumentAllowed(current.href);
     const allowedByKnownHost = isExternalEmbedHost(current.href);
+    // Si l'URL initiale est signée pour un hôte inconnu, n'autoriser que si l'hôte actuel
+    // est soit connu, soit explicitement autorisé par signature ET reste dans un contexte sûr
     if (!allowedByAllowlist && !allowedByKnownHost) {
       if (!signedUnknownHost) {
         return null;
       }
-      // Source signée mais redirige vers un hôte inconnu
+      // Ne pas autoriser redirections vers hôtes inconnus même si signés
       return null;
+    }
+    // Si la politique autorise via signature mais l'hôte n'est pas connu et pas dans allowlist,
+    // refuser pour éviter les redirections non contrôlées
+    if (signedUnknownHost && !allowedByKnownHost && !isExternalEmbedHost(current.href)) {
+      // Vérifier si c'est bien autorisé par signature
+      if (!isEmbedDocumentAllowed(current.href)) {
+        return null;
+      }
     }
     // A signed source may redirect to its CDN; every hop still undergoes DNS
     // classification and the socket is pinned to a validated public address.

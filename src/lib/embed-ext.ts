@@ -222,3 +222,21 @@ export function isRuntimeHost(host?: string | null): boolean {
 export function runtimeHostList(): string[] {
   return [...runtimeEmbedHosts.keys()];
 }
+
+export function isRuntimeHostAllowedForContext(
+  runtimeHost?: string | null,
+  contextHost?: string | null,
+): boolean {
+  if (!runtimeHost || !contextHost) return false;
+  const rh = runtimeHost.toLowerCase().replace(/\.$/, "");
+  const ch = contextHost.toLowerCase().replace(/\.$/, "");
+  if (isPrivateHostname(rh) || isIP(rh)) return false;
+  if (!isRuntimeHost(rh)) return false;
+  const rhParts = rh.split(".");
+  const rhBase = rhParts.length < 2 ? rh : rhParts.slice(-2).join(".");
+  const chParts = ch.split(".");
+  const chBase = chParts.length < 2 ? ch : chParts.slice(-2).join(".");
+  if (rhBase === chBase) return true;
+  if (rh.endsWith("." + ch)) return true;
+  return false;
+}

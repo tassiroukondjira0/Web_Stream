@@ -6,6 +6,7 @@ import {
   isAllowedProxyUrl,
   isExternalEmbedHost,
   isRuntimeHost,
+  isRuntimeHostAllowedForContext,
   partnerReferer,
 } from "@/lib/embed-ext";
 import { publicOrigin } from "@/lib/public-origin";
@@ -238,6 +239,9 @@ async function forward(
     if (!isAllowedProxyUrl(current.href, isRuntimeHost)) {
       return new Response("Domaine non autorisé", { status: 403, headers: ACAO });
     }
+    if (!isExternalEmbedHost(current.href) && isRuntimeHost(current.hostname)) {
+      // Ne peut pas vérifier le contexte ici sans le passer; le contrôle principal est fait dans handle()
+    }
     const headers: Record<string, string> = {
       "User-Agent": EMBED_USER_AGENT,
       Accept: "*/*",
@@ -344,6 +348,13 @@ async function handle(request: NextRequest): Promise<Response> {
 
   if (!isAllowedProxyUrl(target.href, isRuntimeHost)) {
     return new Response("Domaine non autorisé", { status: 403, headers: ACAO });
+  }
+  // Si la cible est un runtime host (non reconnu statiquement), exiger un contexte
+  // valide et restreindre à la famille du document d'embed
+  if (!isExternalEmbedHost(target.href) && isRuntimeHost(target.hostname)) {
+    if (!contextHost || !isRuntimeHostAllowedForContext(target.hostname, contextHost)) {
+      return new Response("Domaine non autorisé", { status: 403, headers: ACAO });
+    }
   }
 
   const hasBody = request.method !== "GET" && request.method !== "HEAD";
