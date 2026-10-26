@@ -321,9 +321,9 @@ async function fetchExternalDocumentSafe(
           res.on("end", () => resolve({ status, location, html: "" }));
           return;
         }
-        res.on("data", (chunk: Buffer) => {
+    res.on("data", (chunk: Buffer) => {
           total += chunk.byteLength;
-          if (total > 2 * 1024 * 1024) {
+          if (total > 8 * 1024 * 1024) {
             req.destroy();
             resolve(null);
             return;

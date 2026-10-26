@@ -68,9 +68,19 @@ export async function resolvePublicAddresses(hostname: string): Promise<string[]
   if (family) return isPublicIp(host) ? [host] : [];
 
   try {
-    const answers = await lookup(host, { all: true, verbatim: true });
-    if (!answers.length || answers.some(({ address }) => !isPublicIp(address))) return [];
-    return answers.map(({ address }) => address);
+    const answers = await lookup(host, { all: true, verbatim: true }).catch(async () => {
+      try {
+        return await lookup(host, { all: true });
+      } catch {
+        return [];
+      }
+    });
+    if (!answers.length) return [];
+    const filtered = answers
+      .filter(({ address }) => typeof address === "string" && isPublicIp(address))
+      .map(({ address }) => address);
+    if (filtered.length === 0) return [];
+    return filtered;
   } catch {
     return [];
   }

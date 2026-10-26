@@ -3,10 +3,20 @@ const MAX_BUCKETS = 20_000;
 
 function clientAddress(request: Request): string {
   const realIp = request.headers.get("x-real-ip")?.trim();
-  if (realIp) return realIp.slice(0, 64);
+  if (realIp && realIp !== "unknown") return realIp.slice(0, 64);
+  const cfConnectingIp = request.headers.get("cf-connecting-ip")?.trim();
+  if (cfConnectingIp && cfConnectingIp !== "unknown") return cfConnectingIp.slice(0, 64);
+  const trueClientIp = request.headers.get("true-client-ip")?.trim();
+  if (trueClientIp && trueClientIp !== "unknown") return trueClientIp.slice(0, 64);
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) {
     const chain = forwarded.split(",").map((part) => part.trim()).filter(Boolean);
+    // Sur Render, le premier hop est généralement le proxy; préférer le plus à droite fiable ou le premier selon config
+    // Utiliser le premier non privé si possible, sinon premier
+    for (const ip of chain) {
+      if (/^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|127\.|::1|fe80:)/i.test(ip)) continue;
+      if (/^[0-9a-f:.]+$/i.test(ip) && ip.length < 64) return ip;
+    }
     if (chain.length) return chain[0].slice(0, 64);
   }
   return "unknown";
