@@ -13,6 +13,9 @@ import {
   Sparkles,
   Play,
   X,
+  Eye,
+  EyeOff,
+  KeyRound,
 } from "lucide-react";
 import { providerSlugHref } from "@/lib/provider-catalog";
 
@@ -41,6 +44,16 @@ export default function AccountPage() {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [history, setHistory] = useState<PlaybackEntry[]>([]);
   const [listsLoading, setListsLoading] = useState(true);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdError, setPwdError] = useState<string | null>(null);
+  const [pwdSuccess, setPwdSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me", { credentials: "include" })
@@ -111,6 +124,38 @@ export default function AccountPage() {
     if (res.ok) setWishlist((prev) => prev.filter((s) => s !== slug));
   };
 
+  const submitChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPwdError(null);
+    setPwdSuccess(null);
+    if (newPassword !== confirmPassword) {
+      setPwdError("La confirmation ne correspond pas.");
+      return;
+    }
+    setPwdLoading(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPwdError(data.error || "Erreur lors du changement de mot de passe.");
+        return;
+      }
+      setPwdSuccess(data.message || "Mot de passe modifié avec succès.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch {
+      setPwdError("Erreur réseau.");
+    } finally {
+      setPwdLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-24 text-center text-sm text-zinc-400">
@@ -176,14 +221,99 @@ export default function AccountPage() {
           </div>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-white/10 px-4 py-2.5 text-xs font-medium text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400 hover:border-violet-500/30 transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          Déconnexion
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              setShowChangePassword((v) => !v);
+              setPwdError(null);
+              setPwdSuccess(null);
+            }}
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-white/10 px-4 py-2.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+          >
+            <KeyRound className="h-4 w-4" />
+            Changer le mot de passe
+          </button>
+          <button
+            onClick={handleLogout}
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-white/10 px-4 py-2.5 text-xs font-medium text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400 hover:border-violet-500/30 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            DǸconnexion
+          </button>
+        </div>
       </div>
+
+      {showChangePassword && (
+        <div className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-6">
+          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+            <KeyRound className="h-5 w-5" />
+            Changer mon mot de passe
+          </h2>
+          <p className="mt-1 text-xs text-zinc-400">
+            Minimum 8 caractères, avec au moins 3 types différents (minuscules, majuscules, chiffres, symboles).
+          </p>
+          <form onSubmit={submitChangePassword} className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <label className="text-xs text-zinc-400">Mot de passe actuel</label>
+              <div className="mt-1 relative">
+                <input
+                  type={showCurrent ? "text" : "password"}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="w-full rounded-xl bg-zinc-950 border border-white/10 px-3 py-2 text-sm text-white pr-10"
+                  required
+                />
+                <button type="button" onClick={() => setShowCurrent((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white">
+                  {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400">Nouveau mot de passe</label>
+              <div className="mt-1 relative">
+                <input
+                  type={showNew ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full rounded-xl bg-zinc-950 border border-white/10 px-3 py-2 text-sm text-white pr-10"
+                  required
+                  minLength={8}
+                />
+                <button type="button" onClick={() => setShowNew((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white">
+                  {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-zinc-400">Confirmer le nouveau mot de passe</label>
+              <div className="mt-1 relative">
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-xl bg-zinc-950 border border-white/10 px-3 py-2 text-sm text-white pr-10"
+                  required
+                  minLength={8}
+                />
+                <button type="button" onClick={() => setShowConfirm((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white">
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            {pwdError && <div className="sm:col-span-2 text-xs text-red-400">{pwdError}</div>}
+            {pwdSuccess && <div className="sm:col-span-2 text-xs text-emerald-400">{pwdSuccess}</div>}
+            <div className="sm:col-span-2">
+              <button
+                type="submit"
+                disabled={pwdLoading}
+                className="rounded-xl bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500 disabled:opacity-50"
+              >
+                {pwdLoading ? "Enregistrement..." : "Enregistrer le nouveau mot de passe"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Carte d'Abonnement Freemium */}
       <div className="mt-8">

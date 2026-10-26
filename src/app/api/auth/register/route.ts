@@ -27,11 +27,11 @@ export async function POST(request: Request) {
 
     if (
       typeof email !== "string" || typeof password !== "string" ||
-      !email.trim() || password.length < 12 || password.length > 128 ||
+      !email.trim() || password.length < 8 || password.length > 128 ||
       (name !== undefined && (typeof name !== "string" || name.length > 100))
     ) {
       return NextResponse.json(
-        { error: "Un e-mail valide et un mot de passe de 12 à 128 caractères sont requis." },
+        { error: "Un e-mail valide et un mot de passe de 8 �� 128 caract��res sont requis." },
         { status: 400 }
       );
     }
@@ -41,15 +41,31 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Adresse e-mail invalide." }, { status: 400 });
     }
     const commonPasswords = new Set([
-      "password123", "password1234", "password12345", "123456789012",
-      "qwerty123456", "azerty123456", "iloveyou123", "letmein12345",
+      "password",
+      "password1",
+      "password123",
+      "password1234",
+      "password12345",
+      "12345678",
+      "123456789",
+      "1234567890",
+      "qwerty123",
+      "azerty123",
+      "iloveyou1",
+      "letmein123",
     ]);
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasDigit = /[0-9]/.test(password);
+    const hasSymbol = /[^A-Za-z0-9]/.test(password);
+    const score = [hasLower, hasUpper, hasDigit, hasSymbol].filter(Boolean).length;
     if (
       commonPasswords.has(password.toLowerCase()) ||
       password.toLowerCase() === normalizedEmail ||
-      /^(.)\1{11,}$/.test(password)
+      /^(.)\1{3,}$/.test(password) ||
+      score < 3
     ) {
-      return NextResponse.json({ error: "Choisissez un mot de passe moins prévisible." }, { status: 400 });
+      return NextResponse.json({ error: "Choisissez un mot de passe plus sécurisé (8 caractères minimum, au moins 3 types)." }, { status: 400 });
     }
     if (process.env.DATABASE_READY !== "true") {
       return NextResponse.json({ error: "Inscription indisponible." }, { status: 503 });
