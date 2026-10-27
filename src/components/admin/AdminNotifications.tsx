@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bell, Send, Users, Star } from "lucide-react";
 
 type Target = "ALL" | "SUBSCRIBERS";
@@ -13,6 +13,27 @@ export function AdminNotifications() {
   const [target, setTarget] = useState<Target>("ALL");
   const [announcementType, setAnnouncementType] = useState<AnnouncementType>("NOUVEAUTE");
   const [loading, setLoading] = useState(false);
+  // Pré-remplir au chargement initial (type Nouveautés par défaut)
+  useEffect(() => {
+    handleTypeChange("NOUVEAUTE");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+
+  // Quand le type d'annonce change, pré-remplir les champs avec des valeurs par défaut
+  const handleTypeChange = (newType: AnnouncementType) => {
+    setAnnouncementType(newType);
+    if (newType === "NOUVEAUTE") {
+      setTitle("Nouveaux titres disponibles");
+      setMessage("De nouveaux films et séries ont été ajoutés au catalogue. Venez les découvrir !");
+      setLink("/nouveautes");
+    } else {
+      setTitle("");
+      setMessage("");
+      setLink("");
+    }
+  };
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,38 +83,44 @@ export function AdminNotifications() {
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-300 mb-1">Titre</label>
+            <label className="block text-sm text-zinc-300 mb-1">
+              {announcementType === "NOUVEAUTE" ? "Titre de la nouveauté" : "Titre de l'annonce"}
+            </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
               maxLength={120}
-              placeholder="Ex: Nouveau film ajouté"
+              placeholder={announcementType === "NOUVEAUTE" ? "Ex: Nouveau film ajouté" : "Ex: Maintenance prévue"}
               className="w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-white"
             />
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-300 mb-1">Message</label>
+            <label className="block text-sm text-zinc-300 mb-1">
+              {announcementType === "NOUVEAUTE" ? "Message de la nouveauté" : "Message de l'annonce"}
+            </label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               required
               rows={3}
               maxLength={500}
-              placeholder="Message à afficher dans la cloche de notification"
+              placeholder={announcementType === "NOUVEAUTE" ? "Message à afficher dans la cloche de notification" : "Message à afficher aux utilisateurs"}
               className="w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-white"
             />
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-300 mb-1">Lien (optionnel)</label>
+            <label className="block text-sm text-zinc-300 mb-1">
+              {announcementType === "NOUVEAUTE" ? "Lien vers la nouveauté" : "Lien (optionnel)"}
+            </label>
             <input
               type="text"
               value={link}
               onChange={(e) => setLink(e.target.value)}
-              placeholder="Ex: /film/123 ou /premium"
+              placeholder={announcementType === "NOUVEAUTE" ? "Ex: /nouveautes ou /film/123" : "Ex: /premium ou /aide"}
               className="w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-white"
             />
           </div>
@@ -103,7 +130,7 @@ export function AdminNotifications() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setAnnouncementType("NOUVEAUTE")}
+                onClick={() => handleTypeChange("NOUVEAUTE")}
                 className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm ${
                   announcementType === "NOUVEAUTE"
                     ? "bg-emerald-600 text-white"
@@ -114,7 +141,7 @@ export function AdminNotifications() {
               </button>
               <button
                 type="button"
-                onClick={() => setAnnouncementType("ANNONCE")}
+                onClick={() => handleTypeChange("ANNONCE")}
                 className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm ${
                   announcementType === "ANNONCE"
                     ? "bg-violet-600 text-white"

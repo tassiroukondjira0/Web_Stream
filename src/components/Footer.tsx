@@ -65,10 +65,10 @@ export function Footer() {
             </ul>
           </div>
 
-          <div className="md:col-span-2 lg:col-span-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">Support</h3>
-            <ul className="mt-4 space-y-2 text-sm">
-              {!isAdmin && (
+          {!isAdmin && (
+            <div className="md:col-span-2 lg:col-span-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">Support</h3>
+              <ul className="mt-4 space-y-2 text-sm">
                 <li>
                   <Link
                     href="/aide"
@@ -78,9 +78,9 @@ export function Footer() {
                     Aide — Assistant IA
                   </Link>
                 </li>
-              )}
-            </ul>
-          </div>
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="mt-12 border-t border-white/5 pt-6 text-center text-xs text-zinc-500">
