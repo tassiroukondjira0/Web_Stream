@@ -23,7 +23,7 @@ interface UserProfile {
   id: string;
   name: string;
   email: string;
-  role: "USER" | "SUBSCRIBER" | "ADMIN";
+  role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN";
 }
 
 interface PlaybackEntry {
@@ -324,7 +324,7 @@ export default function AccountPage() {
                 Formule active
               </span>
               <h2 className="mt-1 text-2xl font-bold text-white flex items-center gap-2">
-                {isPremium ? "Pass Premium Haute Définition" : "Formule Standard Gratuite"}
+                {isPremium ? (user?.role === "SUPER_ADMIN" ? "Super Administrateur" : "Pass Premium Haute Définition") : "Formule Standard Gratuite"}
                 {isPremium && <Sparkles className="h-5 w-5 text-amber-400" />}
               </h2>
               <p className="mt-2 text-sm text-zinc-400 max-w-xl">

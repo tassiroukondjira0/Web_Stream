@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+﻿import { NextResponse } from "next/server";
+import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FSTREAMTV_PROVIDER } from "@/modules/providers/fstreamtv/fstreamtv.client";
 import { syncFStreamTvCatalog } from "@/modules/providers/fstreamtv/fstreamtv.sync";
 
 /**
- * Synchro incrémentale du fournisseur de repli `french-streaming.tv`.
+ * Synchro incrÃ©mentale du fournisseur de repli `french-streaming.tv`.
  *
- * - GET  : état du catalogue (compteurs films/séries + historique des synchros).
- * - POST : lance une synchro (nombre de pages films/séries paramétrable).
+ * - GET  : Ã©tat du catalogue (compteurs films/sÃ©ries + historique des synchros).
+ * - POST : lance une synchro (nombre de pages films/sÃ©ries paramÃ©trable).
  */
 
 const MAX_PAGES = 20;
@@ -22,7 +22,7 @@ async function requireAdmin() {
 export async function GET() {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
       { status: 403 },
     );
   }
@@ -65,7 +65,7 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
       { status: 403 },
     );
   }
@@ -77,14 +77,14 @@ export async function POST(request: Request) {
       pages = Math.min(Math.max(Math.floor(body.pages), 1), MAX_PAGES);
     }
   } catch {
-    // corps vide ou invalide → on garde la valeur par défaut
+    // corps vide ou invalide â†’ on garde la valeur par dÃ©faut
   }
 
   try {
     const report = await syncFStreamTvCatalog({ filmPages: pages, seriesPages: pages });
     return NextResponse.json({
       success: true,
-      message: `Synchro terminée : ${report.fetchedMovies} films et ${report.fetchedSeries} séries récupérés, ${report.upserted} titres en base (${report.pruned} obsolètes retirés).`,
+      message: `Synchro terminÃ©e : ${report.fetchedMovies} films et ${report.fetchedSeries} sÃ©ries rÃ©cupÃ©rÃ©s, ${report.upserted} titres en base (${report.pruned} obsolÃ¨tes retirÃ©s).`,
       report,
     });
   } catch (error) {
@@ -94,3 +94,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+

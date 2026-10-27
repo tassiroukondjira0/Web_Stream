@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 interface SessionUser {
-  role: "USER" | "SUBSCRIBER" | "ADMIN";
+  role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN";
 }
 
 export function Footer() {

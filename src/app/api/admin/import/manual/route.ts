@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { readRequestBodyLimited } from "@/lib/request-body";
@@ -9,28 +9,28 @@ import { readRequestBodyLimited } from "@/lib/request-body";
  * Format JSON attendu (tableau) :
  *   [
  *     {
- *       "title": "Le Chant de la Forêt",
- *       "synopsis": "Résumé...",
+ *       "title": "Le Chant de la ForÃªt",
+ *       "synopsis": "RÃ©sumÃ©...",
  *       "type": "MOVIE" | "SERIES",
  *       "releaseYear": 2024,
  *       "durationMinutes": 120,
  *       "posterUrl": "https://...",
  *       "backdropUrl": "https://...",
- *       "videoUrl": "https://... (fichier vidéo ou playlist HLS sous licence)",
+ *       "videoUrl": "https://... (fichier vidÃ©o ou playlist HLS sous licence)",
  *       "accessLevel": "FREE" | "PREMIUM",
  *       "categories": ["action", "drame"]
  *     }
  *   ]
  *
- * Format CSV attendu (en-tête + lignes) :
+ * Format CSV attendu (en-tÃªte + lignes) :
  *   title,synopsis,type,releaseYear,durationMinutes,posterUrl,backdropUrl,videoUrl,accessLevel,categories
- *   "Le Chant de la Forêt","Résumé...",MOVIE,2024,120,https://...,https://...,https://...,FREE,action,drame
+ *   "Le Chant de la ForÃªt","RÃ©sumÃ©...",MOVIE,2024,120,https://...,https://...,https://...,FREE,action,drame
  *
- * Anti-doublon : vérifie par titre + année (et par slug s'il est fourni).
- * Les fiches sont créées en brouillon (isPublished: false).
+ * Anti-doublon : vÃ©rifie par titre + annÃ©e (et par slug s'il est fourni).
+ * Les fiches sont crÃ©Ã©es en brouillon (isPublished: false).
  */
 
-const MAX_IMPORT = 200; // garde-fou pour éviter les imports massifs accidentels
+const MAX_IMPORT = 200; // garde-fou pour Ã©viter les imports massifs accidentels
 const MAX_IMPORT_BODY_BYTES = 5 * 1024 * 1024;
 
 function slugify(title: string): string {
@@ -87,14 +87,14 @@ export async function POST(request: Request): Promise<NextResponse> {
   const user = await getCurrentUser();
   if (!user || user.role !== "ADMIN") {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
       { status: 403 },
     );
   }
 
   if (process.env.DATABASE_READY !== "true") {
     return NextResponse.json(
-      { error: "DB_NOT_READY", message: "Base de données indisponible." },
+      { error: "DB_NOT_READY", message: "Base de donnÃ©es indisponible." },
       { status: 503 },
     );
   }
@@ -113,7 +113,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     body: Buffer.from(rawBody),
   });
 
-  // Détecte le type de requête : multipart (fichier) ou JSON pur.
+  // DÃ©tecte le type de requÃªte : multipart (fichier) ou JSON pur.
   const contentType = request.headers.get("content-type") ?? "";
   const isMultipart = contentType.includes("multipart/form-data");
 
@@ -141,7 +141,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       items = parseCsv(text);
     } else {
       return NextResponse.json(
-        { error: "BAD_FORMAT", message: "Format non supporté : utilisez .json ou .csv." },
+        { error: "BAD_FORMAT", message: "Format non supportÃ© : utilisez .json ou .csv." },
         { status: 400 },
       );
     }
@@ -150,7 +150,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const body: unknown = await bufferedRequest.json().catch(() => null);
     if (!Array.isArray(body)) {
       return NextResponse.json(
-        { error: "BAD_BODY", message: "Le corps doit être un tableau JSON d'objets." },
+        { error: "BAD_BODY", message: "Le corps doit Ãªtre un tableau JSON d'objets." },
         { status: 400 },
       );
     }
@@ -159,7 +159,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   if (!items.length) {
     return NextResponse.json(
-      { error: "EMPTY", message: "Aucun titre à importer." },
+      { error: "EMPTY", message: "Aucun titre Ã  importer." },
       { status: 400 },
     );
   }
@@ -206,7 +206,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
       const slug: string = (typeof raw.slug === "string" ? raw.slug.trim() : "") || slugify(title);
 
-      // Anti-doublon : titre + année (et slug si présent).
+      // Anti-doublon : titre + annÃ©e (et slug si prÃ©sent).
       const existingBySlug = await prisma.media.findUnique({ where: { slug } });
       const existingByTitleYear = await prisma.media.findFirst({
         where: { title, releaseYear },
@@ -218,7 +218,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         continue;
       }
 
-      // Crée / met à jour les catégories.
+      // CrÃ©e / met Ã  jour les catÃ©gories.
       const categoryConnections = [];
       for (const catSlug of categorySlugs) {
         const catName = catSlug.charAt(0).toUpperCase() + catSlug.slice(1);
@@ -238,7 +238,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           posterUrl,
           backdropUrl,
           videoUrl,
-          isPublished: false, // brouillon : l'admin publiera après ajout de vidéo
+          isPublished: false, // brouillon : l'admin publiera aprÃ¨s ajout de vidÃ©o
           rightsValidUntil: null,
           categories: { create: categoryConnections },
         },
@@ -251,9 +251,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
   return NextResponse.json({
     success: true,
-    message: `Import manuel terminé : ${created} créé(s), ${updated} mis à jour, ${skipped} doublon(s) ignoré(s).`,
+    message: `Import manuel terminÃ© : ${created} crÃ©Ã©(s), ${updated} mis Ã  jour, ${skipped} doublon(s) ignorÃ©(s).`,
     stats: { created, updated, skipped, total: items.length, errors: errors.length },
-    errors: errors.slice(0, 20), // limite la liste d'erreurs renvoyée
+    errors: errors.slice(0, 20), // limite la liste d'erreurs renvoyÃ©e
   });
 }
 
@@ -292,3 +292,4 @@ function parseCsv(text: string): Record<string, unknown>[] {
   }
   return items;
 }
+

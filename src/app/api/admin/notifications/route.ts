@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
 
 async function requireAdmin() {
   const user = await getCurrentUser();
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   try {
     const admin = await requireAdmin();
     if (!admin) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+      return NextResponse.json({ error: "Non autorisÃ©" }, { status: 401 });
     }
 
     const body = await request.json().catch(() => null);
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
     const users = await prisma.user.findMany({ where, select: { id: true } });
     if (users.length === 0) {
-      return NextResponse.json({ error: "Aucun utilisateur ciblé" }, { status: 400 });
+      return NextResponse.json({ error: "Aucun utilisateur ciblÃ©" }, { status: 400 });
     }
 
     await prisma.notification.createMany({
@@ -52,10 +52,12 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       count: users.length,
-      message: `Notification envoyée à ${users.length} utilisateur(s)`,
+      message: `Notification envoyÃ©e Ã  ${users.length} utilisateur(s)`,
     });
   } catch (error) {
     console.error("admin notifications error:", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
+
+

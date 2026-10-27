@@ -50,15 +50,25 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string;
-  role: "USER" | "SUBSCRIBER" | "ADMIN";
+  role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN";
 }
 
 /**
- * Accès total au catalogue : l'ADMIN n'a pas besoin du pass Premium.
- * SUBSCRIBER = abonné payant, ADMIN = accès implicite à tout.
+ * Accès total au catalogue : l'ADMIN et le SUPER_ADMIN n'ont pas besoin du pass Premium.
+ * SUBSCRIBER = abonné payant, ADMIN/SUPER_ADMIN = accès implicite à tout.
  */
 export function hasPremiumAccess(role: SessionUser["role"]): boolean {
-  return role === "SUBSCRIBER" || role === "ADMIN";
+  return role === "SUBSCRIBER" || role === "ADMIN" || role === "SUPER_ADMIN";
+}
+
+/** Accès à l'interface d'administration (lecture + actions courantes). */
+export function hasAdminAccess(role: SessionUser["role"]): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN";
+}
+
+/** Accès super-admin : gestion des rôles, imports, suppression d'admins. */
+export function hasSuperAdminAccess(role: SessionUser["role"]): boolean {
+  return role === "SUPER_ADMIN";
 }
 
 // 1. Hachage des mots de passe

@@ -11,6 +11,7 @@ enum Role {
   USER
   SUBSCRIBER
   ADMIN
+  SUPER_ADMIN
 }
 
 enum MediaType {

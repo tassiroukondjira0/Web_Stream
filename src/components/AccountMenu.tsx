@@ -1,15 +1,15 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, ChevronDown, LogOut, Heart, ListPlus, ShieldCheck, Bell, LogIn, UserPlus } from "lucide-react";
+import { User, ChevronDown, LogOut, Heart, ListPlus, ShieldCheck, Bell, LogIn, UserPlus, Users } from "lucide-react";
 
 interface SessionUser {
   id: string;
   name: string;
   email: string;
-  role: "USER" | "SUBSCRIBER" | "ADMIN";
+  role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN";
 }
 
 export function AccountMenu() {
@@ -106,15 +106,27 @@ export function AccountMenu() {
                       Dashboard admin
                     </Link>
                   )}
-                  {user!.role === "ADMIN" && (
-                    <Link
-                      href="/admin/notifications"
-                      onClick={() => setOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
-                    >
-                      <Bell className="h-4 w-4 text-purple-400" />
-                      Centre de notifications
-                    </Link>
+                  {(user!.role === "ADMIN" || user!.role === "SUPER_ADMIN") && (
+                    <>
+                      <Link
+                        href="/admin/notifications"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
+                      >
+                        <Bell className="h-4 w-4 text-purple-400" />
+                        Centre de notifications
+                      </Link>
+                      {user!.role === "SUPER_ADMIN" && (
+                        <Link
+                          href="/admin/users"
+                          onClick={() => setOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
+                        >
+                          <Users className="h-4 w-4 text-purple-400" />
+                          Gestion des utilisateurs
+                        </Link>
+                      )}
+                    </>
                   )}
                   <Link
                     href="/favoris"
@@ -149,7 +161,7 @@ export function AccountMenu() {
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:bg-violet-500/10 hover:text-violet-400"
                   >
                     <LogOut className="h-4 w-4" />
-                    Déconnexion
+                    DÃ©connexion
                   </button>
                 </div>
               </>
@@ -179,3 +191,5 @@ export function AccountMenu() {
     </div>
   );
 }
+
+

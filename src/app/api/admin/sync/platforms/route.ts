@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+﻿import { NextResponse } from "next/server";
+import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   PLATFORM_SYNC_PROVIDER,
@@ -9,10 +9,10 @@ import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
 
 /**
  * Synchro des plateformes de diffusion (Netflix, Prime Video, Disney+,
- * Paramount+, Apple TV+) — métadonnées TMDB via `/discover`.
+ * Paramount+, Apple TV+) â€” mÃ©tadonnÃ©es TMDB via `/discover`.
  *
- * - GET  : état de la synchro (compteurs de titres tagués + historique).
- * - POST : lance une synchro (nombre de pages par liste paramétrable).
+ * - GET  : Ã©tat de la synchro (compteurs de titres taguÃ©s + historique).
+ * - POST : lance une synchro (nombre de pages par liste paramÃ©trable).
  */
 
 const MAX_PAGES = 20;
@@ -26,7 +26,7 @@ async function requireAdmin() {
 export async function GET() {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
       { status: 403 },
     );
   }
@@ -64,7 +64,7 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
       { status: 403 },
     );
   }
@@ -80,14 +80,14 @@ export async function POST(request: Request) {
       platforms = body.platforms.filter((p: unknown): p is string => typeof p === "string");
     }
   } catch {
-    // corps vide ou invalide → on garde les valeurs par défaut
+    // corps vide ou invalide â†’ on garde les valeurs par dÃ©faut
   }
 
   try {
     const report = await syncPlatformCatalog({ pages, platforms });
     return NextResponse.json({
       success: true,
-      message: `Synchro plateformes terminée : ${report.fetched} titres remontés, ${report.upserted} en base.`,
+      message: `Synchro plateformes terminÃ©e : ${report.fetched} titres remontÃ©s, ${report.upserted} en base.`,
       report,
     });
   } catch (error) {
@@ -97,3 +97,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+

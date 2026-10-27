@@ -1,23 +1,23 @@
-import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+﻿import { NextResponse } from "next/server";
+import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const MONTH_LABELS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const MONTH_LABELS = ["janv.", "fÃ©vr.", "mars", "avr.", "mai", "juin", "juil.", "aoÃ»t", "sept.", "oct.", "nov.", "dÃ©c."];
 
-/** Libellé « oct. 2026 » pour un mois donné. */
+/** LibellÃ© Â« oct. 2026 Â» pour un mois donnÃ©. */
 function monthLabel(year: number, monthIndex: number): string {
   return `${MONTH_LABELS[monthIndex]} ${year}`;
 }
 
 /**
  * Statistiques du dashboard admin : trafic mensuel (12 derniers mois),
- * répartition premium / standard, inscriptions mensuelles et totaux.
+ * rÃ©partition premium / standard, inscriptions mensuelles et totaux.
  */
 export async function GET() {
   const user = await getCurrentUser();
   if (!user || user.role !== "ADMIN") {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
       { status: 403 }
     );
   }
@@ -56,7 +56,7 @@ export async function GET() {
         prisma.pageView.count({
           where: { createdAt: { gte: new Date(now.getFullYear(), now.getMonth(), 1) } },
         }),
-        // Titres partenaires (catalogues externes synchronisés) : total et publiés.
+        // Titres partenaires (catalogues externes synchronisÃ©s) : total et publiÃ©s.
         prisma.providerAsset.count(),
         prisma.providerAsset.count({ where: { isPublished: true } }),
       ]);
@@ -93,3 +93,5 @@ export async function GET() {
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }
+
+

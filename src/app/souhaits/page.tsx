@@ -11,7 +11,7 @@ interface UserProfile {
   id: string;
   name: string;
   email: string;
-  role: "USER" | "SUBSCRIBER" | "ADMIN";
+  role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN";
 }
 
 export default function SouhaitsPage() {

@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, signSessionToken, COOKIE_NAME, sessionCookieOptions } from "@/lib/auth";
 import { readRequestBodyLimited } from "@/lib/request-body";
 import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
-// Mémoire tampon pour tests si la base PostgreSQL locale n'est pas encore démarrée
-const memoryUsers = new Map<string, { id: string; email: string; name: string; passwordHash: string; role: "USER" | "SUBSCRIBER" | "ADMIN" }>();
+// MÃ©moire tampon pour tests si la base PostgreSQL locale n'est pas encore dÃ©marrÃ©e
+const memoryUsers = new Map<string, { id: string; email: string; name: string; passwordHash: string; role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN" }>();
 
 export async function POST(request: Request) {
   try {
@@ -13,15 +13,15 @@ export async function POST(request: Request) {
     if (retryAfter) return tooManyRequests(retryAfter);
 
     const body = await readRequestBodyLimited(request, 8 * 1024);
-    if (!body) return NextResponse.json({ error: "Requête trop volumineuse." }, { status: 413 });
+    if (!body) return NextResponse.json({ error: "RequÃªte trop volumineuse." }, { status: 413 });
     let input: unknown;
     try {
       input = JSON.parse(new TextDecoder().decode(body));
     } catch {
-      return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+      return NextResponse.json({ error: "RequÃªte invalide." }, { status: 400 });
     }
     if (!input || typeof input !== "object") {
-      return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
+      return NextResponse.json({ error: "RequÃªte invalide." }, { status: 400 });
     }
     const { name, email, password } = input as Record<string, unknown>;
 
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       (name !== undefined && (typeof name !== "string" || name.length > 100))
     ) {
       return NextResponse.json(
-        { error: "Un e-mail valide et un mot de passe de 8 �� 128 caract��res sont requis." },
+        { error: "Un e-mail valide et un mot de passe de 8 ï¿½ï¿½ 128 caractï¿½ï¿½res sont requis." },
         { status: 400 }
       );
     }
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       /^(.)\1{3,}$/.test(password) ||
       score < 3
     ) {
-      return NextResponse.json({ error: "Choisissez un mot de passe plus sécurisé (8 caractères minimum, au moins 3 types)." }, { status: 400 });
+      return NextResponse.json({ error: "Choisissez un mot de passe plus sÃ©curisÃ© (8 caractÃ¨res minimum, au moins 3 types)." }, { status: 400 });
     }
     if (process.env.DATABASE_READY !== "true") {
       return NextResponse.json({ error: "Inscription indisponible." }, { status: 503 });
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
 
     const hashedPassword = await hashPassword(password);
 
-    let user: { id: string; email: string; name: string; role: "USER" | "SUBSCRIBER" | "ADMIN" };
+    let user: { id: string; email: string; name: string; role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN" };
 
     if (process.env.DATABASE_READY === "true") {
       const existingUser = await prisma.user.findUnique({
@@ -82,7 +82,7 @@ export async function POST(request: Request) {
 
       if (existingUser) {
         return NextResponse.json(
-          { error: "Un compte existe déjà avec cette adresse e-mail." },
+          { error: "Un compte existe dÃ©jÃ  avec cette adresse e-mail." },
           { status: 409 }
         );
       }
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     } else {
       if (memoryUsers.has(normalizedEmail)) {
         return NextResponse.json(
-          { error: "Un compte existe déjà avec cette adresse e-mail." },
+          { error: "Un compte existe dÃ©jÃ  avec cette adresse e-mail." },
           { status: 409 }
         );
       }
@@ -128,7 +128,7 @@ export async function POST(request: Request) {
     const response = NextResponse.json({
       success: true,
       user,
-      message: "Compte créé avec succès.",
+      message: "Compte crÃ©Ã© avec succÃ¨s.",
     });
 
     response.cookies.set(COOKIE_NAME, sessionToken, sessionCookieOptions());
@@ -139,3 +139,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Erreur interne du serveur." }, { status: 500 });
   }
 }
+
