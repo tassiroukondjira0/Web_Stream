@@ -43,9 +43,10 @@ export const PREMIUM_PLANS: Record<PremiumPlan, { amount: number; label: string;
 export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMethod, string[]>> = {
   SN: { // Sénégal (XOF)
     CARD: ["card"],
-    WAVE: ["wave-sn"],
+    WAVE: ["wave-senegal"],
     ORANGE_MONEY: ["orange-money-senegal"],
     FREE_MONEY: ["free-money"],
+    MTN_MONEY: ["mtn-money-senegal"],
   },
   CI: { // Côte d'Ivoire (XOF)
     CARD: ["card"],
