@@ -29,6 +29,9 @@ export async function POST(request: Request) {
     let where: any = {};
     if (target === "SUBSCRIBERS") {
       where = { role: "SUBSCRIBER" };
+    } else {
+      // Exclude admin users from receiving notifications
+      where = { role: { not: "ADMIN" } };
     }
 
     const users = await prisma.user.findMany({ where, select: { id: true } });
