@@ -29,6 +29,17 @@ interface PaymentConfigResponse {
   countries: Country[];
 }
 
+const COUNTRY_PRICES: Record<string, { monthly: string; yearly: string; currency: string }> = {
+  MA: { monthly: "3,50", yearly: "35", currency: "€" },
+  FR: { monthly: "3,50", yearly: "35", currency: "€" },
+};
+const DEFAULT_PRICES = { monthly: "1 500", yearly: "15 000", currency: "FCFA" };
+
+function getPrices(country: string | null) {
+  if (!country) return DEFAULT_PRICES;
+  return COUNTRY_PRICES[country] ?? DEFAULT_PRICES;
+}
+
 const PERKS = [
   "Accès illimité à l'intégralité du catalogue de films et séries exclusifs",
   "Qualité vidéo Ultra HD 4K et son spatial immersif",
@@ -95,20 +106,26 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
     }
 
     if (selectedPaymentMethod === "PAYPAL") {
-      setLoadingPlan(plan);
-      const res = await fetch("/api/payment/paypal/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, country: selectedCountry }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data?.url) {
-        setError(data?.error || "Impossible d'initier le paiement PayPal.");
+      try {
+        setLoadingPlan(plan);
+        const res = await fetch("/api/payment/paypal/create-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan, country: selectedCountry }),
+        });
+        const data = await res.json().catch(() => null);
+        if (!res.ok || !data?.url) {
+          setError(data?.error || "Impossible d'initier le paiement PayPal.");
+          setLoadingPlan(null);
+          return;
+        }
+        window.location.href = data.url;
+        return;
+      } catch {
+        setError("Connexion au service de paiement impossible. Vérifiez votre réseau.");
         setLoadingPlan(null);
         return;
       }
-      window.location.href = data.url;
-      return;
     }
 
     try {
@@ -257,8 +274,8 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
                   </h3>
                   <p className="mt-1 text-xs text-zinc-400">Sans engagement, résiliable à tout moment</p>
                   <div className="mt-6 flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-white">1 500</span>
-                    <span className="text-sm font-semibold text-zinc-400">FCFA / mois</span>
+                    <span className="text-4xl font-black text-white">{getPrices(selectedCountry).monthly}</span>
+                    <span className="text-sm font-semibold text-zinc-400">{getPrices(selectedCountry).currency} / mois</span>
                   </div>
                   <ul className="mt-8 space-y-3 text-xs text-zinc-300">
                     {PERKS.slice(0, 4).map((perk, i) => (
@@ -304,8 +321,8 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
                   </h3>
                   <p className="mt-1 text-xs text-zinc-400">Le pass le plus avantageux</p>
                   <div className="mt-6 flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-amber-400">15 000</span>
-                    <span className="text-sm font-semibold text-zinc-400">FCFA / an</span>
+                    <span className="text-4xl font-black text-amber-400">{getPrices(selectedCountry).yearly}</span>
+                    <span className="text-sm font-semibold text-zinc-400">{getPrices(selectedCountry).currency} / an</span>
                   </div>
                   <ul className="mt-8 space-y-3 text-xs text-zinc-200">
                     {PERKS.map((perk, i) => (

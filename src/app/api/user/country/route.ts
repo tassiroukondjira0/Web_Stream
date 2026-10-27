@@ -19,7 +19,7 @@ export async function PATCH(request: Request) {
 
     if (country !== undefined && country !== null) {
       const countryCode = country as CountryCode;
-      if (!(countryCode in { SN: 1, CI: 1, CM: 1, NE: 1, ML: 1, BF: 1, TG: 1, BJ: 1 })) {
+      if (!(countryCode in { SN: 1, CI: 1, CM: 1, NE: 1, ML: 1, BF: 1, TG: 1, BJ: 1, GN: 1, CG: 1, GA: 1, MA: 1, FR: 1 })) {
         return NextResponse.json({ error: "Pays non supporté." }, { status: 400 });
       }
     }

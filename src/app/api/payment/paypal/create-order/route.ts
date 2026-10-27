@@ -7,7 +7,7 @@ import { createPayPalOrder } from "@/lib/paypal";
 import { prisma } from "@/lib/prisma";
 
 const PAYPAL_AMOUNTS: Record<string, { MONTHLY: number; YEARLY: number; currency: string }> = {
-  MA: { MONTHLY: 3000, YEARLY: 30000, currency: "MAD" },
+  MA: { MONTHLY: 350, YEARLY: 3500, currency: "EUR" },
   FR: { MONTHLY: 350, YEARLY: 3500, currency: "EUR" },
 };
 
@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ url: approvalUrl, orderId, provider: "PAYPAL" });
   } catch (error) {
     console.error("Erreur PayPal create-order :", error);
-    return NextResponse.json({ error: "Impossible d'initier le paiement PayPal." }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Impossible d'initier le paiement PayPal.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

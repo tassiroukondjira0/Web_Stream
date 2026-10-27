@@ -62,6 +62,7 @@ export async function createPayPalOrder(input: CreatePayPalOrderInput): Promise<
   });
   const data = await res.json();
   if (!res.ok || !data.id) {
+    console.error("PayPal create order error:", JSON.stringify(data, null, 2));
     throw new Error(data.message || "Création commande PayPal échouée");
   }
   const approvalUrl = data.links?.find((l: any) => l.rel === "approve")?.href;
