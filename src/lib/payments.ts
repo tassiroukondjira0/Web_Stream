@@ -46,7 +46,6 @@ export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMeth
     WAVE: ["wave-sn"],
     ORANGE_MONEY: ["orange-money-senegal"],
     FREE_MONEY: ["free-money"],
-    EXPRESSO_MONEY: ["expresso-money"],
   },
   CI: { // Côte d'Ivoire (XOF)
     CARD: ["card"],
