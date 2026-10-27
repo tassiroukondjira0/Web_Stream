@@ -30,6 +30,7 @@ export async function POST(request: Request) {
     const message = typeof body?.message === "string" ? body.message.trim() : "";
     const link = typeof body?.link === "string" ? body.link.trim() : null;
     const target = body?.target === "SUBSCRIBERS" ? "SUBSCRIBERS" : "ALL";
+    const type = body?.type === "ANNONCE" ? "ANNONCE" : "NOUVEAUTE";
 
     if (!title || !message) {
       return NextResponse.json({ error: "Titre et message requis" }, { status: 400 });
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
         title,
         message,
         link,
+        type,
       })),
     });
 

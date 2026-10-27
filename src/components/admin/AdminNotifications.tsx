@@ -4,12 +4,14 @@ import { useState } from "react";
 import { Bell, Send, Users, Star } from "lucide-react";
 
 type Target = "ALL" | "SUBSCRIBERS";
+type AnnouncementType = "NOUVEAUTE" | "ANNONCE";
 
 export function AdminNotifications() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [link, setLink] = useState("");
   const [target, setTarget] = useState<Target>("ALL");
+  const [announcementType, setAnnouncementType] = useState<AnnouncementType>("NOUVEAUTE");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +31,7 @@ export function AdminNotifications() {
           message: message.trim(),
           link: link.trim() || undefined,
           target,
+          type: announcementType,
         }),
       });
 
@@ -93,6 +96,39 @@ export function AdminNotifications() {
               placeholder="Ex: /film/123 ou /premium"
               className="w-full rounded-xl border border-white/10 bg-black/50 px-3 py-2 text-white"
             />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className="block text-sm text-zinc-300 mb-2">Type d'annonce</label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setAnnouncementType("NOUVEAUTE")}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm ${
+                  announcementType === "NOUVEAUTE"
+                    ? "bg-emerald-600 text-white"
+                    : "border border-white/10 bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                }`}
+              >
+                🎬 Nouveautés
+              </button>
+              <button
+                type="button"
+                onClick={() => setAnnouncementType("ANNONCE")}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm ${
+                  announcementType === "ANNONCE"
+                    ? "bg-violet-600 text-white"
+                    : "border border-white/10 bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                }`}
+              >
+                📢 Autre annonce
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">
+              {announcementType === "NOUVEAUTE"
+                ? "Annonce de nouveaux titres ajoutés au catalogue"
+                : "Annonce générale (maintenance, événement, etc.)"}
+            </p>
           </div>
 
           <div className="sm:col-span-2">
