@@ -44,6 +44,7 @@ interface MediaRecord {
 
 export default function AdminDashboardPage() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [medias, setMedias] = useState<MediaRecord[]>([]);
   const [stats, setStats] = useState({ totalMedias: 0, published: 0, premium: 0, free: 0, partnerTotal: 0 });
   const [loading, setLoading] = useState(true);
@@ -132,6 +133,15 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/auth/me", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.user?.role === "SUPER_ADMIN") setIsSuperAdmin(true);
+      })
+      .catch(() => {});
   }, []);
 
   // Chargement des titres partenaires (publication admin) — rechargé à chaque
