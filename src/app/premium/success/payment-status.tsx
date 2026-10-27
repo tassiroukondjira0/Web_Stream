@@ -16,7 +16,7 @@ interface VerifyResponse {
 const MAX_ATTEMPTS = 6;
 const POLL_INTERVAL_MS = 3000;
 
-export default function PaymentStatus({ sessionId }: { sessionId: string | null }) {
+export default function PaymentStatus({ sessionId, paypalOrderId }: { sessionId: string | null; paypalOrderId?: string | null }) {
   const [state, setState] = useState<VerifyState>("loading");
   const [message, setMessage] = useState<string | null>(null);
   const attemptsRef = useRef(0);
@@ -84,6 +84,29 @@ export default function PaymentStatus({ sessionId }: { sessionId: string | null 
   }, [verify]);
 
   useEffect(() => {
+    if (paypalOrderId) {
+      (async () => {
+        try {
+          const res = await fetch("/api/payment/paypal/capture", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId: paypalOrderId }),
+          });
+          if (res.ok) {
+            setState("success");
+            setMessage("Votre Pass Premium est actif. Profitez de tout le catalogue !");
+          } else {
+            const data = await res.json().catch(() => ({}));
+            setState("failed");
+            setMessage(data?.error || "La transaction n'a pas abouti.");
+          }
+        } catch {
+          setState("error");
+          setMessage("Erreur réseau lors de la capture PayPal.");
+        }
+      })();
+      return;
+    }
     const id = setTimeout(() => verifyRef.current(), 0);
     return () => {
       clearTimeout(id);

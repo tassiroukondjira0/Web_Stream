@@ -17,10 +17,10 @@ import { prisma } from "@/lib/prisma";
 export type PremiumPlan = "MONTHLY" | "YEARLY";
 
 /** Code pays ISO 3166-1 alpha-2 supportés pour le filtrage des moyens de paiement. */
-export type CountryCode = "SN" | "CI" | "CM" | "NE" | "ML" | "BF" | "TG" | "BJ";
+export type CountryCode = "SN" | "CI" | "CM" | "NE" | "ML" | "BF" | "TG" | "BJ" | "GN" | "CG" | "GA" | "MA" | "FR";
 
 /** Moyen de paiement proposable sur le site avant redirection vers PayDunya. */
-export type PaymentMethod = "CARD" | "WAVE" | "ORANGE_MONEY" | "FREE_MONEY" | "MTN_MONEY";
+export type PaymentMethod = "CARD" | "WAVE" | "ORANGE_MONEY" | "FREE_MONEY" | "MTN_MONEY" | "PAYPAL";
 
 /** Tarifs du Pass Premium (montants en unités mineures XOF, exposant 0). */
 export const PREMIUM_PLANS: Record<PremiumPlan, { amount: number; label: string; months: number }> = {
@@ -47,6 +47,7 @@ export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMeth
     ORANGE_MONEY: ["orange-money-senegal"],
     FREE_MONEY: ["free-money"],
     MTN_MONEY: ["mtn-money-senegal"],
+    PAYPAL: [],
   },
   CI: { // Côte d'Ivoire (XOF)
     CARD: ["card"],
@@ -54,6 +55,7 @@ export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMeth
     ORANGE_MONEY: ["orange-money-ci"],
     FREE_MONEY: [],
     MTN_MONEY: ["mtn-money-ci"],
+    PAYPAL: [],
   },
   CM: { // Cameroun (XAF)
     CARD: ["card"],
@@ -61,6 +63,7 @@ export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMeth
     ORANGE_MONEY: ["orange-money-cm"],
     FREE_MONEY: [],
     MTN_MONEY: ["mtn-money-cm"],
+    PAYPAL: [],
   },
   NE: { // Niger (XOF)
     CARD: ["card"],
@@ -68,6 +71,7 @@ export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMeth
     ORANGE_MONEY: ["orange-money-ne"],
     FREE_MONEY: [],
     MTN_MONEY: ["mtn-money-ne"],
+    PAYPAL: [],
   },
   ML: { // Mali (XOF)
     CARD: ["card"],
@@ -75,6 +79,7 @@ export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMeth
     ORANGE_MONEY: ["orange-money-ml"],
     FREE_MONEY: [],
     MTN_MONEY: ["mtn-money-ml"],
+    PAYPAL: [],
   },
   BF: { // Burkina Faso (XOF)
     CARD: ["card"],
@@ -82,6 +87,7 @@ export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMeth
     ORANGE_MONEY: ["orange-money-bf"],
     FREE_MONEY: [],
     MTN_MONEY: ["mtn-money-bf"],
+    PAYPAL: [],
   },
   TG: { // Togo (XOF)
     CARD: ["card"],
@@ -89,6 +95,7 @@ export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMeth
     ORANGE_MONEY: ["orange-money-tg"],
     FREE_MONEY: [],
     MTN_MONEY: ["mtn-money-tg"],
+    PAYPAL: [],
   },
   BJ: { // Bénin (XOF)
     CARD: ["card"],
@@ -96,6 +103,47 @@ export const PAYMENT_CHANNELS_BY_COUNTRY: Record<CountryCode, Record<PaymentMeth
     ORANGE_MONEY: ["orange-money-bj"],
     FREE_MONEY: [],
     MTN_MONEY: ["mtn-money-bj"],
+    PAYPAL: [],
+  },
+  GN: { // Guinée (GNF)
+    CARD: ["card"],
+    WAVE: [],
+    ORANGE_MONEY: ["orange-money-gn"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-gn"],
+    PAYPAL: [],
+  },
+  CG: { // Congo-Brazzaville (XAF)
+    CARD: ["card"],
+    WAVE: [],
+    ORANGE_MONEY: ["orange-money-cg"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-cg"],
+    PAYPAL: [],
+  },
+  GA: { // Gabon (XAF)
+    CARD: ["card"],
+    WAVE: [],
+    ORANGE_MONEY: ["orange-money-ga"],
+    FREE_MONEY: [],
+    MTN_MONEY: ["mtn-money-ga"],
+    PAYPAL: [],
+  },
+  MA: { // Maroc (MAD) — PayPal
+    CARD: [],
+    WAVE: [],
+    ORANGE_MONEY: [],
+    FREE_MONEY: [],
+    MTN_MONEY: [],
+    PAYPAL: ["paypal"],
+  },
+  FR: { // France (EUR) — PayPal
+    CARD: [],
+    WAVE: [],
+    ORANGE_MONEY: [],
+    FREE_MONEY: [],
+    MTN_MONEY: [],
+    PAYPAL: ["paypal"],
   },
 };
 
@@ -106,6 +154,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   ORANGE_MONEY: "Orange Money",
   FREE_MONEY: "Free Money",
   MTN_MONEY: "MTN Money",
+  PAYPAL: "PayPal",
 };
 
 /** Libellé d'affichage pour chaque pays supporté. */
@@ -118,6 +167,11 @@ export const COUNTRY_LABELS: Record<CountryCode, string> = {
   BF: "Burkina Faso",
   TG: "Togo",
   BJ: "Bénin",
+  GN: "Guinée",
+  CG: "Congo-Brazzaville",
+  GA: "Gabon",
+  MA: "Maroc",
+  FR: "France",
 };
 
 /**

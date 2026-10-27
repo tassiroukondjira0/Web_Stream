@@ -94,6 +94,23 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
       return;
     }
 
+    if (selectedPaymentMethod === "PAYPAL") {
+      setLoadingPlan(plan);
+      const res = await fetch("/api/payment/paypal/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, country: selectedCountry }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.url) {
+        setError(data?.error || "Impossible d'initier le paiement PayPal.");
+        setLoadingPlan(null);
+        return;
+      }
+      window.location.href = data.url;
+      return;
+    }
+
     try {
       setLoadingPlan(plan);
       const res = await fetch("/api/payment/initiate", {
