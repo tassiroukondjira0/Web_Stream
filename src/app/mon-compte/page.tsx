@@ -145,12 +145,12 @@ export default function AccountPage() {
         setPwdError(data.error || "Erreur lors du changement de mot de passe.");
         return;
       }
-      setPwdSuccess(data.message || "Mot de passe modifiÃ© avec succÃ¨s.");
+      setPwdSuccess(data.message || "Mot de passe modifié avec succès.");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch {
-      setPwdError("Erreur rÃ©seau.");
+      setPwdError("Erreur réseau.");
     } finally {
       setPwdLoading(false);
     }
@@ -170,7 +170,7 @@ export default function AccountPage() {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-900 border border-white/10 text-zinc-400 mb-4">
           <User className="h-7 w-7" />
         </div>
-        <h1 className="text-2xl font-bold text-white">Non connectÃ©</h1>
+        <h1 className="text-2xl font-bold text-white">Non connecté</h1>
         <p className="mt-2 text-sm text-zinc-400">
           Connectez-vous pour consulter votre abonnement, vos favoris et votre progression de lecture.
         </p>
@@ -185,7 +185,7 @@ export default function AccountPage() {
             href="/inscription"
             className="rounded-xl bg-zinc-800 border border-white/10 px-5 py-2.5 text-xs font-medium text-zinc-300 hover:bg-zinc-700"
           >
-            CrÃ©er un compte
+            Créer un compte
           </Link>
         </div>
       </div>
@@ -197,7 +197,7 @@ export default function AccountPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-      {/* En-tÃªte profil */}
+      {/* En-tête profil */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-8">
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 to-amber-600 text-2xl font-black text-white shadow-xl">
@@ -238,7 +238,7 @@ export default function AccountPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 border border-white/10 px-4 py-2.5 text-xs font-medium text-zinc-300 hover:bg-violet-500/10 hover:text-violet-400 hover:border-violet-500/30 transition-colors"
           >
             <LogOut className="h-4 w-4" />
-            DÇ¸connexion
+            Déconnexion
           </button>
         </div>
       </div>
@@ -250,7 +250,7 @@ export default function AccountPage() {
             Changer mon mot de passe
           </h2>
           <p className="mt-1 text-xs text-zinc-400">
-            Minimum 8 caractÃ¨res, avec au moins 3 types diffÃ©rents (minuscules, majuscules, chiffres, symboles).
+            Minimum 8 caractères, avec au moins 3 types différents (minuscules, majuscules, chiffres, symboles).
           </p>
           <form onSubmit={submitChangePassword} className="mt-4 grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
@@ -324,13 +324,13 @@ export default function AccountPage() {
                 Formule active
               </span>
               <h2 className="mt-1 text-2xl font-bold text-white flex items-center gap-2">
-                {isPremium ? "Pass Premium Haute DÃ©finition" : "Formule Standard Gratuite"}
+                {isPremium ? "Pass Premium Haute Définition" : "Formule Standard Gratuite"}
                 {isPremium && <Sparkles className="h-5 w-5 text-amber-400" />}
               </h2>
               <p className="mt-2 text-sm text-zinc-400 max-w-xl">
                 {isPremium
-                  ? "Vous disposez d'un accÃ¨s illimitÃ© Ã  l'intÃ©gralitÃ© du catalogue, aux titres exclusifs et aux rÃ©solutions 4K sans interruption publicitaire."
-                  : "Vous profitez des Å“uvres d'appel et du catalogue public libre de droits. Passez Ã  la formule Premium pour dÃ©bloquer les titres exclusifs."}
+                  ? "Vous disposez d'un accès illimité à l'intégralité du catalogue, aux titres exclusifs et aux résolutions 4K sans interruption publicitaire."
+                  : "Vous profitez des Œuvres d'appel et du catalogue public libre de droits. Passez à la formule Premium pour débloquer les titres exclusifs."}
               </p>
             </div>
 
@@ -373,11 +373,11 @@ export default function AccountPage() {
             </Link>
           </div>
           {listsLoading ? (
-            <p className="mt-4 text-center text-xs text-zinc-500">Chargementâ€¦</p>
+            <p className="mt-4 text-center text-xs text-zinc-500">Chargement…</p>
           ) : bookmarks.length === 0 ? (
             <div className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-zinc-500">
-              Aucun favori pour le moment. Cliquez sur Â« Ajouter Ã  mes favoris Â»
-              sur la fiche d&apos;un film ou d&apos;une sÃ©rie.
+              Aucun favori pour le moment. Cliquez sur « Ajouter à mes favoris »
+              sur la fiche d&apos;un film ou d&apos;une série.
             </div>
           ) : (
             <ul className="mt-4 space-y-2">
@@ -423,11 +423,11 @@ export default function AccountPage() {
             </Link>
           </div>
           {listsLoading ? (
-            <p className="mt-4 text-center text-xs text-zinc-500">Chargementâ€¦</p>
+            <p className="mt-4 text-center text-xs text-zinc-500">Chargement…</p>
           ) : wishlist.length === 0 ? (
             <div className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-zinc-500">
-              Aucune envie pour le moment. Cliquez sur Â« Ajouter Ã  ma liste de
-              souhaits Â» sur la fiche d&apos;un titre.
+              Aucune envie pour le moment. Cliquez sur « Ajouter à ma liste de
+              souhaits » sur la fiche d&apos;un titre.
             </div>
           ) : (
             <ul className="mt-4 space-y-2">
@@ -463,16 +463,16 @@ export default function AccountPage() {
               <Clock className="h-4 w-4 text-amber-500" />
               Reprendre la lecture
             </h3>
-            <span className="text-xs text-zinc-500">SynchronisÃ©</span>
+            <span className="text-xs text-zinc-500">Synchronisé</span>
           </div>
           <p className="text-xs text-zinc-400">
-            Votre position de lecture est sauvegardÃ©e automatiquement toutes les 10 secondes.
+            Votre position de lecture est sauvegardée automatiquement toutes les 10 secondes.
           </p>
           {listsLoading ? (
-            <p className="mt-4 text-center text-xs text-zinc-500">Chargementâ€¦</p>
+            <p className="mt-4 text-center text-xs text-zinc-500">Chargement…</p>
           ) : resumed.length === 0 ? (
             <div className="mt-4 rounded-xl border border-dashed border-white/10 p-6 text-center text-xs text-zinc-500">
-              Aucune session en cours. Lancez un film depuis le catalogue pour dÃ©marrer la lecture.
+              Aucune session en cours. Lancez un film depuis le catalogue pour démarrer la lecture.
             </div>
           ) : (
             <ul className="mt-4 space-y-2">
@@ -508,7 +508,7 @@ export default function AccountPage() {
                             />
                           </span>
                           <span className="shrink-0 text-[11px] text-zinc-500">
-                            {percent}% Â· {formatTime(entry.progressSeconds)}
+                            {percent}% à· {formatTime(entry.progressSeconds)}
                           </span>
                         </span>
                       </span>
@@ -555,7 +555,7 @@ function prettyTitle(slug: string): string {
   const m = slug.match(/^(partner|frenchmanga|tmdb|fstreamtv)-(movie|series|anime)-(.+)$/);
   if (m) {
     const [, , kind, id] = m;
-    return `${humanize(id)} ${kind === "movie" ? "Â· Film" : kind === "series" ? "Â· SÃ©rie" : "Â· AnimÃ©"}`;
+    return `${humanize(id)} ${kind === "movie" ? "Â· Film" : kind === "series" ? "Â· Série" : "Â· Animé"}`;
   }
   return humanize(slug);
 }
