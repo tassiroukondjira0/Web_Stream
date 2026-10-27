@@ -12,7 +12,7 @@ function monthLabel(year: number, monthIndex: number): string {
  */
 export async function GET() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") {
+  if (!user || !hasAdminAccess(user.role)) {
     return NextResponse.json(
       { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
       { status: 403 }
