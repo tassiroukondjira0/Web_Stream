@@ -32,7 +32,7 @@ export default function AdminNotificationsPage() {
   }, []);
 
   useEffect(() => {
-    if (!loading && (!user || user.role !== "ADMIN")) {
+    if (!loading && (!user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN"))) {
       router.replace("/connexion");
     }
   }, [loading, user, router]);
@@ -58,5 +58,6 @@ export default function AdminNotificationsPage() {
     </div>
   );
 }
+
 
 

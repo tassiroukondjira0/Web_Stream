@@ -192,7 +192,7 @@ export default function AccountPage() {
     );
   }
 
-  const isPremium = user.role === "SUBSCRIBER" || user.role === "ADMIN";
+  const isPremium = user.role === "SUBSCRIBER" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
   const resumed = history.filter((entry) => !entry.completed).slice(0, 8);
 
   return (
@@ -346,7 +346,7 @@ export default function AccountPage() {
               ) : (
                 <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 px-4 py-2.5 text-xs font-semibold text-emerald-400">
                   <ShieldCheck className="h-4 w-4" />
-                   {user?.role === "ADMIN" ? "Accès illimité (Administrateur)" : "Abonnement actif jusqu'au 31/12/2026"}
+                   {user?.role === "ADMIN" || user?.role === "SUPER_ADMIN" ? "Accès illimité (Administrateur)" : "Abonnement actif jusqu'au 31/12/2026"}
                 </span>
               )}
             </div>
@@ -567,3 +567,4 @@ function humanize(value: string): string {
     .trim()
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
+

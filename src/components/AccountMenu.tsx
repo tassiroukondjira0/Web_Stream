@@ -79,7 +79,7 @@ export function AccountMenu() {
                 <div className="border-b border-white/10 px-4 py-3">
                   <p className="truncate text-sm font-semibold text-white">{user!.name}</p>
                   <p className="truncate text-xs text-zinc-400">{user!.email}</p>
-                  {user!.role === "ADMIN" && (
+                  {(user!.role === "ADMIN" || user!.role === "SUPER_ADMIN") && (
                     <span className="mt-2 inline-flex items-center gap-1 rounded-md bg-purple-500/20 px-2 py-0.5 text-[10px] font-bold text-purple-300">
                       <ShieldCheck className="h-3 w-3" />
                       ADMIN
@@ -96,7 +96,7 @@ export function AccountMenu() {
                     <User className="h-4 w-4 text-zinc-400" />
                     Mon profil
                   </Link>
-                  {user!.role === "ADMIN" && (
+                  {(user!.role === "ADMIN" || user!.role === "SUPER_ADMIN") && (
                     <Link
                       href="/admin"
                       onClick={() => setOpen(false)}
@@ -191,5 +191,6 @@ export function AccountMenu() {
     </div>
   );
 }
+
 
 

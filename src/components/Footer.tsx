@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -17,7 +17,7 @@ export function Footer() {
       .catch(() => setUser(null));
   }, []);
 
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
   return (
     <footer className="mt-auto border-t border-white/10 bg-black/60 text-zinc-400">
@@ -30,10 +30,10 @@ export function Footer() {
                 <Link href="/films" className="hover:text-white">Films en streaming</Link>
               </li>
               <li>
-                <Link href="/series" className="hover:text-white">Séries & Documentaires</Link>
+                <Link href="/series" className="hover:text-white">SÃ©ries & Documentaires</Link>
               </li>
               <li>
-                <Link href="/nouveautes" className="hover:text-white">Dernières sorties</Link>
+                <Link href="/nouveautes" className="hover:text-white">DerniÃ¨res sorties</Link>
               </li>
             </ul>
           </div>
@@ -45,19 +45,19 @@ export function Footer() {
                 <Link href="/premium" className="hover:text-white">Offre Premium</Link>
               </li>
               <li>
-                <Link href="/aide" className="hover:text-white">Questions fréquentes</Link>
+                <Link href="/aide" className="hover:text-white">Questions frÃ©quentes</Link>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">Légal & Droits</h3>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">LÃ©gal & Droits</h3>
             <ul className="mt-4 space-y-2 text-sm">
               <li>
-                <Link href="/mentions-legales" className="hover:text-white">Mentions légales</Link>
+                <Link href="/mentions-legales" className="hover:text-white">Mentions lÃ©gales</Link>
               </li>
               <li>
-                <Link href="/confidentialite" className="hover:text-white">Politique de confidentialité</Link>
+                <Link href="/confidentialite" className="hover:text-white">Politique de confidentialitÃ©</Link>
               </li>
               <li>
                 <Link href="/conditions" className="hover:text-white">Conditions d&apos;utilisation</Link>
@@ -75,7 +75,7 @@ export function Footer() {
                     onClick={() => {}}
                     className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-800 px-3 py-2 text-sm text-amber-300 hover:bg-zinc-700 hover:text-white transition-colors"
                   >
-                    Aide — Assistant IA
+                    Aide â€” Assistant IA
                   </Link>
                 </li>
               </ul>
@@ -84,9 +84,10 @@ export function Footer() {
         </div>
 
         <div className="mt-12 border-t border-white/5 pt-6 text-center text-xs text-zinc-500">
-          <p>© 2026 CinéMax. Tous droits réservés.</p>
+          <p>Â© 2026 CinÃ©Max. Tous droits rÃ©servÃ©s.</p>
         </div>
       </div>
     </footer>
   );
 }
+

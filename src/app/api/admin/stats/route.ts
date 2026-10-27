@@ -1,14 +1,11 @@
 ﻿import { NextResponse } from "next/server";
-import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
+import { getCurrentUser, hasAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
 const MONTH_LABELS = ["janv.", "fÃ©vr.", "mars", "avr.", "mai", "juin", "juil.", "aoÃ»t", "sept.", "oct.", "nov.", "dÃ©c."];
-
 /** LibellÃ© Â« oct. 2026 Â» pour un mois donnÃ©. */
 function monthLabel(year: number, monthIndex: number): string {
   return `${MONTH_LABELS[monthIndex]} ${year}`;
 }
-
 /**
  * Statistiques du dashboard admin : trafic mensuel (12 derniers mois),
  * rÃ©partition premium / standard, inscriptions mensuelles et totaux.
@@ -21,7 +18,6 @@ export async function GET() {
       { status: 403 }
     );
   }
-
   try {
     const now = new Date();
     const months: { year: number; month: number; label: string; start: Date; end: Date }[] = [];
@@ -38,7 +34,6 @@ export async function GET() {
       });
     }
     const windowStart = months[0].start;
-
     const [pageViews, signups, premiumCount, standardCount, totalUsers, totalViews, monthViews, partnerTotal, partnerPublished] =
       await Promise.all([
         prisma.pageView.findMany({
@@ -60,7 +55,6 @@ export async function GET() {
         prisma.providerAsset.count(),
         prisma.providerAsset.count({ where: { isPublished: true } }),
       ]);
-
     const viewsByMonth = months.map((m) => ({
       label: m.label,
       views: pageViews.filter((v) => v.createdAt >= m.start && v.createdAt < m.end).length,
@@ -69,7 +63,6 @@ export async function GET() {
       label: m.label,
       signups: signups.filter((s) => s.createdAt >= m.start && s.createdAt < m.end).length,
     }));
-
     return NextResponse.json({
       success: true,
       totals: {
@@ -93,6 +86,4 @@ export async function GET() {
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }
-
-
 
