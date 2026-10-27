@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -74,7 +74,7 @@ export default function AdminDashboardPage() {
   const [tmdbSyncing, setTmdbSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
 
-  // Titres partenaires (ProviderAsset) — publication contrôlée par l'admin
+  // Titres partenaires (ProviderAsset) â€” publication contrÃ´lÃ©e par l'admin
   interface PartnerAsset {
     id: string;
     title: string;
@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
   const [partnerPages, setPartnerPages] = useState(1);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  // Édition / publication d'un média
+  // Ã‰dition / publication d'un mÃ©dia
   const [showEditModal, setShowEditModal] = useState(false);
   const [editSlug, setEditSlug] = useState("");
   const [editVideoUrl, setEditVideoUrl] = useState("");
@@ -144,7 +144,16 @@ export default function AdminDashboardPage() {
       .catch(() => {});
   }, []);
 
-  // Chargement des titres partenaires (publication admin) — rechargé à chaque
+  useEffect(() => {
+    fetch("/api/auth/me", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.user?.role === "SUPER_ADMIN") setIsSuperAdmin(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Chargement des titres partenaires (publication admin) â€” rechargÃ© Ã  chaque
   // changement de filtre ou de page.
   useEffect(() => {
     const params = new URLSearchParams({ page: String(partnerPage), pageSize: "12" });
@@ -208,18 +217,18 @@ export default function AdminDashboardPage() {
         setTitle("");
         setSlug("");
         setSynopsis("");
-        setMessage("Titre ajouté au catalogue !");
+        setMessage("Titre ajoutÃ© au catalogue !");
         loadData();
       } else {
         setMessage(data.error || "Erreur lors de l'ajout.");
       }
     } catch {
-      setMessage("Erreur réseau.");
+      setMessage("Erreur rÃ©seau.");
     }
   };
 
   const handleDelete = async (targetSlug: string) => {
-    if (!confirm(`Supprimer définitivement ${targetSlug} du catalogue ?`)) return;
+    if (!confirm(`Supprimer dÃ©finitivement ${targetSlug} du catalogue ?`)) return;
 
     try {
       const res = await fetch(`/api/admin/medias?slug=${targetSlug}`, { method: "DELETE" });
@@ -248,14 +257,14 @@ export default function AdminDashboardPage() {
       const response = await fetch(`/api/admin/medias?slug=${encodeURIComponent(media.slug)}`);
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Impossible de charger les sources du média.");
+        throw new Error(data.message || "Impossible de charger les sources du mÃ©dia.");
       }
       setEditVideoUrl(data.media.videoUrl || "");
       setEditEpisodeSources(data.media.episodeSources || []);
       setEditEpisodeSourcesLoaded(true);
     } catch (error) {
       setEditMessage(
-        error instanceof Error ? error.message : "Impossible de charger les sources du média."
+        error instanceof Error ? error.message : "Impossible de charger les sources du mÃ©dia."
       );
     }
   };
@@ -282,13 +291,13 @@ export default function AdminDashboardPage() {
       const data = await res.json();
       if (res.ok) {
         setShowEditModal(false);
-        setMessage(data.message || "Média mis à jour.");
+        setMessage(data.message || "MÃ©dia mis Ã  jour.");
         loadData();
       } else {
         setEditMessage(data.message || "Erreur lors de l'enregistrement.");
       }
     } catch {
-      setEditMessage("Erreur réseau.");
+      setEditMessage("Erreur rÃ©seau.");
     } finally {
       setSaving(false);
     }
@@ -308,15 +317,15 @@ export default function AdminDashboardPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setImportMessage(data.message || "Import terminé.");
+        setImportMessage(data.message || "Import terminÃ©.");
         setShowImportModal(false);
-        setMessage(data.message || "Import TMDB terminé.");
+        setMessage(data.message || "Import TMDB terminÃ©.");
         loadData();
       } else {
         setImportMessage(data.message || "Erreur lors de l'import TMDB.");
       }
     } catch {
-      setImportMessage("Erreur réseau lors de l'import.");
+      setImportMessage("Erreur rÃ©seau lors de l'import.");
     } finally {
       setImporting(false);
     }
@@ -336,13 +345,13 @@ export default function AdminDashboardPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSyncMessage(data.message || "Synchro terminée.");
+        setSyncMessage(data.message || "Synchro terminÃ©e.");
         loadData();
       } else {
         setSyncMessage(data.message || "Erreur lors de la synchro.");
       }
     } catch {
-      setSyncMessage("Erreur réseau lors de la synchro.");
+      setSyncMessage("Erreur rÃ©seau lors de la synchro.");
     } finally {
       setSyncing(false);
     }
@@ -362,13 +371,13 @@ export default function AdminDashboardPage() {
 
       const data = await res.json();
       if (res.ok) {
-        setSyncMessage(data.message || "Synchro TMDB terminée.");
+        setSyncMessage(data.message || "Synchro TMDB terminÃ©e.");
         loadData();
       } else {
         setSyncMessage(data.message || "Erreur lors de la synchro TMDB.");
       }
     } catch {
-      setSyncMessage("Erreur réseau lors de la synchro TMDB.");
+      setSyncMessage("Erreur rÃ©seau lors de la synchro TMDB.");
     } finally {
       setTmdbSyncing(false);
     }
@@ -377,7 +386,7 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-24 text-center text-sm text-zinc-400">
-        Vérification des permissions administratives...
+        VÃ©rification des permissions administratives...
       </div>
     );
   }
@@ -388,9 +397,9 @@ export default function AdminDashboardPage() {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 mb-4">
           <Lock className="h-7 w-7" />
         </div>
-        <h1 className="text-2xl font-bold text-white">Accès Refusé</h1>
+        <h1 className="text-2xl font-bold text-white">AccÃ¨s RefusÃ©</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Cette zone est strictement réservée aux administrateurs de la plateforme (Rôle ADMIN requis).
+          Cette zone est strictement rÃ©servÃ©e aux administrateurs de la plateforme (RÃ´le ADMIN requis).
         </p>
         <div className="mt-6">
           <Link
@@ -406,7 +415,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      {/* En-tête Back-office */}
+      {/* En-tÃªte Back-office */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-6">
         <div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 px-3 py-1 text-xs font-semibold text-purple-400">
@@ -431,7 +440,7 @@ export default function AdminDashboardPage() {
             className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            Ajouter une œuvre
+            Ajouter une Å“uvre
           </button>
         </div>
       </div>
@@ -442,7 +451,7 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* Cartes Métriques */}
+      {/* Cartes MÃ©triques */}
       <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
         <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
           <span className="text-xs text-zinc-400">Total Catalogue</span>
@@ -466,14 +475,14 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Trafic du site — visiteurs mensuels, premium vs standard */}
+      {/* Trafic du site â€” visiteurs mensuels, premium vs standard */}
       <div className="mt-10">
         <h2 className="mb-4 text-lg font-bold text-white">Trafic & audience</h2>
         <TrafficCharts />
       </div>
 
-      {/* Catalogue partenaire — synchro incrémentale */}
-      <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40">
+      {/* Catalogue partenaire â€” synchro incrÃ©mentale */}
+      <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40" style={{ display: isSuperAdmin ? undefined : "none" }}>
         <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2">
@@ -482,8 +491,8 @@ export default function AdminDashboardPage() {
             </h2>
             <p className="mt-1 text-[11px] text-zinc-500">
               {syncStatus
-                ? `${syncStatus.assets.total} asset(s) en base — ${syncStatus.assets.movies} films, ${syncStatus.assets.series} séries, ${syncStatus.assets.animes} animés.`
-                : "Chargement de l'état du catalogue partenaire..."}
+                ? `${syncStatus.assets.total} asset(s) en base â€” ${syncStatus.assets.movies} films, ${syncStatus.assets.series} sÃ©ries, ${syncStatus.assets.animes} animÃ©s.`
+                : "Chargement de l'Ã©tat du catalogue partenaire..."}
             </p>
           </div>
           <form onSubmit={handleSyncPartner} className="flex flex-wrap items-center gap-2 text-xs">
@@ -513,7 +522,7 @@ export default function AdminDashboardPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-800 px-4 py-2 font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <RefreshCw className={`h-4 w-4 ${tmdbSyncing ? "animate-spin" : ""}`} />
-              {tmdbSyncing ? "Synchro TMDB…" : "Synchro TMDB"}
+              {tmdbSyncing ? "Synchro TMDBâ€¦" : "Synchro TMDB"}
             </button>
           </form>
         </div>
@@ -528,11 +537,11 @@ export default function AdminDashboardPage() {
           <table className="w-full min-w-[640px] text-left text-xs text-zinc-300">
             <thead className="bg-black/40 text-zinc-400 uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="px-4 py-3.5 sm:px-6">Démarré le</th>
+                <th className="px-4 py-3.5 sm:px-6">DÃ©marrÃ© le</th>
                 <th className="px-4 py-3.5 sm:px-6">Statut</th>
                 <th className="px-4 py-3.5 sm:px-6">Pages</th>
-                <th className="px-4 py-3.5 sm:px-6">À jour</th>
-                <th className="px-4 py-3.5 sm:px-6">Purgés</th>
+                <th className="px-4 py-3.5 sm:px-6">Ã€ jour</th>
+                <th className="px-4 py-3.5 sm:px-6">PurgÃ©s</th>
                 <th className="px-4 py-3.5 sm:px-6">Erreur</th>
               </tr>
             </thead>
@@ -540,7 +549,7 @@ export default function AdminDashboardPage() {
               {!syncStatus || syncStatus.runs.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-4 text-zinc-500 sm:px-6">
-                    Aucune synchronisation enregistrée pour le moment.
+                    Aucune synchronisation enregistrÃ©e pour le moment.
                   </td>
                 </tr>
               ) : (
@@ -553,7 +562,7 @@ export default function AdminDashboardPage() {
                       {r.status === "SUCCESS" ? (
                         <span className="inline-flex items-center gap-1 text-emerald-400">
                           <CheckCircle2 className="h-3.5 w-3.5" />
-                          Succès
+                          SuccÃ¨s
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-violet-400">
@@ -566,7 +575,7 @@ export default function AdminDashboardPage() {
                     <td className="px-4 py-3 sm:px-6">{r.assetsUpserted}</td>
                     <td className="px-4 py-3 sm:px-6">{r.assetsPruned}</td>
                     <td className="px-4 py-3 sm:px-6 max-w-xs truncate text-zinc-500" title={r.error || ""}>
-                      {r.error || "—"}
+                      {r.error || "â€”"}
                     </td>
                   </tr>
                 ))
@@ -577,9 +586,9 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Tableau du catalogue */}
-      <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40">
+      <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40" style={{ display: isSuperAdmin ? undefined : "none" }}>
         <div className="border-b border-white/10 px-4 py-4 sm:px-6">
-          <h2 className="text-base font-bold text-white">Œuvres sous gestion légale</h2>
+          <h2 className="text-base font-bold text-white">Å’uvres sous gestion lÃ©gale</h2>
         </div>
 
         <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
@@ -588,7 +597,7 @@ export default function AdminDashboardPage() {
               <tr>
                 <th className="px-4 py-3.5 sm:px-6">Titre & Slug</th>
                 <th className="px-4 py-3.5 sm:px-6">Type</th>
-                <th className="px-4 py-3.5 sm:px-6">Accès</th>
+                <th className="px-4 py-3.5 sm:px-6">AccÃ¨s</th>
                 <th className="px-4 py-3.5 sm:px-6">Statut</th>
                 <th className="px-4 py-3.5 sm:px-6">Droits jusqu&apos;au</th>
                 <th className="px-4 py-3.5 text-right sm:px-6">Actions</th>
@@ -617,7 +626,7 @@ export default function AdminDashboardPage() {
                     {m.isPublished ? (
                       <span className="inline-flex items-center gap-1 text-emerald-400">
                         <CheckCircle2 className="h-3.5 w-3.5" />
-                        Publié
+                        PubliÃ©
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 text-zinc-500">
@@ -629,7 +638,7 @@ export default function AdminDashboardPage() {
                     {new Date(m.rightsValidUntil) < new Date() ? (
                       <span className="text-violet-400 font-semibold flex items-center gap-1">
                         <AlertTriangle className="h-3.5 w-3.5" />
-                        Expiré
+                        ExpirÃ©
                       </span>
                     ) : (
                       m.rightsValidUntil.split("T")[0]
@@ -647,7 +656,7 @@ export default function AdminDashboardPage() {
                       <button
                         onClick={() => openEdit(m)}
                         className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                        title="Éditer / Publier"
+                        title="Ã‰diter / Publier"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
@@ -667,8 +676,8 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* Titres partenaires (catalogues externes) — publication par l'admin */}
-      <div className="mt-10">
+      {/* Titres partenaires (catalogues externes) â€” publication par l'admin */}
+      <div className="mt-10" style={{ display: isSuperAdmin ? undefined : "none" }}>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-white">
@@ -676,8 +685,8 @@ export default function AdminDashboardPage() {
               Titres partenaires (catalogues externes)
             </h2>
             <p className="mt-1 text-xs text-zinc-500">
-              {partnerTotal.toLocaleString("fr-FR")} titre(s) synchronisé(s). Un titre masqué
-              disparaît des grilles, de la recherche et de la une, mais reste en base.
+              {partnerTotal.toLocaleString("fr-FR")} titre(s) synchronisÃ©(s). Un titre masquÃ©
+              disparaÃ®t des grilles, de la recherche et de la une, mais reste en base.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -688,7 +697,7 @@ export default function AdminDashboardPage() {
                 setPartnerFilter(e.target.value);
                 setPartnerPage(1);
               }}
-              placeholder="Rechercher un titre…"
+              placeholder="Rechercher un titreâ€¦"
               className="w-44 rounded-xl border border-white/10 bg-black/50 p-2 text-xs text-white placeholder:text-zinc-500"
             />
             <select
@@ -709,7 +718,7 @@ export default function AdminDashboardPage() {
 
         {partnerAssets.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-xs text-zinc-500">
-            Aucun titre partenaire synchronisé. Lancez une synchro depuis le panneau précédent.
+            Aucun titre partenaire synchronisÃ©. Lancez une synchro depuis le panneau prÃ©cÃ©dent.
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -734,8 +743,8 @@ export default function AdminDashboardPage() {
                     {a.title}
                   </p>
                   <p className="mt-0.5 text-[11px] text-zinc-500">
-                    {a.provider} · {a.contentType}
-                    {a.releaseYear ? ` · ${a.releaseYear}` : ""}
+                    {a.provider} Â· {a.contentType}
+                    {a.releaseYear ? ` Â· ${a.releaseYear}` : ""}
                   </p>
                   <span
                     className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
@@ -744,7 +753,7 @@ export default function AdminDashboardPage() {
                         : "bg-amber-500/10 text-amber-400"
                     }`}
                   >
-                    {a.isPublished ? "Publié" : "Masqué"}
+                    {a.isPublished ? "PubliÃ©" : "MasquÃ©"}
                   </span>
                 </div>
                 <button
@@ -777,7 +786,7 @@ export default function AdminDashboardPage() {
               disabled={partnerPage <= 1}
               className="rounded-lg border border-white/10 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              Précédent
+              PrÃ©cÃ©dent
             </button>
             <span className="text-xs text-zinc-500">
               Page {partnerPage} / {partnerPages}
@@ -793,16 +802,16 @@ export default function AdminDashboardPage() {
         )}
       </div>
 
-      {/* Modal d'édition / publication */}
+      {/* Modal d'Ã©dition / publication */}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-1">Éditer &amp; publier</h3>
+            <h3 className="text-lg font-bold text-white mb-1">Ã‰diter &amp; publier</h3>
             <p className="text-xs text-zinc-400 mb-4 font-mono">/{editSlug}</p>
             <form onSubmit={handleSave} className="space-y-4 text-xs">
               {editContentType !== "SERIES" && (
                 <div>
-                  <label className="block text-zinc-300 mb-1">URL de lecture du média</label>
+                  <label className="block text-zinc-300 mb-1">URL de lecture du mÃ©dia</label>
                   <input
                     type="url"
                     value={editVideoUrl}
@@ -811,21 +820,21 @@ export default function AdminDashboardPage() {
                     className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
                   />
                   <p className="mt-1 text-[11px] text-zinc-500">
-                    Fichier vidéo direct (MP4/WebM) ou playlist HLS (.m3u8), dont vous détenez les droits.
+                    Fichier vidÃ©o direct (MP4/WebM) ou playlist HLS (.m3u8), dont vous dÃ©tenez les droits.
                   </p>
                 </div>
               )}
 
               {editEpisodeSources.length > 0 && (
                 <fieldset className="max-h-64 space-y-3 overflow-y-auto rounded-xl border border-white/10 p-3">
-                  <legend className="px-1 text-zinc-300">Sources des épisodes</legend>
+                  <legend className="px-1 text-zinc-300">Sources des Ã©pisodes</legend>
                   {editEpisodeSources.map((episode, index) => (
                     <label
                       key={`${episode.seasonNumber}-${episode.episodeNumber}`}
                       className="block"
                     >
                       <span className="mb-1 block text-zinc-400">
-                        Saison {episode.seasonNumber}, épisode {episode.episodeNumber} — {episode.title}
+                        Saison {episode.seasonNumber}, Ã©pisode {episode.episodeNumber} â€” {episode.title}
                       </span>
                       <input
                         type="url"
@@ -849,7 +858,7 @@ export default function AdminDashboardPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-300 mb-1">Niveau d&apos;accès</label>
+                  <label className="block text-zinc-300 mb-1">Niveau d&apos;accÃ¨s</label>
                   <select
                     value={editAccessLevel}
                     onChange={(e) => setEditAccessLevel(e.target.value)}
@@ -860,7 +869,7 @@ export default function AdminDashboardPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-zinc-300 mb-1">Validité des droits</label>
+                  <label className="block text-zinc-300 mb-1">ValiditÃ© des droits</label>
                   <input
                     type="date"
                     value={editRightsUntil}
@@ -913,7 +922,7 @@ export default function AdminDashboardPage() {
           <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
             <h3 className="text-lg font-bold text-white mb-1">Importer depuis TMDB</h3>
             <p className="text-xs text-zinc-400 mb-4">
-              Récupère les métadonnées et affiches officielles. Les fiches sont créées en <span className="text-amber-400 font-semibold">brouillon</span> : vous devrez ajouter une vidéo licenciée puis publier.
+              RÃ©cupÃ¨re les mÃ©tadonnÃ©es et affiches officielles. Les fiches sont crÃ©Ã©es en <span className="text-amber-400 font-semibold">brouillon</span> : vous devrez ajouter une vidÃ©o licenciÃ©e puis publier.
             </p>
             <form onSubmit={handleImportTmdb} className="space-y-4 text-xs">
               <div>
@@ -924,7 +933,7 @@ export default function AdminDashboardPage() {
                   className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
                 >
                   <option value="MOVIE">Films populaires</option>
-                  <option value="SERIES">Séries (avec saisons &amp; épisodes)</option>
+                  <option value="SERIES">SÃ©ries (avec saisons &amp; Ã©pisodes)</option>
                 </select>
               </div>
 
@@ -938,7 +947,7 @@ export default function AdminDashboardPage() {
                   onChange={(e) => setImportPages(Math.min(Math.max(Number(e.target.value) || 1, 1), 5))}
                   className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
                 />
-                <p className="mt-1 text-[11px] text-zinc-500">Maximum 5 pages. Pour les séries, chaque fiche déclenche aussi l&apos;import des saisons/épisodes.</p>
+                <p className="mt-1 text-[11px] text-zinc-500">Maximum 5 pages. Pour les sÃ©ries, chaque fiche dÃ©clenche aussi l&apos;import des saisons/Ã©pisodes.</p>
               </div>
 
               {importMessage && (
@@ -973,16 +982,16 @@ export default function AdminDashboardPage() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-zinc-900 p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">Ajouter un nouveau média</h3>
+            <h3 className="text-lg font-bold text-white mb-4">Ajouter un nouveau mÃ©dia</h3>
             <form onSubmit={handleCreate} className="space-y-4 text-xs">
               <div>
-                <label className="block text-zinc-300 mb-1">Titre de l&apos;œuvre</label>
+                <label className="block text-zinc-300 mb-1">Titre de l&apos;Å“uvre</label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ex: Le Chant de la Forêt"
+                  placeholder="Ex: Le Chant de la ForÃªt"
                   className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
                 />
               </div>
@@ -1005,25 +1014,25 @@ export default function AdminDashboardPage() {
                   rows={3}
                   value={synopsis}
                   onChange={(e) => setSynopsis(e.target.value)}
-                  placeholder="Court résumé de l'œuvre..."
+                  placeholder="Court rÃ©sumÃ© de l'Å“uvre..."
                   className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-zinc-300 mb-1">Niveau d&apos;accès</label>
+                  <label className="block text-zinc-300 mb-1">Niveau d&apos;accÃ¨s</label>
                   <select
                     value={accessLevel}
                     onChange={(e) => setAccessLevel(e.target.value)}
                     className="w-full rounded-xl border border-white/10 bg-black/50 p-2.5 text-white"
                   >
                     <option value="FREE">Gratuit</option>
-                    <option value="PREMIUM">Premium (Abonnés)</option>
+                    <option value="PREMIUM">Premium (AbonnÃ©s)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-zinc-300 mb-1">Validité des droits</label>
+                  <label className="block text-zinc-300 mb-1">ValiditÃ© des droits</label>
                   <input
                     type="date"
                     value={rightsValidUntil}
