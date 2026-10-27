@@ -1,21 +1,11 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
 import { prisma } from "@/lib/prisma";
-
-const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET || "dev-secret");
+import { getCurrentUser } from "@/lib/auth";
 
 async function requireAdmin() {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("auth_token")?.value;
-  if (!token) return null;
-  try {
-    const { payload } = await jwtVerify(token, secret);
-    if (payload.role !== "ADMIN") return null;
-    return payload as { sub: string; role: string };
-  } catch {
-    return null;
-  }
+  const user = await getCurrentUser();
+  if (!user || user.role !== "ADMIN") return null;
+  return user;
 }
 
 export async function POST(request: Request) {
