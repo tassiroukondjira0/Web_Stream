@@ -586,7 +586,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Tableau du catalogue */}
-      <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40" style={{ display: isSuperAdmin ? undefined : "none" }}>
+      <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40">
         <div className="border-b border-white/10 px-4 py-4 sm:px-6">
           <h2 className="text-base font-bold text-white">Å’uvres sous gestion lÃ©gale</h2>
         </div>
