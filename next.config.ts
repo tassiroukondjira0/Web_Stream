@@ -74,7 +74,7 @@ const nextConfig: NextConfig = {
               "frame-src 'self' https:",
               "font-src 'self' data: https:",
               "object-src 'none'",
-              "base-uri 'self'",
+              "base-uri 'self' https:",
               "form-action 'self'",
               "frame-ancestors 'self'",
             ].join("; "),
