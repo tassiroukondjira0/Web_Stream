@@ -53,6 +53,7 @@ body {
   color: var(--foreground);
   min-height: 100vh;
   overflow-x: hidden;
+  overscroll-behavior-y: contain;
   /* Safe areas pour les appareils mobiles à encoche */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
