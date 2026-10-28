@@ -101,7 +101,12 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
 
 // 3. Récupération de la session courante depuis les cookies Next.js
 export async function getCurrentUser(): Promise<SessionUser | null> {
-  const cookieStore = await cookies();
+  let cookieStore;
+  try {
+    cookieStore = await cookies();
+  } catch {
+    return null;
+  }
   const token = cookieStore.get(COOKIE_NAME)?.value;
   if (!token) return null;
   const claims = await verifySessionToken(token);
