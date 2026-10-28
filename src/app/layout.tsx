@@ -9,6 +9,7 @@ import { Footer } from "@/components/Footer";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { CapacitorInit } from "@/components/CapacitorInit";
 import { AndroidAppBanner } from "@/components/AndroidAppBanner";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { getMetadataBase } from "@/lib/env";
 
 const geistSans = Geist({
@@ -91,6 +92,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <PageViewTracker />
           <CapacitorInit />
+          <PullToRefresh />
         </Suspense>
         <Suspense fallback={null}>
           <AndroidAppBanner />
