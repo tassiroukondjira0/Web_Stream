@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
  */
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") return null;
+  if (!user || !hasAdminAccess(user.role)) return null;
   return user;
 }
 /** Liste paginÃ©e des titres partenaires avec leur Ã©tat de publication. */

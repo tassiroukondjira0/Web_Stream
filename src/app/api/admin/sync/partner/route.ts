@@ -15,7 +15,7 @@ const MAX_PAGES = 20;
 
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") return null;
+  if (!user || !hasAdminAccess(user.role)) return null;
   return user;
 }
 
