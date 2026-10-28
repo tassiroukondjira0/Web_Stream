@@ -76,7 +76,7 @@ async function AnimesContent({ searchParams }: AnimesPageProps) {
             <h2 className="text-xl font-bold text-white">
               Mangas & animés du catalogue
             </h2>
-            <span className="text-xs text-zinc-500">
+            <span className="text-xs text-zinc-500 break-words">
               {partner.totalItems} titres — page {partner.page} / {partner.totalPages}
             </span>
           </div>
