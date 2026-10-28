@@ -11,6 +11,7 @@ import { VidzyPlayer } from "@/components/VidzyPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
+import { Reviews } from "@/components/Reviews";
 import { ShieldCheck, Film, Calendar, Clock, Lock } from "lucide-react";
 
 interface PageProps {
@@ -259,6 +260,8 @@ async function FilmContent({ params, searchParams }: PageProps) {
           </div>
         </div>
       </div>
+
+      <Reviews mediaSlug={film.slug} />
     </div>
   );
 }
