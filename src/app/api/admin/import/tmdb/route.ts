@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -10,15 +10,15 @@ import {
   TMDB_GENRES,
 } from "@/lib/tmdb";
 
-// Import de mÃ©tadonnÃ©es depuis TMDB â†’ Ã©bauches de mÃ©dias dans la base.
-// Les fiches importÃ©es sont des BROUILLONS (isPublished: false) : elles ne
-// seront visibles publiquement qu'aprÃ¨s ajout d'une vidÃ©o licenciÃ©e + publication.
+// Import de métadonnées depuis TMDB → ébauches de médias dans la base.
+// Les fiches importées sont des BROUILLONS (isPublished: false) : elles ne
+// seront visibles publiquement qu'après ajout d'une vidéo licenciée + publication.
 
 const MAX_PAGES = 5;
-// Plafond de saisons importÃ©es par sÃ©rie (limite le nombre d'appels API).
+// Plafond de saisons importées par série (limite le nombre d'appels API).
 const MAX_SEASONS = 3;
 
-/** CrÃ©e/met Ã  jour les catÃ©gories de rÃ©fÃ©rence et renvoie un index slug â†’ id. */
+/** Crée/met à jour les catégories de référence et renvoie un index slug → id. */
 async function ensureCategories(): Promise<Record<string, string>> {
   const categoryIdBySlug: Record<string, string> = {};
   for (const { name, slug } of Object.values(TMDB_GENRES)) {
@@ -33,8 +33,8 @@ async function ensureCategories(): Promise<Record<string, string>> {
 }
 
 /**
- * Importe les saisons et Ã©pisodes d'une sÃ©rie depuis TMDB.
- * CrÃ©e/maj les Season (contrainte unique mediaId+seasonNumber) et leurs Episode.
+ * Importe les saisons et épisodes d'une série depuis TMDB.
+ * Crée/maj les Season (contrainte unique mediaId+seasonNumber) et leurs Episode.
  */
 async function importSeriesSeasons(
   mediaId: string,
@@ -57,7 +57,7 @@ async function importSeriesSeasons(
     try {
       season = await fetchTvSeason(seriesId, s);
     } catch {
-      continue; // Saison indisponible : on passe Ã  la suivante
+      continue; // Saison indisponible : on passe à la suivante
     }
     if (!season.episodes || season.episodes.length === 0) continue;
 
@@ -88,7 +88,7 @@ async function importSeriesSeasons(
         create: {
           seasonId: seasonRecord.id,
           episodeNumber: ep.episode_number,
-          title: ep.name || `Ã‰pisode ${ep.episode_number}`,
+          title: ep.name || `Épisode ${ep.episode_number}`,
           synopsis: ep.overview || null,
           durationMinutes: ep.runtime ?? null,
           videoUrl: null,
@@ -106,17 +106,17 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user || user.role !== "ADMIN") {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 }
     );
   }
 
-  // L'import nÃ©cessite une base active.
+  // L'import nécessite une base active.
   if (process.env.DATABASE_READY !== "true") {
     return NextResponse.json(
       {
         error: "DB_NOT_READY",
-        message: "La base de donnÃ©es n'est pas disponible. DÃ©marrez PostgreSQL avant l'import.",
+        message: "La base de données n'est pas disponible. Démarrez PostgreSQL avant l'import.",
       },
       { status: 503 }
     );
@@ -128,17 +128,17 @@ export async function POST(request: Request) {
     const requestedPages = Number(body?.pages) || 1;
     const pages = Math.min(Math.max(requestedPages, 1), MAX_PAGES);
 
-    // 1. S'assurer que toutes les catÃ©gories de rÃ©fÃ©rence existent.
+    // 1. S'assurer que toutes les catégories de référence existent.
     const categoryIdBySlug = await ensureCategories();
 
-    // 2. RÃ©cupÃ©rer les pages TMDB demandÃ©es.
+    // 2. Récupérer les pages TMDB demandées.
     const allResults = [];
     for (let p = 1; p <= pages; p++) {
       const data = type === "SERIES" ? await fetchPopularTv(p) : await fetchPopularMovies(p);
       allResults.push(...data.results);
     }
 
-    // 3. CrÃ©er les mÃ©dias en brouillon (upsert sur le slug, jamais de republication auto).
+    // 3. Créer les médias en brouillon (upsert sur le slug, jamais de republication auto).
     let created = 0;
     const updated = 0;
     let skipped = 0;
@@ -149,7 +149,7 @@ export async function POST(request: Request) {
     for (const item of allResults) {
       const draft = tmdbToMediaDraft(item, type);
 
-      // Garantit l'unicitÃ© du slug en cas de titres identiques sur une mÃªme page.
+      // Garantit l'unicité du slug en cas de titres identiques sur une même page.
       let slug = draft.slug;
       while (usedSlugs.has(slug)) slug = `${draft.slug}-${item.id}`;
       usedSlugs.add(slug);
@@ -159,8 +159,8 @@ export async function POST(request: Request) {
         .filter(Boolean)
         .map((id) => ({ category: { connect: { id } } }));
 
-      // Anti-doublon : vÃ©rifie par slug ET par titre + annÃ©e (un mÃªme titre
-      // peut avoir un slug diffÃ©rent Ã  cause d'une casse ou d'un accent).
+      // Anti-doublon : vérifie par slug ET par titre + année (un même titre
+      // peut avoir un slug différent à cause d'une casse ou d'un accent).
       const existingBySlug = await prisma.media.findUnique({ where: { slug } });
       const existingByTitleYear = await prisma.media.findFirst({
         where: {
@@ -172,10 +172,10 @@ export async function POST(request: Request) {
       const existing = existingBySlug ?? existingByTitleYear;
 
       if (existing) {
-        // Titre dÃ©jÃ  prÃ©sent (mÃªme slug ou mÃªme titre+annÃ©e) â†’ on saute.
+        // Titre déjà présent (même slug ou même titre+année) → on saute.
         skipped++;
 
-        // Met Ã  jour les mÃ©tadonnÃ©es si le slug diffÃ¨re (cas d'un doublon dÃ©tectÃ© par titre+annÃ©e).
+        // Met à jour les métadonnées si le slug diffère (cas d'un doublon détecté par titre+année).
         if (existingByTitleYear && !existingBySlug) {
           await prisma.media.update({
             where: { id: existingByTitleYear.id },
@@ -191,7 +191,7 @@ export async function POST(request: Request) {
           });
         }
 
-        // ComplÃ¨te aussi les saisons si c'est une sÃ©rie et qu'elle n'en a pas encore.
+        // Complète aussi les saisons si c'est une série et qu'elle n'en a pas encore.
         if (type === "SERIES") {
           const seasonCount = await prisma.season.count({ where: { mediaId: existing.id } });
           if (seasonCount === 0) {
@@ -214,14 +214,14 @@ export async function POST(request: Request) {
             posterUrl: draft.posterUrl,
             backdropUrl: draft.backdropUrl,
             videoUrl: null,
-            isPublished: false, // Brouillon : en attente d'une vidÃ©o licenciÃ©e
+            isPublished: false, // Brouillon : en attente d'une vidéo licenciée
             rightsValidUntil: null,
             categories: { create: categoryConnections },
           },
         });
         created++;
 
-        // Pour une sÃ©rie, importe immÃ©diatement ses saisons et Ã©pisodes.
+        // Pour une série, importe immédiatement ses saisons et épisodes.
         if (type === "SERIES") {
           const res = await importSeriesSeasons(media.id, item.id);
           seasonsImported += res.seasons;
@@ -232,12 +232,12 @@ export async function POST(request: Request) {
 
     const seriesNote =
       type === "SERIES"
-        ? ` ${seasonsImported} saison(s) et ${episodesImported} Ã©pisode(s) importÃ©(s).`
+        ? ` ${seasonsImported} saison(s) et ${episodesImported} épisode(s) importé(s).`
         : "";
 
     return NextResponse.json({
       success: true,
-      message: `Import TMDB terminÃ© : ${created} fiche(s) crÃ©Ã©e(s), ${updated} mise(s) Ã  jour, ${skipped} doublon(s) ignorÃ©(s).${seriesNote} Les fiches sont en brouillon en attente d'une vidÃ©o licenciÃ©e.`,
+      message: `Import TMDB terminé : ${created} fiche(s) créée(s), ${updated} mise(s) à jour, ${skipped} doublon(s) ignoré(s).${seriesNote} Les fiches sont en brouillon en attente d'une vidéo licenciée.`,
       stats: {
         created,
         updated,

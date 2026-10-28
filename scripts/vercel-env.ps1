@@ -1,20 +1,20 @@
-﻿#!/usr/bin/env pwsh
+#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
     Envoie les variables d'environnement de .env vers Vercel.
 
 .DESCRIPTION
-    Ã‰vite le copier-coller manuel dans le dashboard Vercel, source d'erreurs.
+    Évite le copier-coller manuel dans le dashboard Vercel, source d'erreurs.
 
-    Utilise une LISTE BLANCHE : seules les variables rÃ©ellement lues par
-    l'application sont transmises. Toute autre variable prÃ©sente dans .env
-    (NEXTAUTH_URL et autres variables non utilisées) est ignorÃ©e â€” le code ne l'utilise pas.
+    Utilise une LISTE BLANCHE : seules les variables réellement lues par
+    l'application sont transmises. Toute autre variable présente dans .env
+    (NEXTAUTH_URL et autres variables non utilisées) est ignorée — le code ne l'utilise pas.
 
 .PARAMETER Environments
-    Cibles Vercel. Par dÃ©faut : production, preview, development.
+    Cibles Vercel. Par défaut : production, preview, development.
 
 .PARAMETER Force
-    Ã‰crase une variable existante sans demander confirmation.
+    Écrase une variable existante sans demander confirmation.
 
 .EXAMPLE
     .\scripts\vercel-env.ps1
@@ -29,9 +29,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# â”€â”€â”€ Liste blanche : variable => valeur (null = lire depuis .env) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Liste blanche : variable => valeur (null = lire depuis .env) ─────────────
 $Whitelist = [ordered]@{
-    "DATABASE_URL"                        = $null   # URL PostgreSQL poolÃ©e
+    "DATABASE_URL"                        = $null   # URL PostgreSQL poolée
     "DATABASE_READY"                      = "true"  # active PostgreSQL
     "NEXTAUTH_SECRET"                     = $null   # signature des sessions JWT
     "NEXT_PUBLIC_APP_NAME"                = $null
@@ -40,7 +40,7 @@ $Whitelist = [ordered]@{
     "TMDB_API_KEY"                        = $null
 }
 
-# Variables prÃ©sentes dans .env mais hors liste blanche (affichage informatif)
+# Variables présentes dans .env mais hors liste blanche (affichage informatif)
 $Excluded = @("NEON_API_KEY", "NEON_BRANCH", "DATABASE_URL_UNPOOLED", "NEXTAUTH_URL")
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
@@ -51,7 +51,7 @@ Write-Host "  Synchronisation des variables vers Vercel" -ForegroundColor Cyan
 Write-Host "  =========================================" -ForegroundColor DarkGray
 Write-Host ""
 
-# â”€â”€â”€ VÃ©rifications prÃ©alables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Vérifications préalables ────────────────────────────────────────────────
 if (-not (Test-Path $envFile)) {
     Write-Host "  ERREUR : fichier .env introuvable dans $repoRoot" -ForegroundColor Red
     exit 1
@@ -62,7 +62,7 @@ if (-not (Get-Command vercel -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# Lecture de .env (les valeurs ne sont jamais affichÃ©es)
+# Lecture de .env (les valeurs ne sont jamais affichées)
 $values = @{}
 foreach ($line in Get-Content $envFile) {
     if ($line -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$') {
@@ -73,7 +73,7 @@ foreach ($line in Get-Content $envFile) {
 Write-Host "  .env lu : $($values.Count) variable(s)" -ForegroundColor DarkGray
 Write-Host ""
 
-# â”€â”€â”€ Construction du plan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Construction du plan ────────────────────────────────────────────────────
 $plan = @()
 foreach ($name in $Whitelist.Keys) {
     $value = if ($null -ne $Whitelist[$name]) { $Whitelist[$name] } else { $values[$name] }
@@ -97,8 +97,8 @@ foreach ($name in $Whitelist.Keys) {
     }
 }
 
-# â”€â”€â”€ RÃ©capitulatif â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-Write-Host "  Ã€ envoyer :" -ForegroundColor Green
+# ─── Récapitulatif ───────────────────────────────────────────────────────────
+Write-Host "  À envoyer :" -ForegroundColor Green
 $plan | Where-Object Action -eq "envoyer" | ForEach-Object {
     Write-Host ("    + {0,-38} {1}" -f $_.Name, $_.Detail)
 }
@@ -106,12 +106,12 @@ $plan | Where-Object Action -eq "envoyer" | ForEach-Object {
 $skipped = $plan | Where-Object Action -eq "ignorer"
 if ($skipped) {
     Write-Host ""
-    Write-Host "  IgnorÃ©es (vides dans .env) :" -ForegroundColor Yellow
+    Write-Host "  Ignorées (vides dans .env) :" -ForegroundColor Yellow
     $skipped | ForEach-Object { Write-Host ("    - {0}" -f $_.Name) }
 }
 
 Write-Host ""
-Write-Host "  Exclues volontairement (non utilisÃ©es par le code) :" -ForegroundColor DarkGray
+Write-Host "  Exclues volontairement (non utilisées par le code) :" -ForegroundColor DarkGray
 $Excluded | Where-Object { $values.ContainsKey($_) } | ForEach-Object {
     Write-Host ("    x {0}" -f $_)
 }
@@ -119,27 +119,27 @@ $Excluded | Where-Object { $values.ContainsKey($_) } | ForEach-Object {
 $toSend = @($plan | Where-Object Action -eq "envoyer")
 if ($toSend.Count -eq 0) {
     Write-Host ""
-    Write-Host "  Rien Ã  envoyer." -ForegroundColor Yellow
+    Write-Host "  Rien à envoyer." -ForegroundColor Yellow
     exit 0
 }
 
-# â”€â”€â”€ Confirmation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Confirmation ────────────────────────────────────────────────────────────
 if (-not $Force) {
     Write-Host ""
     $answer = Read-Host "  Envoyer ces $($toSend.Count) variable(s) vers $($Environments -join ', ') ? [o/N]"
     if ($answer -notmatch '^[oOyY]') {
-        Write-Host "  AnnulÃ©." -ForegroundColor Yellow
+        Write-Host "  Annulé." -ForegroundColor Yellow
         exit 0
     }
 }
 
-# â”€â”€â”€ Envoi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ─── Envoi ───────────────────────────────────────────────────────────────────
 $ok = 0
 $fail = 0
 
 foreach ($item in $toSend) {
     foreach ($env in $Environments) {
-        # `vercel env add` lit la valeur sur stdin : rien n'apparaÃ®t dans l'historique
+        # `vercel env add` lit la valeur sur stdin : rien n'apparaît dans l'historique
         $item.Value | vercel env add $item.Name $env 2>&1 | Out-Null
 
         if ($LASTEXITCODE -eq 0) {
@@ -153,14 +153,14 @@ foreach ($item in $toSend) {
 }
 
 Write-Host ""
-Write-Host "  TerminÃ© : $ok succÃ¨s, $fail Ã©chec(s)" -ForegroundColor $(if ($fail) { "Yellow" } else { "Green" })
+Write-Host "  Terminé : $ok succès, $fail échec(s)" -ForegroundColor $(if ($fail) { "Yellow" } else { "Green" })
 
 if ($fail -gt 0) {
     Write-Host ""
-    Write-Host "  Un Ã©chec signifie souvent que la variable existe dÃ©jÃ ." -ForegroundColor DarkGray
-    Write-Host "  Relancez avec -Force pour l'Ã©craser." -ForegroundColor DarkGray
+    Write-Host "  Un échec signifie souvent que la variable existe déjà." -ForegroundColor DarkGray
+    Write-Host "  Relancez avec -Force pour l'écraser." -ForegroundColor DarkGray
     exit 1
 }
 
 Write-Host ""
-Write-Host "  Prochaine Ã©tape : vercel --prod" -ForegroundColor Cyan
+Write-Host "  Prochaine étape : vercel --prod" -ForegroundColor Cyan

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CLI de synchronisation du catalogue partenaire (films + séries + animes).
  *
  *   npm run partner:sync                                     # 5 pages films + 5 séries

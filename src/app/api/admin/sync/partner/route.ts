@@ -1,14 +1,14 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PARTNER_PROVIDER } from "@/modules/providers/partner/partner.client";
 import { syncPartnerCatalog } from "@/modules/providers/partner/partner.sync";
 
 /**
- * Synchro incrÃ©mentale du catalogue partenaire.
+ * Synchro incrémentale du catalogue partenaire.
  *
- * - GET  : Ã©tat du catalogue (compteurs films/sÃ©ries + historique des synchros).
- * - POST : lance une synchro (nombre de pages films/sÃ©ries paramÃ©trable).
+ * - GET  : état du catalogue (compteurs films/séries + historique des synchros).
+ * - POST : lance une synchro (nombre de pages films/séries paramétrable).
  */
 
 const MAX_PAGES = 20;
@@ -22,7 +22,7 @@ async function requireAdmin() {
 export async function GET() {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 },
     );
   }
@@ -68,7 +68,7 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 },
     );
   }
@@ -80,14 +80,14 @@ export async function POST(request: Request) {
       pages = Math.min(Math.max(Math.floor(body.pages), 1), MAX_PAGES);
     }
   } catch {
-    // corps vide ou invalide â†’ on garde la valeur par dÃ©faut
+    // corps vide ou invalide → on garde la valeur par défaut
   }
 
   try {
     const report = await syncPartnerCatalog({ filmPages: pages, seriesPages: pages });
     return NextResponse.json({
       success: true,
-      message: `Synchro terminÃ©e : ${report.fetchedMovies} films et ${report.fetchedSeries} sÃ©ries rÃ©cupÃ©rÃ©s, ${report.upserted} titres en base (${report.pruned} obsolÃ¨tes retirÃ©s).`,
+      message: `Synchro terminée : ${report.fetchedMovies} films et ${report.fetchedSeries} séries récupérés, ${report.upserted} titres en base (${report.pruned} obsolètes retirés).`,
       report,
     });
   } catch (error) {

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -40,7 +40,7 @@ export default function AdminNotificationsPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-20 text-center">
-        <p className="text-zinc-400">Chargementâ€¦</p>
+        <p className="text-zinc-400">Chargement…</p>
       </div>
     );
   }
@@ -51,8 +51,8 @@ export default function AdminNotificationsPage() {
         Centre de notifications
       </h1>
       <p className="text-zinc-400 mb-8">
-        Envoyez une notification in-app Ã  tous vos utilisateurs ou aux
-        abonnÃ©s Premium uniquement.
+        Envoyez une notification in-app à tous vos utilisateurs ou aux
+        abonnés Premium uniquement.
       </p>
       <AdminNotifications />
     </div>

@@ -1,19 +1,19 @@
-﻿/**
+/**
  * CLI de synchronisation du catalogue mangas French-Manga.
  *
- *   npm run mangas:sync                  # 3 pages de catÃ©gorie (dÃ©faut)
- *   npm run mangas:sync -- --pages=20    # fenÃªtre plus large
- *   npm run mangas:sync -- --dry-run     # simulation, aucune Ã©criture
+ *   npm run mangas:sync                  # 3 pages de catégorie (défaut)
+ *   npm run mangas:sync -- --pages=20    # fenêtre plus large
+ *   npm run mangas:sync -- --dry-run     # simulation, aucune écriture
  *
- * IncrÃ©mental par conception : seules les premiÃ¨res pages du catalogue sont
- * rapportÃ©es ; le catalogue complet n'est jamais aspirÃ© d'un coup.
+ * Incrémental par conception : seules les premières pages du catalogue sont
+ * rapportées ; le catalogue complet n'est jamais aspiré d'un coup.
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { syncFrenchMangaCatalog } from "../src/modules/providers/frenchmanga/frenchmanga.sync";
 
-/** Charge .env si la variable n'est pas dÃ©jÃ  dÃ©finie (pas de dÃ©pendance dotenv). */
+/** Charge .env si la variable n'est pas déjà définie (pas de dépendance dotenv). */
 function loadDotEnv(): void {
   try {
     const raw = readFileSync(join(process.cwd(), ".env"), "utf8");
@@ -43,19 +43,19 @@ async function main(): Promise<void> {
   loadDotEnv();
   const options = parseArgs(process.argv.slice(2));
 
-  console.log("ðŸ”„ Synchro catalogue mangas (French-Manga)â€¦");
+  console.log("🔄 Synchro catalogue mangas (French-Manga)…");
   const report = await syncFrenchMangaCatalog(options);
 
-  console.log(`\n${report.dryRun ? "ðŸ§ª Simulation (aucune Ã©criture)" : "âœ… Synchro terminÃ©e"}`);
+  console.log(`\n${report.dryRun ? "🧪 Simulation (aucune écriture)" : "✅ Synchro terminée"}`);
   console.log(`  Pages           : ${report.pagesPerType}`);
-  console.log(`  Titres rapportÃ©s: ${report.fetched}`);
-  console.log(`  Assets upsertÃ©s : ${report.upserted}`);
-  console.log(`  Assets purgÃ©s   : ${report.pruned}`);
-  console.log(`  DurÃ©e           : ${(report.durationMs / 1000).toFixed(1)} s`);
+  console.log(`  Titres rapportés: ${report.fetched}`);
+  console.log(`  Assets upsertés : ${report.upserted}`);
+  console.log(`  Assets purgés   : ${report.pruned}`);
+  console.log(`  Durée           : ${(report.durationMs / 1000).toFixed(1)} s`);
 }
 
 main().catch((e) => {
-  console.error("âŒ Ã‰chec de la synchro :", e instanceof Error ? e.message : e);
+  console.error("❌ Échec de la synchro :", e instanceof Error ? e.message : e);
   process.exitCode = 1;
 });
 

@@ -1,23 +1,23 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getCurrentUser, hasAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 /**
  * Publication des titres partenaires (ProviderAsset).
  *
  * L'admin peut masquer (isPublished=false) un titre issu d'un catalogue externe :
- * il disparaÃ®t alors des grilles, de la recherche et de la une, mais reste en
- * base. La synchro n'Ã©crase jamais ce choix (voir bulk-upsert.ts).
+ * il disparaît alors des grilles, de la recherche et de la une, mais reste en
+ * base. La synchro n'écrase jamais ce choix (voir bulk-upsert.ts).
  */
 async function requireAdmin() {
   const user = await getCurrentUser();
   if (!user || !hasAdminAccess(user.role)) return null;
   return user;
 }
-/** Liste paginÃ©e des titres partenaires avec leur Ã©tat de publication. */
+/** Liste paginée des titres partenaires avec leur état de publication. */
 export async function GET(request: Request) {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 },
     );
   }
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
     });
   } catch {
     return NextResponse.json(
-      { error: "DB_UNAVAILABLE", message: "Base de donnÃ©es indisponible." },
+      { error: "DB_UNAVAILABLE", message: "Base de données indisponible." },
       { status: 503 },
     );
   }
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 },
     );
   }
@@ -90,7 +90,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: true, item: updated });
   } catch {
     return NextResponse.json(
-      { error: "DB_UNAVAILABLE", message: "Base de donnÃ©es indisponible." },
+      { error: "DB_UNAVAILABLE", message: "Base de données indisponible." },
       { status: 503 },
     );
   }

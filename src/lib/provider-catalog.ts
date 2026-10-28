@@ -1,4 +1,4 @@
-﻿import { prisma } from "./prisma";
+import { prisma } from "./prisma";
 
 /**
  * Lecture du catalogue externe synchronisé (CDC §4.7 : grilles/listes depuis

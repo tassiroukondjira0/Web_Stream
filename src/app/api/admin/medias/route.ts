@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MediaItem } from "@/lib/catalog";
@@ -20,7 +20,7 @@ function isValidVideoUrl(value: string): boolean {
   }
 }
 
-/** Convertit un mÃ©dia Prisma (avec ses catÃ©gories) en MediaItem pour l'admin. */
+/** Convertit un média Prisma (avec ses catégories) en MediaItem pour l'admin. */
 function dbMediaToItem(m: {
   id: string;
   title: string;
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
   const user = await getCurrentUser();
   if (!user || !hasAdminAccess(user.role)) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 }
     );
   }
@@ -97,11 +97,11 @@ export async function GET(request: Request) {
           },
         });
         if (!media) {
-          return NextResponse.json({ error: "MÃ©dia introuvable" }, { status: 404 });
+          return NextResponse.json({ error: "Média introuvable" }, { status: 404 });
         }
         return NextResponse.json({ media: dbMediaToItem(media) });
       } catch (error) {
-        console.error("Erreur lecture mÃ©dia admin :", error);
+        console.error("Erreur lecture média admin :", error);
         return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
       }
     }
@@ -114,8 +114,8 @@ export async function GET(request: Request) {
 
       const items = medias.map(dbMediaToItem);
 
-      // Total des titres partenaires (Partenaire, FrenchManga) â€” agrÃ©gÃ© pour
-      // la carte du dashboard. Inclut publiÃ©s et masquÃ©s.
+      // Total des titres partenaires (Partenaire, FrenchManga) — agrégé pour
+      // la carte du dashboard. Inclut publiés et masqués.
       let partnerTotal = 0;
       try {
         partnerTotal = await prisma.providerAsset.count();
@@ -145,7 +145,7 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user || !hasSuperAdminAccess(user.role)) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 }
     );
   }
@@ -163,7 +163,7 @@ export async function POST(request: Request) {
     }
     if (typeof videoUrl === "string" && videoUrl.trim() && !isValidVideoUrl(videoUrl.trim())) {
       return NextResponse.json(
-        { error: "INVALID_VIDEO_URL", message: "L'URL vidÃ©o doit Ãªtre une URL HTTP(S) valide." },
+        { error: "INVALID_VIDEO_URL", message: "L'URL vidéo doit être une URL HTTP(S) valide." },
         { status: 400 }
       );
     }
@@ -173,14 +173,14 @@ export async function POST(request: Request) {
     const parsedYear = Number(releaseYear);
     const parsedDuration = durationMinutes == null || durationMinutes === "" ? null : Number(durationMinutes);
     if (!Number.isInteger(parsedYear) || parsedYear < 1888 || parsedYear > 2200 || (parsedDuration !== null && (!Number.isInteger(parsedDuration) || parsedDuration < 1))) {
-      return NextResponse.json({ error: "INVALID_MEDIA", message: "AnnÃ©e ou durÃ©e invalide." }, { status: 400 });
+      return NextResponse.json({ error: "INVALID_MEDIA", message: "Année ou durée invalide." }, { status: 400 });
     }
     const rightsDate = rightsValidUntil ? new Date(rightsValidUntil) : null;
     if (rightsDate && Number.isNaN(rightsDate.getTime())) {
       return NextResponse.json({ error: "INVALID_RIGHTS_DATE" }, { status: 400 });
     }
 
-    const rawCategories: unknown[] = Array.isArray(body.categories) ? body.categories : [{ name: "GÃ©nÃ©ral", slug: "general" }];
+    const rawCategories: unknown[] = Array.isArray(body.categories) ? body.categories : [{ name: "Général", slug: "general" }];
     const categoryData = rawCategories.flatMap((value) => {
       if (typeof value === "string") {
         const categorySlug = value.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -210,7 +210,7 @@ export async function POST(request: Request) {
         posterUrl: typeof body.posterUrl === "string" && body.posterUrl.trim() ? body.posterUrl.trim() : null,
         backdropUrl: typeof body.backdropUrl === "string" && body.backdropUrl.trim() ? body.backdropUrl.trim() : null,
         videoUrl: typeof videoUrl === "string" && videoUrl.trim() ? videoUrl.trim() : null,
-        // Une fiche sans source ne doit pas apparaÃ®tre comme publiÃ©e.
+        // Une fiche sans source ne doit pas apparaître comme publiée.
         isPublished: isPublished === true && typeof videoUrl === "string" && Boolean(videoUrl.trim()),
         rightsValidUntil: rightsDate,
       };
@@ -230,10 +230,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       media: updatedRecord,
-      message: savedMedia.created ? "MÃ©dia crÃ©Ã© avec succÃ¨s." : "MÃ©dia mis Ã  jour.",
+      message: savedMedia.created ? "Média créé avec succès." : "Média mis à jour.",
     });
   } catch (error) {
-    console.error("Erreur crÃ©ation mÃ©dia admin :", error);
+    console.error("Erreur création média admin :", error);
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }
@@ -242,7 +242,7 @@ export async function DELETE(request: Request) {
   const user = await getCurrentUser();
   if (!user || !hasSuperAdminAccess(user.role)) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 }
     );
   }
@@ -261,26 +261,26 @@ export async function DELETE(request: Request) {
   try {
     const deleted = await prisma.media.deleteMany({ where: { slug } });
     if (deleted.count > 0) {
-    return NextResponse.json({ success: true, message: "MÃ©dia retirÃ© du catalogue." });
+    return NextResponse.json({ success: true, message: "Média retiré du catalogue." });
     }
   } catch (error) {
-    console.error("Erreur suppression mÃ©dia admin :", error);
+    console.error("Erreur suppression média admin :", error);
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 
-  return NextResponse.json({ error: "MÃ©dia introuvable" }, { status: 404 });
+  return NextResponse.json({ error: "Média introuvable" }, { status: 404 });
 }
 
 /**
- * Ã‰dition / publication d'un mÃ©dia existant (identifiÃ© par son slug).
- * Permet d'attacher une URL vidÃ©o licenciÃ©e, de changer le niveau
- * d'accÃ¨s, la validitÃ© des droits et de publier la fiche.
+ * Édition / publication d'un média existant (identifié par son slug).
+ * Permet d'attacher une URL vidéo licenciée, de changer le niveau
+ * d'accès, la validité des droits et de publier la fiche.
  */
 export async function PATCH(request: Request) {
   const user = await getCurrentUser();
   if (!user || !hasSuperAdminAccess(user.role)) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 }
     );
   }
@@ -315,7 +315,7 @@ export async function PATCH(request: Request) {
       const value = body.videoUrl.trim();
       if (value && !isValidVideoUrl(value)) {
         return NextResponse.json(
-          { error: "INVALID_VIDEO_URL", message: "L'URL vidÃ©o doit Ãªtre une URL HTTP(S) valide." },
+          { error: "INVALID_VIDEO_URL", message: "L'URL vidéo doit être une URL HTTP(S) valide." },
           { status: 400 }
         );
       }
@@ -324,7 +324,7 @@ export async function PATCH(request: Request) {
     if (body.episodeSources !== undefined) {
       if (!Array.isArray(body.episodeSources)) {
         return NextResponse.json(
-          { error: "INVALID_EPISODES", message: "La liste des Ã©pisodes est invalide." },
+          { error: "INVALID_EPISODES", message: "La liste des épisodes est invalide." },
           { status: 400 }
         );
       }
@@ -340,14 +340,14 @@ export async function PATCH(request: Request) {
           typeof source?.videoUrl !== "string"
         ) {
           return NextResponse.json(
-            { error: "INVALID_EPISODES", message: "Une URL ou un numÃ©ro d'Ã©pisode est invalide." },
+            { error: "INVALID_EPISODES", message: "Une URL ou un numéro d'épisode est invalide." },
             { status: 400 }
           );
         }
         const videoUrl = source.videoUrl.trim();
         if (videoUrl && !isValidVideoUrl(videoUrl)) {
           return NextResponse.json(
-            { error: "INVALID_VIDEO_URL", message: "Chaque URL d'Ã©pisode doit Ãªtre une URL HTTP(S) valide." },
+            { error: "INVALID_VIDEO_URL", message: "Chaque URL d'épisode doit être une URL HTTP(S) valide." },
             { status: 400 }
           );
         }
@@ -368,7 +368,7 @@ export async function PATCH(request: Request) {
       data.rightsValidUntil = body.rightsValidUntil ? new Date(body.rightsValidUntil) : null;
     }
 
-    // Garde-fou : ne pas publier une fiche sans vidÃ©o attachÃ©e.
+    // Garde-fou : ne pas publier une fiche sans vidéo attachée.
     if (data.isPublished === true) {
       const existing = DB_READY
         ? await prisma.media.findUnique({
@@ -411,7 +411,7 @@ export async function PATCH(request: Request) {
         (!requiresEpisodeVideo && !willHaveVideo && !hasEpisodeVideo)
       ) {
         return NextResponse.json(
-          { error: "VIDEO_REQUIRED", message: "Impossible de publier sans vidÃ©o licenciÃ©e attachÃ©e." },
+          { error: "VIDEO_REQUIRED", message: "Impossible de publier sans vidéo licenciée attachée." },
           { status: 400 }
         );
       }
@@ -421,7 +421,7 @@ export async function PATCH(request: Request) {
       try {
         const existing = await prisma.media.findUnique({ where: { slug } });
         if (!existing) {
-          return NextResponse.json({ error: "MÃ©dia introuvable" }, { status: 404 });
+          return NextResponse.json({ error: "Média introuvable" }, { status: 404 });
         }
         for (const source of episodeSources) {
           const episode = await prisma.episode.findFirst({
@@ -435,7 +435,7 @@ export async function PATCH(request: Request) {
             return NextResponse.json(
               {
                 error: "EPISODE_NOT_FOUND",
-                message: `Ã‰pisode ${source.seasonNumber}x${source.episodeNumber} introuvable.`,
+                message: `Épisode ${source.seasonNumber}x${source.episodeNumber} introuvable.`,
               },
               { status: 400 }
             );
@@ -467,21 +467,21 @@ export async function PATCH(request: Request) {
         });
         return NextResponse.json({
           success: true,
-          message: updated.isPublished ? "MÃ©dia publiÃ©." : "MÃ©dia mis Ã  jour.",
+          message: updated.isPublished ? "Média publié." : "Média mis à jour.",
           media: updatedWithRelations ? dbMediaToItem(updatedWithRelations) : dbMediaToItem({
             ...updated,
             categories: [],
           }),
         });
       } catch (error) {
-        console.error("Erreur PATCH mÃ©dia (DB) :", error);
+        console.error("Erreur PATCH média (DB) :", error);
         return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
       }
     }
 
     return NextResponse.json({ error: "DB_NOT_READY" }, { status: 503 });
   } catch (error) {
-    console.error("Erreur PATCH mÃ©dia admin :", error);
+    console.error("Erreur PATCH média admin :", error);
     return NextResponse.json({ error: "INTERNAL_ERROR" }, { status: 500 });
   }
 }

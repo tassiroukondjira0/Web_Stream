@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -30,8 +30,8 @@ interface PaymentConfigResponse {
 }
 
 const COUNTRY_PRICES: Record<string, { monthly: string; yearly: string; currency: string }> = {
-  MA: { monthly: "3,50", yearly: "35", currency: "â‚¬" },
-  FR: { monthly: "3,50", yearly: "35", currency: "â‚¬" },
+  MA: { monthly: "3,50", yearly: "35", currency: "€" },
+  FR: { monthly: "3,50", yearly: "35", currency: "€" },
 };
 const DEFAULT_PRICES = { monthly: "1 500", yearly: "15 000", currency: "FCFA" };
 
@@ -41,12 +41,12 @@ function getPrices(country: string | null) {
 }
 
 const PERKS = [
-  "AccÃ¨s illimitÃ© Ã  l'intÃ©gralitÃ© du catalogue de films et sÃ©ries exclusifs",
-  "QualitÃ© vidÃ©o Ultra HD 4K et son spatial immersif",
-  "ZÃ©ro coupure publicitaire",
-  "Reprise de lecture synchronisÃ©e sur tous vos Ã©crans",
-  "TÃ©lÃ©chargement hors ligne (Ã  venir sur mobile)",
-  "RÃ©munÃ©ration directe reversÃ©e aux crÃ©ateurs et ayants droit",
+  "Accès illimité à l'intégralité du catalogue de films et séries exclusifs",
+  "Qualité vidéo Ultra HD 4K et son spatial immersif",
+  "Zéro coupure publicitaire",
+  "Reprise de lecture synchronisée sur tous vos écrans",
+  "Téléchargement hors ligne (à venir sur mobile)",
+  "Rémunération directe reversée aux créateurs et ayants droit",
 ];
 
 export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
@@ -67,7 +67,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
       })
       .catch(() => {
         setConfigLoading(false);
-        setError("Impossible de charger les moyens de paiement. RÃ©essayez plus tard.");
+        setError("Impossible de charger les moyens de paiement. Réessayez plus tard.");
       });
   }, []);
 
@@ -75,7 +75,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
 
   const canSubscribe = Boolean(selectedCountry && selectedPaymentMethod);
 
-  // Persiste le pays choisi sur le profil utilisateur (appel serveur, cÃ´tÃ© client).
+  // Persiste le pays choisi sur le profil utilisateur (appel serveur, côté client).
   useEffect(() => {
     if (!user || !selectedCountry) return;
 
@@ -87,7 +87,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
           body: JSON.stringify({ country: selectedCountry }),
         });
       } catch {
-        // Ã‰chec silencieux : le pays est dÃ©jÃ  transmis Ã  l'initiation du paiement.
+        // Échec silencieux : le pays est déjà transmis à l'initiation du paiement.
       }
     })();
   }, [user, selectedCountry]);
@@ -122,7 +122,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
         window.location.href = data.url;
         return;
       } catch {
-        setError("Connexion au service de paiement impossible. VÃ©rifiez votre rÃ©seau.");
+        setError("Connexion au service de paiement impossible. Vérifiez votre réseau.");
         setLoadingPlan(null);
         return;
       }
@@ -142,14 +142,14 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
       const data = await res.json().catch(() => null);
 
       if (!res.ok || !data?.url) {
-        setError(data?.error || "Le paiement n'a pas pu Ãªtre initiÃ©. RÃ©essayez.");
+        setError(data?.error || "Le paiement n'a pas pu être initié. Réessayez.");
         setLoadingPlan(null);
         return;
       }
 
       window.location.href = data.url as string;
     } catch {
-      setError("Connexion au service de paiement impossible. VÃ©rifiez votre rÃ©seau.");
+      setError("Connexion au service de paiement impossible. Vérifiez votre réseau.");
       setLoadingPlan(null);
     }
   };
@@ -171,18 +171,18 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
       <div className="mx-auto max-w-3xl text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-semibold text-amber-400">
           <Sparkles className="h-3.5 w-3.5" />
-          Pass CinÃ©ma IndÃ©pendant
+          Pass Cinéma Indépendant
         </div>
         <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-          Choisissez l&apos;expÃ©rience Premium
+          Choisissez l&apos;expérience Premium
         </h1>
         <p className="mt-4 text-base text-zinc-400 leading-relaxed">
-          Profitez d&apos;une plateforme de streaming Ã©thique, fluide et performante. Sans engagement, annulable
+          Profitez d&apos;une plateforme de streaming éthique, fluide et performante. Sans engagement, annulable
           en 1 clic.
         </p>
         <div className="mt-4 inline-flex items-center gap-2 text-xs text-zinc-500">
           <Smartphone className="h-3.5 w-3.5" />
-          Paiement par carte bancaire internationale et Mobile Money sÃ©curisÃ©.
+          Paiement par carte bancaire internationale et Mobile Money sécurisé.
         </div>
       </div>
 
@@ -190,7 +190,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
         <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-4 text-center">
           <p className="flex items-center justify-center gap-2 text-sm font-semibold text-emerald-300">
             <Check className="h-4 w-4" />
-            Vous bÃ©nÃ©ficiez dÃ©jÃ  de l&apos;accÃ¨s Premium.
+            Vous bénéficiez déjà de l&apos;accès Premium.
           </p>
         </div>
       )}
@@ -204,7 +204,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
                 <h3 className="text-sm font-semibold text-white">Votre pays</h3>
               </div>
               {configLoading ? (
-                <p className="text-xs text-zinc-400">Chargement des paysâ€¦</p>
+                <p className="text-xs text-zinc-400">Chargement des pays…</p>
               ) : config ? (
                 <select
                   value={selectedCountry ?? ""}
@@ -214,7 +214,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
                   }}
                   className="w-full rounded-xl border border-white/10 bg-zinc-800 px-4 py-3 text-sm text-white focus:border-amber-500 focus:outline-none"
                 >
-                  <option value="">â€” SÃ©lectionnez votre pays â€”</option>
+                  <option value="">— Sélectionnez votre pays —</option>
                   {config.countries.map((c) => (
                     <option key={c.code} value={c.code}>
                       {c.label}
@@ -272,7 +272,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
                   <h3 className="text-xl font-bold text-white flex items-center gap-2">
                     Abonnement Mensuel
                   </h3>
-                  <p className="mt-1 text-xs text-zinc-400">Sans engagement, rÃ©siliable Ã  tout moment</p>
+                  <p className="mt-1 text-xs text-zinc-400">Sans engagement, résiliable à tout moment</p>
                   <div className="mt-6 flex items-baseline gap-1">
                     <span className="text-4xl font-black text-white">{getPrices(selectedCountry).monthly}</span>
                     <span className="text-sm font-semibold text-zinc-400">{getPrices(selectedCountry).currency} / mois</span>
@@ -296,7 +296,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
                     {loadingPlan === "MONTHLY" ? (
                       <span className="inline-flex items-center justify-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Redirectionâ€¦
+                        Redirection…
                       </span>
                     ) : (
                       "Souscrire mensuellement"
@@ -312,7 +312,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
 
               <div className="relative flex flex-col justify-between rounded-3xl border-2 border-amber-500 bg-gradient-to-b from-zinc-900 to-amber-950/20 p-8 shadow-2xl shadow-amber-500/10">
                 <div className="absolute -top-3.5 right-6 rounded-full bg-amber-500 px-3 py-1 text-[11px] font-bold text-black uppercase tracking-wider">
-                  Ã‰conomisez 2 mois
+                  Économisez 2 mois
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -343,7 +343,7 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
                     {loadingPlan === "YEARLY" ? (
                       <span className="inline-flex items-center justify-center gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Redirectionâ€¦
+                        Redirection…
                       </span>
                     ) : (
                       "Choisir la formule Annuelle"
@@ -369,8 +369,8 @@ export default function PremiumClient({ user, isPremium }: PremiumClientProps) {
       )}
 
       <p className="mx-auto mt-10 max-w-2xl text-center text-[11px] leading-relaxed text-zinc-500">
-        Le paiement est traitÃ© par PayDunya via votre moyen de paiement (carte bancaire ou Mobile Money). L&apos;accÃ¨s Premium est activÃ©
-        automatiquement dÃ¨s la confirmation de la transaction par le prestataire.
+        Le paiement est traité par PayDunya via votre moyen de paiement (carte bancaire ou Mobile Money). L&apos;accès Premium est activé
+        automatiquement dès la confirmation de la transaction par le prestataire.
       </p>
     </div>
   );

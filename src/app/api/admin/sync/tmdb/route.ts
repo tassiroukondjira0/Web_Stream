@@ -1,14 +1,14 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
 import { syncTmdbCatalog } from "@/modules/providers/tmdb/tmdb.sync";
 
 /**
- * Synchro incrÃ©mentale du catalogue TMDB (films + sÃ©ries lus via Vidzy).
+ * Synchro incrémentale du catalogue TMDB (films + séries lus via Vidzy).
  *
- * - GET  : Ã©tat du catalogue TMDB (compteurs + historique des synchros).
- * - POST : lance une synchro (nombre de pages par liste paramÃ©trable).
+ * - GET  : état du catalogue TMDB (compteurs + historique des synchros).
+ * - POST : lance une synchro (nombre de pages par liste paramétrable).
  */
 
 const MAX_PAGES = 20;
@@ -22,7 +22,7 @@ async function requireAdmin() {
 export async function GET() {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 },
     );
   }
@@ -65,7 +65,7 @@ export async function GET() {
 export async function POST(request: Request) {
   if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action rÃ©servÃ©e aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 },
     );
   }
@@ -77,14 +77,14 @@ export async function POST(request: Request) {
       pages = Math.min(Math.max(Math.floor(body.pages), 1), MAX_PAGES);
     }
   } catch {
-    // corps vide ou invalide â†’ on garde la valeur par dÃ©faut
+    // corps vide ou invalide → on garde la valeur par défaut
   }
 
   try {
     const report = await syncTmdbCatalog({ pages });
     return NextResponse.json({
       success: true,
-      message: `Synchro TMDB terminÃ©e : ${report.fetched} titres rÃ©cupÃ©rÃ©s, ${report.upserted} en base (${report.pruned} obsolÃ¨tes retirÃ©s, ${report.duplicatesHidden} doublons FRENCHSTREAM masquÃ©s).`,
+      message: `Synchro TMDB terminée : ${report.fetched} titres récupérés, ${report.upserted} en base (${report.pruned} obsolètes retirés, ${report.duplicatesHidden} doublons FRENCHSTREAM masqués).`,
       report,
     });
   } catch (error) {

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -356,7 +356,7 @@ export default function AccountPage() {
 
       {/* Sections Favoris & Reprise de lecture */}
       <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Favoris â€” persistÃ©s en base */}
+        {/* Favoris — persistés en base */}
         <div id="favoris" className="scroll-mt-24 rounded-2xl border border-white/10 bg-zinc-900/40 p-6">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-base font-semibold text-white">
@@ -369,7 +369,7 @@ export default function AccountPage() {
               )}
             </h3>
             <Link href="/films" className="text-xs text-zinc-400 hover:text-white">
-              Explorer â†’
+              Explorer →
             </Link>
           </div>
           {listsLoading ? (
@@ -406,7 +406,7 @@ export default function AccountPage() {
           )}
         </div>
 
-        {/* Liste de souhaits â€” persistÃ©e en base */}
+        {/* Liste de souhaits — persistée en base */}
         <div id="souhaits" className="scroll-mt-24 rounded-2xl border border-white/10 bg-zinc-900/40 p-6">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="flex items-center gap-2 text-base font-semibold text-white">
@@ -419,7 +419,7 @@ export default function AccountPage() {
               )}
             </h3>
             <Link href="/series" className="text-xs text-zinc-400 hover:text-white">
-              Explorer â†’
+              Explorer →
             </Link>
           </div>
           {listsLoading ? (
@@ -495,8 +495,8 @@ export default function AccountPage() {
                           {prettyTitle(entry.mediaSlug)}
                           {entry.episodeNumber != null && (
                             <span className="text-zinc-500">
-                              {entry.seasonNumber != null ? ` Â· S${entry.seasonNumber}` : ""}
-                              {` Â· Ã‰p. ${entry.episodeNumber}`}
+                              {entry.seasonNumber != null ? ` · S${entry.seasonNumber}` : ""}
+                              {` · Ép. ${entry.episodeNumber}`}
                             </span>
                           )}
                         </span>
@@ -524,12 +524,12 @@ export default function AccountPage() {
   );
 }
 
-/** Route de fiche correspondant Ã  un slug (local ou partenaire externe). */
+/** Route de fiche correspondant à un slug (local ou partenaire externe). */
 function slugToHref(slug: string): string {
   return providerSlugHref(slug);
 }
 
-/** Lien de reprise : fiche + saison/Ã©pisode exacts. */
+/** Lien de reprise : fiche + saison/épisode exacts. */
 function progressHref(entry: PlaybackEntry): string {
   const base = slugToHref(entry.mediaSlug);
   const query = new URLSearchParams();
@@ -539,7 +539,7 @@ function progressHref(entry: PlaybackEntry): string {
   return qs ? `${base}?${qs}` : base;
 }
 
-/** DurÃ©e mm:ss (ou h:mm:ss) pour l'affichage de la progression. */
+/** Durée mm:ss (ou h:mm:ss) pour l'affichage de la progression. */
 function formatTime(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));
   const h = Math.floor(total / 3600);
@@ -550,12 +550,12 @@ function formatTime(seconds: number): string {
     : `${m}:${String(s).padStart(2, "0")}`;
 }
 
-/** LibellÃ© lisible Ã  partir d'un slug (sans appel rÃ©seau). */
+/** Libellé lisible à partir d'un slug (sans appel réseau). */
 function prettyTitle(slug: string): string {
   const m = slug.match(/^(partner|frenchmanga|tmdb|fstreamtv)-(movie|series|anime)-(.+)$/);
   if (m) {
     const [, , kind, id] = m;
-    return `${humanize(id)} ${kind === "movie" ? "Â· Film" : kind === "series" ? "Â· Série" : "Â· Animé"}`;
+    return `${humanize(id)} ${kind === "movie" ? "· Film" : kind === "series" ? "· Série" : "· Animé"}`;
   }
   return humanize(slug);
 }
