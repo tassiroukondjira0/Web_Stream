@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { getCurrentUser, hasAdminAccess } from "@/lib/auth";
 
 async function requireAdmin() {
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Titre et message requis" }, { status: 400 });
     }
 
-    let where: any = {};
+    let where: Prisma.UserWhereInput = {};
     if (target === "SUBSCRIBERS") {
       where = { role: "SUBSCRIBER" };
     } else {

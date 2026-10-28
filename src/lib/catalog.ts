@@ -34,7 +34,10 @@ export async function getAllMedias(): Promise<MediaItem[]> {
 
   try {
     const medias = await prisma.media.findMany({
-      where: { isPublished: true },
+      where: {
+        isPublished: true,
+        OR: [{ rightsValidUntil: null }, { rightsValidUntil: { gte: new Date() } }],
+      },
       include: {
         categories: {
           include: { category: true },
