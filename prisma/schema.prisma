@@ -62,6 +62,7 @@ model User {
   pageViews        PageView[]
   playbackProgress PlaybackProgress[]
   notifications    Notification[]
+  reviews          Review[]
 
   @@map("users")
 }
@@ -402,4 +403,20 @@ model NewsletterSubscriber {
   createdAt DateTime @default(now())
 
   @@map("newsletter_subscribers")
+}
+
+/// Avis et notes des utilisateurs sur un titre du catalogue.
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaSlug String
+  rating    Int
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, mediaSlug])
+  @@index([mediaSlug])
+  @@map("reviews")
 }

@@ -10,6 +10,7 @@ import { VidzyPlayer } from "@/components/VidzyPlayer";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
 import { ShareButton } from "@/components/ShareButton";
+import { Reviews } from "@/components/Reviews";
 import { Tv, Calendar, Lock, Play } from "lucide-react";
 
 interface PageProps {
@@ -264,6 +265,8 @@ async function SeriesContent({ params, searchParams }: PageProps) {
           </ul>
         </div>
       </div>
+
+      <Reviews mediaSlug={serie.slug} />
     </div>
   );
 }
