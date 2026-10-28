@@ -51,6 +51,21 @@ export function Footer() {
           </div>
 
           <div>
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">Application</h3>
+            <ul className="mt-4 space-y-2 text-sm">
+              <li>
+                <a
+                  href="/downloads/cinemax.apk"
+                  download="CineMax.apk"
+                  className="inline-flex items-center gap-1.5 hover:text-white"
+                >
+                  📱 Télécharger l&apos;APK Android
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <div>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">Légal & Droits</h3>
             <ul className="mt-4 space-y-2 text-sm">
               <li>

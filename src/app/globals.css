@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
 /*
+ * ─── Safe areas (Capacitor / mobile natif) ────────────────────────────
+ * Sur les appareils à encoche (iPhone X+, Android avec punch-hole), les
+ * zones « safe-area-inset-*» évitent que le contenu passe sous la barre
+ * d'état ou le « home indicator ». Ces variables sont nulles sur le web
+ * classique et n'ont donc aucun effet sur la version navigateur.
+ */
+
+/*
  * Largeur maximale adaptative du conteneur standard `max-w-7xl`
  * (navbar, page d'accueil, footer, pages catalogue…).
  *
@@ -45,6 +53,11 @@ body {
   color: var(--foreground);
   min-height: 100vh;
   overflow-x: hidden;
+  /* Safe areas pour les appareils mobiles à encoche */
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 img,

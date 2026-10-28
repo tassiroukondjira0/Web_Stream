@@ -26,9 +26,22 @@
     "posters:fix-relative": "tsx scripts/fix-relative-posters.ts",
     "vercel:env": "powershell -ExecutionPolicy Bypass -File ./scripts/vercel-env.ps1",
     "vercel:pull": "vercel env pull .env.local --environment=production",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "cap:init": "npx cap add android && npx cap add ios",
+    "cap:sync": "npx cap sync",
+    "cap:android": "npx cap open android",
+    "cap:ios": "npx cap open ios",
+    "cap:run:android": "npx cap run android",
+    "cap:run:ios": "npx cap run ios"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/browser": "^8.0.5",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/keyboard": "^8.0.6",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
     "@prisma/client": "6.4.1",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.12",
@@ -39,6 +52,9 @@
     "stripe": "^23.0.0"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/cli": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
     "@tailwindcss/turbopack": "^4.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",

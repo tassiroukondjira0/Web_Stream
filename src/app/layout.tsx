@@ -7,6 +7,8 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageViewTracker } from "@/components/PageViewTracker";
+import { CapacitorInit } from "@/components/CapacitorInit";
+import { AndroidAppBanner } from "@/components/AndroidAppBanner";
 import { getMetadataBase } from "@/lib/env";
 
 const geistSans = Geist({
@@ -49,6 +51,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   themeColor: "#09090b",
+  viewportFit: "cover",
 };
 
 /**
@@ -87,6 +90,10 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
         <Suspense fallback={null}>
           <PageViewTracker />
+          <CapacitorInit />
+        </Suspense>
+        <Suspense fallback={null}>
+          <AndroidAppBanner />
         </Suspense>
         <Suspense fallback={<NavbarFallback />}>
           <Navbar />
