@@ -1,9 +1,9 @@
 import type { PlayerSource } from "@/lib/player-sources";
 import {
   EMBED_USER_AGENT,
+  embedReferer,
   isDeadEmbedDocument,
   originalEmbedUrl,
-  partnerReferer,
 } from "@/lib/embed-ext";
 
 /**
@@ -42,7 +42,7 @@ async function probe(url: string): Promise<boolean> {
         "User-Agent": EMBED_USER_AGENT,
         Accept: "text/html,application/xhtml+xml,*/*",
         "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
-        Referer: partnerReferer(),
+        Referer: embedReferer(url),
       },
       redirect: "follow",
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
