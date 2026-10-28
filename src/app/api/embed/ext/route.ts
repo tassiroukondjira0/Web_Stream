@@ -298,6 +298,7 @@ async function fetchExternalDocumentSafe(
     // classification and the socket is pinned to a validated public address.
     const addresses = await resolvePublicAddresses(current.hostname);
     if (!addresses.length) return null;
+    const pinnedAddress = addresses.find((a) => isIP(a) === 4) ?? addresses[0];
 
     const result = await new Promise<{ status: number; location?: string; html: string } | null>((resolve) => {
       const chunks: Buffer[] = [];
@@ -309,8 +310,14 @@ async function fetchExternalDocumentSafe(
           "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
           Referer: embedReferer(current.href),
         },
-        lookup: ((_hostname: string, _options: unknown, callback: (error: NodeJS.ErrnoException | null, address: string, family: number) => void) => {
-          callback(null, addresses[0], isIP(addresses[0]));
+        lookup: ((_hostname: string, options: { all?: boolean } | unknown, callback: (error: NodeJS.ErrnoException | null, address: string | Array<{ address: string; family: number }>, family?: number) => void) => {
+          const address = pinnedAddress;
+          const family = isIP(address);
+          if (options && typeof options === "object" && (options as { all?: boolean }).all) {
+            callback(null, [{ address, family }]);
+          } else {
+            callback(null, address, family);
+          }
         }) as never,
         servername: current.hostname,
         timeout: 12_000,

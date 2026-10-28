@@ -72,7 +72,7 @@ function requestRawOnce(
   return (async () => {
     const addresses = await resolvePublicAddresses(url.hostname);
     if (!addresses.length) throw new Error("destination address is not public");
-    const address = addresses[0];
+    const address = addresses.find((a) => net.isIP(a) === 4) ?? addresses[0];
   const isHttps = url.protocol === "https:";
   const port = url.port ? Number(url.port) : isHttps ? 443 : 80;
   const path = url.pathname + url.search;
