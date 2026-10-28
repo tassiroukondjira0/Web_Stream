@@ -28,7 +28,7 @@ export const metadata = {
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col gap-12 pb-16">
+    <div className="flex flex-col gap-12 overflow-x-hidden pb-16">
       {/* À la une — sélection rotative (renouvelée automatiquement) */}
       <Suspense
         fallback={

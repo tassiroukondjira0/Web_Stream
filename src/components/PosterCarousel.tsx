@@ -152,7 +152,7 @@ export function PosterCarousel({
         <button
           type="button"
           onClick={() => scrollByPage(1)}
-          className="absolute right-0 top-[38%] z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/80 text-white shadow-md backdrop-blur transition-colors hover:bg-zinc-800 sm:h-10 sm:w-10"
+          className="absolute right-2 top-[38%] z-20 hidden h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-black/80 text-white shadow-md backdrop-blur transition-colors hover:bg-zinc-800 sm:flex sm:h-10 sm:w-10"
           aria-label="Faire défiler vers la droite"
         >
           <ChevronRight className="h-5 w-5" />
