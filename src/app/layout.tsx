@@ -9,7 +9,7 @@ import { Footer } from "@/components/Footer";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { CapacitorInit } from "@/components/CapacitorInit";
 import { AndroidAppBanner } from "@/components/AndroidAppBanner";
-import { PropellerAdsTag } from "@/components/PropellerAdsTag";
+import { AdScript } from "@/components/AdScript";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { getMetadataBase } from "@/lib/env";
 
@@ -98,9 +98,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <AndroidAppBanner />
         </Suspense>
-        <Suspense fallback={null}>
-          <PropellerAdsTag />
-        </Suspense>
+        <AdScript />
         <Suspense fallback={<NavbarFallback />}>
           <Navbar />
         </Suspense>

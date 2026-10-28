@@ -75,8 +75,8 @@ export interface PosterCarouselItem {
 
 /** Tailles de cartes du carrousel. "lg" est réservé à la section « À la une ». */
 const CARD_WIDTH: Record<"sm" | "lg", string> = {
-  sm: "w-[140px] sm:w-[160px] lg:w-[176px]",
-  lg: "w-[172px] sm:w-[210px] lg:w-[248px]",
+  sm: "w-[120px] sm:w-[150px] lg:w-[176px]",
+  lg: "w-[150px] sm:w-[190px] lg:w-[248px]",
 };
 
 export function PosterCarousel({
@@ -119,10 +119,10 @@ export function PosterCarousel({
   if (items.length === 0) return null;
 
   return (
-    <div className="group/carousel relative w-full min-w-0">
+    <div className="group/carousel relative w-full min-w-0 overflow-hidden">
       <div
         ref={scroller}
-        className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex max-w-full snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {items.map((item) => (
           <div key={item.key} className={`${CARD_WIDTH[size]} shrink-0 snap-start`}>
