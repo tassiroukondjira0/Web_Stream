@@ -67,6 +67,7 @@ export async function GET() {
 
     const slugs = items.map((i) => i.mediaSlug);
     const posterMap: Record<string, string | null> = {};
+    const titleMap: Record<string, string> = {};
 
     if (slugs.length > 0) {
       const externalIds = slugs.map((slug) => {
@@ -79,36 +80,42 @@ export async function GET() {
           where: {
             externalId: { in: externalIds },
           },
-          select: { provider: true, externalId: true, posterUrl: true },
+          select: { provider: true, externalId: true, posterUrl: true, title: true },
         }),
         prisma.media.findMany({
           where: {
             slug: { in: slugs },
           },
-          select: { slug: true, posterUrl: true },
+          select: { slug: true, posterUrl: true, title: true },
         }),
       ]);
 
-      // Associer les affiches des médias locaux
+      // Associer les affiches et titres des médias locaux
       for (const m of localMedias) {
         if (m.posterUrl) {
           posterMap[m.slug] = m.posterUrl;
         }
+        if (m.title) {
+          titleMap[m.slug] = m.title;
+        }
       }
 
-      // Associer les affiches des providerAssets
+      // Associer les affiches et titres des providerAssets
       for (const slug of slugs) {
-        if (posterMap[slug]) continue;
+        if (posterMap[slug] && titleMap[slug]) continue;
         const m = slug.match(/^(?:partner|frenchmanga|tmdb|fstreamtv)-(?:movie|series|anime)-(.+)$/);
         const id = m ? m[1] : slug;
         const asset = providerAssets.find((a) => a.externalId === id);
-        if (asset?.posterUrl) {
+        if (asset?.posterUrl && !posterMap[slug]) {
           posterMap[slug] = asset.posterUrl;
+        }
+        if (asset?.title && !titleMap[slug]) {
+          titleMap[slug] = asset.title;
         }
       }
     }
 
-    return NextResponse.json({ wishlist: slugs, posterMap });
+    return NextResponse.json({ wishlist: slugs, posterMap, titleMap });
   } catch (error) {
     console.error("Erreur lors de la récupération de la liste de souhaits :", error);
     return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });

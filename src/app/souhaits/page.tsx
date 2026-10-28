@@ -19,6 +19,7 @@ export default function SouhaitsPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [posterMap, setPosterMap] = useState<Record<string, string | null>>({});
+  const [titleMap, setTitleMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -46,9 +47,11 @@ export default function SouhaitsPage() {
       setWishlist(Array.isArray(data.wishlist) ? data.wishlist : []);
       // Extraire le posterMap de la réponse
       setPosterMap(data.posterMap || {});
+       setTitleMap(data.titleMap || {});
     }).catch(() => {
       setWishlist([]);
       setPosterMap({});
+       setTitleMap({});
     });
   }, [user]);
 
@@ -121,7 +124,7 @@ export default function SouhaitsPage() {
                 key={slug}
                 href={href}
                 posterUrl={posterUrl}
-                title={prettyTitle(slug)}
+                title={titleMap[slug] || prettyTitle(slug)}
                 year={extractYear(slug)}
                 // Ajout d'un badge pour indiquer le statut wishlist
                 badge={isInWishlist ? "★" : undefined}
