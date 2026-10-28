@@ -168,8 +168,14 @@ export function originalEmbedUrl(url: string): string | null {
  *  3. le domaine historique de repli.
  */
 export function partnerReferer(): string {
+  // Les embeds (uqload, premium/fsvid…) sont publiés par le partenaire
+  // principal (`PARTNER_DOMAINS`) ; c'est son domaine qui est mis en liste
+  // blanche par les hébergeurs (fsvid renvoie 403 pour le domaine de repli).
+  // On privilégie donc le partenaire principal, avec repli sur le fournisseur
+  // de secours puis sur le domaine historique.
   const raw =
-    process.env.FSTREAMTV_DOMAIN?.trim() || process.env.PARTNER_DOMAINS?.split(",")[0]?.trim();
+    process.env.PARTNER_DOMAINS?.split(",")[0]?.trim() ||
+    process.env.FSTREAMTV_DOMAIN?.trim();
   if (!raw) return "https://www.french-streaming.tv/";
   const base = raw.startsWith("http") ? raw : `https://${raw}`;
   return base.endsWith("/") ? base : `${base}/`;
