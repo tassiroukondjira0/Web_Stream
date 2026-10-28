@@ -196,7 +196,7 @@ async function MangaSection() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
             Mangas & animés

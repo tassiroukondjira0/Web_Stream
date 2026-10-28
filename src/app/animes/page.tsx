@@ -72,7 +72,7 @@ async function AnimesContent({ searchParams }: AnimesPageProps) {
         </div>
       ) : (
         <section className="mt-8">
-          <div className="flex items-baseline justify-between border-b border-white/10 pb-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-white/10 pb-4">
             <h2 className="text-xl font-bold text-white">
               Mangas & animés du catalogue
             </h2>
