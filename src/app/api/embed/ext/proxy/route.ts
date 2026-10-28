@@ -423,7 +423,7 @@ export async function OPTIONS() {
     headers: {
       "Access-Control-Allow-Origin": "null",
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Accept, X-Requested-With, Range",
+      "Access-Control-Allow-Headers": "*",
       "Access-Control-Max-Age": "86400",
     },
   });
