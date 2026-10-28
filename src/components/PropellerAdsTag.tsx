@@ -34,9 +34,11 @@ export function PropellerAdsTag() {
 
   return (
     <Script
-      src="https://5gvci.com/act/files/tag.min.js?z=12142561"
-      strategy="afterInteractive"
+      src="https://quge5.com/88/tag.min.js"
+      data-zone="303060"
+      async
       data-cfasync="false"
+      strategy="afterInteractive"
     />
   );
 }
