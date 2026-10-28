@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, ChevronDown, LogOut, Heart, ListPlus, ShieldCheck, Bell, LogIn, UserPlus, Users } from "lucide-react";
+import { User, ChevronDown, LogOut, Heart, ListPlus, ShieldCheck, Bell, LogIn, UserPlus, Users, Star } from "lucide-react";
 
 interface SessionUser {
   id: string;
@@ -115,6 +115,14 @@ export function AccountMenu() {
                       >
                         <Bell className="h-4 w-4 text-purple-400" />
                         Centre de notifications
+                      </Link>
+                      <Link
+                        href="/admin/reviews"
+                        onClick={() => setOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
+                      >
+                        <Star className="h-4 w-4 text-purple-400" />
+                        Avis des utilisateurs
                       </Link>
                       {user!.role === "SUPER_ADMIN" && (
                         <Link
