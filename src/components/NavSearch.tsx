@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
 
-type Result = { title: string; href: string; type: string };
+type Result = { title: string; href: string; type: string; posterUrl: string };
 
 export function NavSearch() {
   const [open, setOpen] = useState(false);
@@ -109,21 +109,35 @@ export function NavSearch() {
           {!loading && results.length === 0 && (
             <div className="px-4 py-3 text-xs text-zinc-400">Aucun résultat</div>
           )}
-          {results.map((r, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                setQuery("");
-                router.push(r.href);
-              }}
-              className="flex w-full items-center justify-between gap-2 px-4 py-2 text-left text-sm text-white hover:bg-zinc-800"
-            >
-              <span className="truncate">{r.title}</span>
-              <span className="shrink-0 text-[10px] text-zinc-500">{r.type}</span>
-            </button>
-          ))}
+          <div className="grid grid-cols-3 gap-2 p-2">
+            {results.map((r, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setQuery("");
+                  router.push(r.href);
+                }}
+                className="group flex flex-col overflow-hidden rounded-lg bg-zinc-800 text-left hover:ring-1 hover:ring-violet-500"
+              >
+                <div className="relative aspect-[2/3] w-full bg-zinc-700">
+                  {r.posterUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={r.posterUrl}
+                      alt={r.title}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : null}
+                </div>
+                <div className="p-1.5">
+                  <p className="line-clamp-2 text-[11px] font-medium text-white">{r.title}</p>
+                  <p className="text-[9px] text-zinc-500">{r.type}</p>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

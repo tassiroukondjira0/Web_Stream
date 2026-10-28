@@ -25,15 +25,17 @@ export async function GET(request: Request) {
         title: m.title,
         href: m.type === "SERIES" ? `/series/${m.slug}` : `/films/${m.slug}`,
         type: m.type === "SERIES" ? "Série" : "Film",
+        posterUrl: m.posterUrl,
       }));
 
-    let partnerResults: { title: string; href: string; type: string }[] = [];
+    let partnerResults: { title: string; href: string; type: string; posterUrl: string | null }[] = [];
     try {
       const assets = await searchPartnerAssets(q, limit);
       partnerResults = assets.slice(0, limit).map((a) => ({
         title: a.title,
         href: providerItemHref(a),
         type: "Catalogue",
+        posterUrl: a.posterUrl,
       }));
     } catch {
       partnerResults = [];
