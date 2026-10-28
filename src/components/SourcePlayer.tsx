@@ -1,6 +1,7 @@
 import { VIDZY_HOST, type PlayerSelection, type PlayerSource } from "@/lib/player-sources";
 import { EmbedFrame } from "@/components/EmbedFrame";
 import { SourceSelect } from "@/components/SourceSelect";
+import { AdBanner } from "@/components/AdBanner";
 
 /**
  * Lecteur multi-sources : iframe + menus déroulants pour épisode / langue /
@@ -225,6 +226,7 @@ export function SourcePlayer({ sources, hrefFor, selection, title, mediaSlug }: 
           )}
         </div>
       )}
+      <AdBanner />
     </div>
   );
 }
