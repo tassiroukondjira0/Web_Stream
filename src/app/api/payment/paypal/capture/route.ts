@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { COOKIE_NAME, getCurrentUser, sessionCookieOptions, signSessionToken, hasPremiumAccess } from "@/lib/auth";
 import { capturePayPalOrder } from "@/lib/paypal";
 import { activatePremium } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
@@ -20,6 +20,7 @@ export async function POST(request: Request) {
 
     const payment = await prisma.payment.findUnique({ where: { providerRef: orderId } });
     if (!payment) return NextResponse.json({ error: "Paiement introuvable." }, { status: 404 });
+    if (payment.userId !== user.id) return NextResponse.json({ error: "Paiement introuvable." }, { status: 404 });
 
     await activatePremium({
       providerRef: orderId,
@@ -32,7 +33,12 @@ export async function POST(request: Request) {
       rawPayload: capture,
     });
 
-    return NextResponse.json({ success: true });
+    const res = NextResponse.json({ success: true });
+    if (!hasPremiumAccess(user.role)) {
+      const sessionToken = await signSessionToken({ ...user, role: "SUBSCRIBER" });
+      res.cookies.set(COOKIE_NAME, sessionToken, sessionCookieOptions());
+    }
+    return res;
   } catch (error) {
     console.error("Erreur PayPal capture :", error);
     return NextResponse.json({ error: "Capture échouée." }, { status: 500 });

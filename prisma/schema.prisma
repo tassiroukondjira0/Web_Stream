@@ -394,3 +394,12 @@ model ProviderSyncRun {
   @@index([provider, startedAt])
   @@map("provider_sync_runs")
 }
+
+/// Abonnés à la newsletter (consentement RGPD explicite).
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("newsletter_subscribers")
+}

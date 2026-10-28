@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     const appUrl = getAppUrl();
 
     // Laisser PayDunya afficher les canaux activés sur le compte marchand
-    let channels: string[] | undefined = undefined;
+    const channels: string[] | undefined = undefined;
 
     const invoice = await createPremiumInvoice({
       amount,

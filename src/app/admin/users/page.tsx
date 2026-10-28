@@ -17,22 +17,25 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/admin/users");
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || "Erreur");
-      setUsers(data.users);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchUsers();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    let active = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/admin/users");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.error || "Erreur");
+        if (active) setUsers(data.users);
+      } catch (e) {
+        if (active) setError(e instanceof Error ? e.message : "Erreur");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
 
   const changeRole = async (userId: string, role: string) => {
@@ -47,7 +50,7 @@ export default function AdminUsersPage() {
         alert(data?.error || "Erreur");
         return;
       }
-      fetchUsers();
+      window.location.reload();
     } catch {
       alert("Erreur réseau");
     }

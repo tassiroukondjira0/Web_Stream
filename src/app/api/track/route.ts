@@ -75,7 +75,7 @@ export async function POST(request: Request) {
         const ua = request.headers.get("user-agent") || "";
         const key = `track:${ip}:${ua.slice(0, 64)}:${path}`;
         const now = Date.now();
-        const g = global as any;
+        const g = global as { __trackCache?: Map<string, number> };
         if (!g.__trackCache) g.__trackCache = new Map<string, number>();
         const last = g.__trackCache.get(key);
         if (typeof last === "number" && now - last < 30_000) {

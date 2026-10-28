@@ -15,7 +15,11 @@ export function AdminNotifications() {
   const [loading, setLoading] = useState(false);
   // Pré-remplir au chargement initial (type Nouveautés par défaut)
   useEffect(() => {
-    handleTypeChange("NOUVEAUTE");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAnnouncementType("NOUVEAUTE");
+    setTitle("Nouveaux titres disponibles");
+    setMessage("De nouveaux films et series ont ete ajoutes au catalogue. Venez les decouvrir !");
+    setLink("/nouveautes");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -65,8 +69,8 @@ export function AdminNotifications() {
       setTitle("");
       setMessage("");
       setLink("");
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'envoi");
     } finally {
       setLoading(false);
     }
@@ -126,7 +130,7 @@ export function AdminNotifications() {
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-sm text-zinc-300 mb-2">Type d'annonce</label>
+            <label className="block text-sm text-zinc-300 mb-2">Type d&apos;annonce</label>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, hasAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { readRequestBodyLimited } from "@/lib/request-body";
 
@@ -85,7 +85,7 @@ async function ensureCategory(slug: string, name: string): Promise<string> {
 
 export async function POST(request: Request): Promise<NextResponse> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") {
+  if (!user || !hasAdminAccess(user.role)) {
     return NextResponse.json(
       { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
       { status: 403 },

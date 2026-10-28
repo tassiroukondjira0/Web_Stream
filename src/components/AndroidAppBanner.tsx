@@ -57,7 +57,8 @@ export function AndroidAppBanner() {
       // localStorage indisponible — on affiche quand même
     }
 
-    setVisible(true);
+    const timer = window.setTimeout(() => setVisible(true), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   if (!visible) return null;
