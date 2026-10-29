@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       };
 
       const sessionToken = await signSessionToken(user);
-      const res = NextResponse.json({ success: true, user });
+      const res = NextResponse.json({ success: true, user, token: sessionToken });
       res.cookies.set(COOKIE_NAME, sessionToken, sessionCookieOptions());
       return res;
     }
