@@ -445,16 +445,38 @@ function bridge(p,q){
 function withGk(u){
   try{
     if(!window.__vzgk||!/(^|\.)fsvid\./i.test(HOST))return u;
-    var a=new URL(u);
+    var a=new URL(u,location.href);
     if(a.pathname.indexOf("/api/embed/ext/proxy")!==0)return u;
+    // Absolu sur notre hôte : un chemin relatif serait résolu via <base> hébergeur.
+    if(a.hostname!==location.hostname)a=new URL(a.pathname+a.search,location.href);
     if(!a.searchParams.get("gk"))a.searchParams.set("gk",window.__vzgk);
     return a.href;
   }catch(e){return u;}
 }
+/** Vrai pour une URL (relative ou absolue) déjà pointée vers notre proxy. */
+function isOurProxy(u){
+  if(typeof u!=="string"||!u)return false;
+  if(u.indexOf("/api/embed/ext/proxy")===0)return true;
+  try{
+    var a=new URL(u,location.href);
+    return a.hostname===location.hostname&&a.pathname.indexOf("/api/embed/ext/proxy")===0;
+  }catch(e){return false;}
+}
+/** Normalise une URL proxy en absolue sur notre origine (évite <base> hébergeur). */
+function ourProxyAbs(u){
+  try{
+    var a=new URL(u,location.href);
+    if(a.hostname!==location.hostname)a=new URL(a.pathname+a.search,location.href);
+    return withGk(a.href);
+  }catch(e){return withGk(u);}
+}
 function map(u){
   if(typeof u!=="string"||!u)return null;
-  // URL de bridge déjà absolue : ne pas la réécrire une seconde fois.
-  if(u.indexOf("/api/embed/ext/proxy")===0)return withGk(u);
+  // Playlist HLS réécrite : segments déjà en URL absolue vers notre proxy.
+  // Il FAUT quand même renvoyer une URL (truthy) pour que fetch/XHR forcent
+  // credentials=omit — sinon JWPlayer/hls.js garde withCredentials=true et
+  // CORS échoue depuis l'origine opaque (sandbox sans allow-same-origin).
+  if(isOurProxy(u))return ourProxyAbs(u);
   if(u.indexOf(location.origin)===0)return null;
   var a;try{
     // Proto-relative (//cdn.example.com/x.js) : résolu contre l'hôte de l'embed
@@ -474,7 +496,7 @@ function map(u){
 function mapBody(body){
   if(typeof body!=="string"||body.indexOf("http")<0)return body;
   return body.replace(/https?:\\/\\/[^"'\\s&<]+/g,function(u){
-    try{var a=new URL(u);if(a.hostname===location.hostname||a.hostname===HOST)return u;if(a.origin===location.origin)return u;return withGk(proxyUrl(u));}catch(e){return u;}
+    try{var a=new URL(u);if(isOurProxy(u)||a.hostname===location.hostname||a.hostname===HOST)return u;if(a.origin===location.origin)return u;return withGk(proxyUrl(u));}catch(e){return u;}
     return u;
   });
 }
@@ -484,6 +506,8 @@ if(of_)window.fetch=function(input,init){
     if(typeof input==="string"){
       var m=map(input);
       if(m){var ci={};if(init)for(var k in init)ci[k]=init[k];ci.credentials="omit";return of_.call(this,m,ci);}
+      // URL déjà same-site hors map : si c'est notre proxy, ôter les cookies.
+      if(isOurProxy(input)){var ci0={};if(init)for(var k0 in init)ci0[k0]=init[k0];ci0.credentials="omit";return of_.call(this,input,ci0);}
     }else if(input&&typeof input==="object"&&typeof input.url==="string"){
       var m2=map(input.url);
       if(m2){
@@ -498,7 +522,7 @@ if(of_)window.fetch=function(input,init){
     }
     if(init&&typeof init.body==="string"){
       var nb=mapBody(init.body);
-      if(nb!==init.body){var ni={};for(var k in init)ni[k]=init[k];ni.body=nb;return of_.call(this,input,ni);}
+      if(nb!==init.body){var ni={};for(var k in init)ni[k]=init[k];ni.body=nb;ni.credentials=ni.credentials||"omit";return of_.call(this,input,ni);}
     }
   }catch(e){}
   return of_.apply(this,arguments);
@@ -507,7 +531,11 @@ var XP=XMLHttpRequest.prototype,oo=XP.open,os=XP.send;
 XP.open=function(){
   var args=Array.prototype.slice.call(arguments);
   try{
-    if(typeof args[1]==="string"){var m=map(args[1]);if(m){args[1]=m;this.__embedProxyRequest=true;}}
+    if(typeof args[1]==="string"){
+      var m=map(args[1]);
+      if(m){args[1]=m;this.__embedProxyRequest=true;}
+      else if(isOurProxy(args[1]))this.__embedProxyRequest=true;
+    }
   }catch(e){}
   return oo.apply(this,args);
 };
@@ -623,9 +651,20 @@ try{
       var url=typeof input==="string"?input:(input&&(input.href||input.url)?(input.href||input.url):String(input));
       if(url&&url.indexOf("http")===0){
         var u=new URL(url);
-        if(u.hostname===location.hostname)return _fetch.apply(this,arguments);
+        var toProxy=u.pathname.indexOf("/api/embed/ext/proxy")===0;
+        if(u.hostname===location.hostname){
+          // Même hôte : si c'est le proxy, forcer credentials=omit (origine opaque).
+          if(toProxy){
+            var pi={};if(init)for(var pk in init)pi[pk]=init[pk];
+            pi.credentials="omit";
+            return _fetch.call(this,url,pi);
+          }
+          return _fetch.apply(this,arguments);
+        }
         if(url.indexOf("/api/embed/ext/proxy?u=")>=0)return _fetch.apply(this,arguments);
-        return _fetch.call(this,location.origin+"/api/embed/ext/proxy?u="+encodeURIComponent(url),init||{});
+        var ei={};if(init)for(var ek in init)ei[ek]=init[ek];
+        ei.credentials="omit";
+        return _fetch.call(this,location.origin+"/api/embed/ext/proxy?u="+encodeURIComponent(url),ei);
       }
     }catch(e){}
     return _fetch.apply(this,arguments);

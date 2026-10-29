@@ -174,12 +174,18 @@ function toResponse(raw: RawResponse): Response {
   };
   if (raw.headers["content-range"]) out["Content-Range"] = raw.headers["content-range"];
   if (raw.headers["accept-ranges"]) out["Accept-Ranges"] = raw.headers["accept-ranges"];
-  if (raw.headers["content-length"]) out["Content-Length"] = raw.headers["content-length"];
-  else out["Content-Length"] = String(raw.body.length);
+  // Toujours la taille réelle du buffer : un Content-Length amont trop grand
+  // (réponse tronquée) fait attendre le navigateur indéfiniment → XHR failed.
+  out["Content-Length"] = String(raw.body.length);
   return new Response(new Uint8Array(raw.body), { status: raw.status, headers: out });
 }
 
-/** Enveloppe une URL de playlist/segment vers notre proxy absolu. */
+/**
+ * Enveloppe une URL de playlist/segment vers notre proxy absolu.
+ * Obligatoirement absolu : le document d'embed pose un `<base href="https://hébergeur/…">`,
+ * donc un chemin `/api/…` serait résolu contre l'hébergeur, pas notre origine.
+ * Le bootstrap force ensuite credentials=omit sur ces URLs (origine opaque).
+ */
 function playlistProxyUrl(
   raw: string,
   base: URL,
