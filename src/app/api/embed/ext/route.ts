@@ -76,6 +76,23 @@ function applyRuntimeHosts(html: string, embedHost: string): string {
 }
 
 /**
+ * Corrige le décodeur HLS partagé fsvid/Vidzy (lecteur « Premium »).
+ *
+ * L'URL réelle est XOR-déchiffrée avec une clé dérivée de
+ * `location.hostname`. Servie depuis notre domaine, la page calcule la
+ * mauvaise clé et retombe sur le flux démo `/troll/`. On fige `h` sur
+ * l'hôte d'origine de l'embed (ex. `fsvid.lol`), comme `/api/embed` le
+ * fait déjà pour Vidzy.
+ */
+function fixDecoderHostname(html: string, embedHost: string): string {
+  if (!/(^|\.)(fsvid|vidzy)\./i.test(embedHost)) return html;
+  const pinned = JSON.stringify(embedHost);
+  return html
+    .split('var h=(location&&location.hostname)||""')
+    .join(`var h=${pinned}`);
+}
+
+/**
  * jwplayer retrouve son dossier d'installation via un tag `<script>` dont le
  * `src` contient littéralement `/jwplayer.js`. Nos URLs de bridge encodent ce
  * chemin, ce qui fait échouer `setup()` (« Could not locate jwplayer.js script
@@ -210,7 +227,7 @@ export async function GET(request: NextRequest) {
     `${proxyOrigin}${EXT_BRIDGE_PATH}?h=${encodeURIComponent(embedHost)}&p=${encodeURIComponent(path)}&r=${encodeURIComponent(documentPath)}`;
 
   // Nettoie les scripts/iframes/overlays publicitaires avant réécriture
-  const cleanedHtml = stripAdsAndOverlays(fetched.html);
+  const cleanedHtml = fixDecoderHostname(stripAdsAndOverlays(fetched.html), embedHost);
   const html = injectFilecode(
     injectJwplayerBase(
       applyRuntimeHosts(rewriteHtml(cleanedHtml, bridge, embedHost, proxyOrigin), embedHost),
@@ -422,10 +439,11 @@ var BH="https://"+HOST;
 var PROXY=ORIGIN+"/api/embed/ext/proxy?u=";
 var BRIDGE=ORIGIN+"/api/embed/ext/proxy";
 var RHOSTS=window.__EMBED_RUNTIME_HOSTS__||[];
-// fsvid chiffre sa source HLS avec une clé dérivée de location.hostname.
-// Servie depuis notre origine, la page ne peut pas la déchiffrer et retombe
-// sur la démo /troll/. On corrige le code dépaqueté avant son eval.
-if(${JSON.stringify(/(^|\.)fsvid\./i.test(embedHost))}){
+// fsvid/Premium : clé HLS dérivée de location.hostname. Le HTML inline est
+// déjà corrigé côté serveur (fixDecoderHostname) ; on rattrape aussi le
+// code dépaqueté passé à eval.
+var IS_FSV=${JSON.stringify(/(^|\.)(fsvid|vidzy)\./i.test(embedHost))};
+if(IS_FSV){
   var _ev=window.eval;
   window.eval=function(c){
     if(typeof c==="string"&&c.indexOf("location&&location.hostname")>=0){
@@ -433,6 +451,16 @@ if(${JSON.stringify(/(^|\.)fsvid\./i.test(embedHost))}){
     }
     return _ev.call(this,c);
   };
+}
+/** Capture le jeton gk renvoyé par /gk ou gate.php (segments HLS au-delà de la grâce). */
+function captureGk(url,text){
+  if(!IS_FSV)return;
+  try{
+    if(typeof text!=="string"||!text)return;
+    if(String(url).indexOf("/gk")<0&&String(url).indexOf("gate")<0)return;
+    var j=JSON.parse(text);
+    if(j&&typeof j.gk==="string"&&j.gk)window.__vzgk=j.gk;
+  }catch(e){}
 }
 var BASE=HOST.split(".").slice(-2).join(".");
 function isRuntimeHost(h){return h===HOST||RHOSTS.indexOf(h)>=0;}
@@ -500,24 +528,34 @@ function mapBody(body){
     return u;
   });
 }
+function tapGk(url,p){
+  if(!IS_FSV||!p||!p.then)return p;
+  return p.then(function(res){
+    try{
+      var c=res.clone();
+      c.text().then(function(t){captureGk(url,t);}).catch(function(){});
+    }catch(e){}
+    return res;
+  });
+}
 var of_=window.fetch;
 if(of_)window.fetch=function(input,init){
   try{
     if(typeof input==="string"){
       var m=map(input);
-      if(m){var ci={};if(init)for(var k in init)ci[k]=init[k];ci.credentials="omit";return of_.call(this,m,ci);}
+      if(m){var ci={};if(init)for(var k in init)ci[k]=init[k];ci.credentials="omit";return tapGk(m,of_.call(this,m,ci));}
       // URL déjà same-site hors map : si c'est notre proxy, ôter les cookies.
-      if(isOurProxy(input)){var ci0={};if(init)for(var k0 in init)ci0[k0]=init[k0];ci0.credentials="omit";return of_.call(this,input,ci0);}
+      if(isOurProxy(input)){var ci0={};if(init)for(var k0 in init)ci0[k0]=init[k0];ci0.credentials="omit";return tapGk(input,of_.call(this,input,ci0));}
     }else if(input&&typeof input==="object"&&typeof input.url==="string"){
       var m2=map(input.url);
       if(m2){
         try{
-          return of_.call(this,new Request(m2,{
+          return tapGk(m2,of_.call(this,new Request(m2,{
             method:input.method,headers:input.headers,
             body:(input.method==="GET"||input.method==="HEAD")?undefined:input.body,
             credentials:"omit",cache:input.cache,
-            redirect:input.redirect,signal:input.signal}));
-        }catch(e){var ci2={};if(init)for(var k2 in init)ci2[k2]=init[k2];ci2.credentials="omit";return of_.call(this,m2,ci2);}
+            redirect:input.redirect,signal:input.signal})));
+        }catch(e){var ci2={};if(init)for(var k2 in init)ci2[k2]=init[k2];ci2.credentials="omit";return tapGk(m2,of_.call(this,m2,ci2));}
       }
     }
     if(init&&typeof init.body==="string"){
@@ -533,8 +571,8 @@ XP.open=function(){
   try{
     if(typeof args[1]==="string"){
       var m=map(args[1]);
-      if(m){args[1]=m;this.__embedProxyRequest=true;}
-      else if(isOurProxy(args[1]))this.__embedProxyRequest=true;
+      if(m){args[1]=m;this.__embedProxyRequest=true;this.__embedProxyUrl=m;}
+      else if(isOurProxy(args[1])){this.__embedProxyRequest=true;this.__embedProxyUrl=args[1];}
     }
   }catch(e){}
   return oo.apply(this,args);
@@ -543,6 +581,12 @@ XP.send=function(body){
   try{
     if(this.__embedProxyRequest)this.withCredentials=false;
     if(typeof body==="string"){var nb=mapBody(body);if(nb!==body)body=nb;}
+    if(IS_FSV&&this.__embedProxyUrl){
+      var xhr=this;
+      this.addEventListener("load",function(){
+        try{captureGk(xhr.__embedProxyUrl,xhr.responseText);}catch(e){}
+      });
+    }
   }catch(e){}
   return os.call(this,body);
 };
