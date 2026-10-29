@@ -100,19 +100,21 @@ export async function verifySessionToken(token: string): Promise<SessionUser | n
 }
 
 // 3. Récupération de la session courante depuis les cookies Next.js
-export async function getCurrentUser(): Promise<SessionUser | null> {
-  let cookieStore;
-  try {
-    cookieStore = await cookies();
-  } catch {
-    return null;
+export async function getCurrentUser(token?: string): Promise<SessionUser | null> {
+  let resolvedToken = token;
+  if (!resolvedToken) {
+    let cookieStore;
+    try {
+      cookieStore = await cookies();
+    } catch {
+      return null;
+    }
+    resolvedToken = cookieStore.get(COOKIE_NAME)?.value;
   }
-  const token = cookieStore.get(COOKIE_NAME)?.value;
-  if (!token) return null;
-  const claims = await verifySessionToken(token);
+  if (!resolvedToken) return null;
+  const claims = await verifySessionToken(resolvedToken);
   if (!claims || process.env.DATABASE_READY !== "true") return null;
 
-  // JWT roles can outlive a revocation; use the database role for authorization.
   const current = await prisma.user.findUnique({
     where: { id: claims.id },
     select: { id: true, email: true, name: true, role: true },

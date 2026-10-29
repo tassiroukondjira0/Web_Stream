@@ -128,6 +128,7 @@ export async function POST(request: Request) {
     const response = NextResponse.json({
       success: true,
       user,
+      token: sessionToken,
       message: "Compte créé avec succès.",
     });
 

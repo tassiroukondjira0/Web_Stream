@@ -7,8 +7,12 @@ export async function POST() {
   return response;
 }
 
-export async function GET() {
-  const user = await getCurrentUser();
+export async function GET(request: Request) {
+  const authHeader = request.headers.get("authorization") || "";
+  const bearer = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : undefined;
+  const user = await getCurrentUser(bearer);
   if (!user) {
     return NextResponse.json({ user: null }, { status: 401 });
   }
