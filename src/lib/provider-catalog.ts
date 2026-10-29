@@ -575,3 +575,38 @@ export const CATALOG_PLATFORMS = [
   { value: "paramount", label: "Paramount+" },
   { value: "apple-tv", label: "Apple TV+" },
 ] as const;
+
+export async function getPartnerAssetById(
+  id: string,
+  contentType: "MOVIE" | "SERIES" | "ANIME"
+): Promise<ProviderCatalogItem | null> {
+  if (process.env.DATABASE_READY !== "true") return null;
+
+  try {
+    const asset = await prisma.providerAsset.findFirst({
+      where: {
+        externalId: id,
+        contentType,
+        isPublished: true,
+        isDuplicate: false,
+        hasSources: true,
+        provider: {
+          in:
+            contentType === "ANIME"
+              ? ANIME_PROVIDERS
+              : MOVIE_SERIES_PROVIDERS,
+        },
+      },
+      select: ASSET_SELECT,
+    });
+
+    if (!asset) return null;
+
+    return toItem({
+      ...asset,
+      contentType: asset.contentType as "MOVIE" | "SERIES" | "ANIME",
+    });
+  } catch {
+    return null;
+  }
+}
