@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUserFromRequest } from "@/lib/auth";
 
 /**
  * Progression de lecture persistée en base (table `playback_progress`).
@@ -24,7 +24,7 @@ function parseNumber(value: unknown): number | null {
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }

@@ -127,3 +127,11 @@ export async function getCurrentUser(token?: string): Promise<SessionUser | null
     role: current.role,
   };
 }
+
+export async function getCurrentUserFromRequest(request: Request): Promise<SessionUser | null> {
+  const authHeader = request.headers.get("authorization") || "";
+  const bearer = authHeader.startsWith("Bearer ")
+    ? authHeader.slice(7)
+    : undefined;
+  return getCurrentUser(bearer);
+}

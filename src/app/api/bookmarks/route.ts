@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUserFromRequest } from "@/lib/auth";
 
 /**
  * Favoris persistés en base (table `bookmarks`).
@@ -11,7 +11,7 @@ import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
@@ -57,9 +57,9 @@ export async function POST(request: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const user = await getCurrentUser();
+    const user = await getCurrentUserFromRequest(request);
     if (!user) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
     }
