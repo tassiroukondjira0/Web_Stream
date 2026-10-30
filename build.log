@@ -5,7 +5,7 @@
 Environment variables loaded from .env
 Prisma schema loaded from prisma\schema.prisma
 
-✔ Generated Prisma Client (v6.4.1) to .\node_modules\@prisma\client in 860ms
+✔ Generated Prisma Client (v6.4.1) to .\node_modules\@prisma\client in 461ms
 
 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
 
@@ -13,8 +13,121 @@ Tip: Want to react to database changes in your app as they happen? Discover how 
 
 ▲ Next.js 16.4.3 (Turbopack)
 - Environments: .env
-✓ Running next.config.ts took 403ms
+✓ Running next.config.ts took 140ms
 - Cache Components enabled
 - Partial Prefetching enabled
 
   Creating an optimized production build ...
+✓ Compiled successfully in 13.9s
+  Running TypeScript ...
+  Finished TypeScript in 20.9s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/84) ...
+  Generating static pages using 7 workers (21/84) 
+  Generating static pages using 7 workers (42/84) 
+  Generating static pages using 7 workers (63/84) 
+✓ Generating static pages using 7 workers (84/84) in 6.0s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ◐ /_not-found
+├ ◐ /admin
+├ ◐ /admin/notifications
+├ ◐ /admin/reviews
+├ ◐ /admin/users
+├ ◐ /aide
+├ ◐ /animes
+├   /animes/frenchmanga/[id]
+│ └ ◐ /animes/frenchmanga/[id]
+├   /animes/partner/[id]
+│ └ ◐ /animes/partner/[id]
+├   /animes/tmdb/[id]
+│ └ ◐ /animes/tmdb/[id]
+├ ƒ /api/admin/import/manual
+├ ƒ /api/admin/import/tmdb
+├ ƒ /api/admin/medias
+├ ƒ /api/admin/notifications
+├ ƒ /api/admin/provider-assets
+├ ƒ /api/admin/reviews
+├ ƒ /api/admin/stats
+├ ƒ /api/admin/sync/fstreamtv
+├ ƒ /api/admin/sync/partner
+├ ƒ /api/admin/sync/platforms
+├ ƒ /api/admin/sync/tmdb
+├ ƒ /api/admin/users
+├ ƒ /api/admin/users/role
+├ ƒ /api/auth/change-password
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/me
+├ ƒ /api/auth/register
+├ ƒ /api/bookmarks
+├ ƒ /api/catalog
+├ ƒ /api/catalog/[id]
+├ ƒ /api/catalog/search
+├ ƒ /api/chat
+├ ƒ /api/embed
+├ ƒ /api/embed/ext
+├ ƒ /api/embed/ext/proxy
+├ ƒ /api/embed/proxy
+├ ƒ /api/history
+├ ƒ /api/newsletter
+├ ƒ /api/notifications
+├ ƒ /api/notifications/read
+├ ○ /api/payment/config
+├ ƒ /api/payment/initiate
+├ ƒ /api/payment/paypal/capture
+├ ƒ /api/payment/paypal/create-order
+├ ƒ /api/payment/paypal/webhook
+├ ƒ /api/payment/verify
+├ ƒ /api/payment/webhook
+├ ƒ /api/push-token
+├ ƒ /api/reviews
+├ ƒ /api/search
+├ ƒ /api/synopsis
+├ ƒ /api/track
+├ ƒ /api/user/country
+├ ƒ /api/video-url
+├ ƒ /api/wishlist
+├ ◐ /conditions
+├ ◐ /confidentialite
+├ ◐ /connexion
+├ ◐ /favoris
+├ ◐ /films
+├   /films/[slug]
+│ └ ◐ /films/[slug]
+├   /films/fstreamtv/[id]
+│ └ ◐ /films/fstreamtv/[id]
+├   /films/partner/[id]
+│ └ ◐ /films/partner/[id]
+├   /films/tmdb/[id]
+│ └ ◐ /films/tmdb/[id]
+├ ◐ /inscription
+├ ◐ /mentions-legales
+├ ◐ /mon-compte
+├ ◐ /nouveautes
+├ ƒ /premium
+├ ◐ /premium/cancel
+├ ƒ /premium/success
+├ ◐ /recherche
+├ ○ /robots.txt
+├ ◐ /series
+├   /series/[slug]
+│ └ ◐ /series/[slug]
+├   /series/frenchmanga/[id]
+│ └ ◐ /series/frenchmanga/[id]
+├   /series/fstreamtv/[id]
+│ └ ◐ /series/fstreamtv/[id]
+├   /series/partner/[id]
+│ └ ◐ /series/partner/[id]
+├   /series/tmdb/[id]
+│ └ ◐ /series/tmdb/[id]
+├ ƒ /sitemap.xml
+└ ◐ /souhaits
+
+
+○  (Static)             prerendered as static content
+◐  (Partial Prerender)  prerendered as static HTML with dynamic server-streamed content
+ƒ  (Dynamic)            server-rendered on demand
+
