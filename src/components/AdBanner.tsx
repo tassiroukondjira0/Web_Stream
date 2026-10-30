@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { Sparkles } from "lucide-react";
 
 interface AdBannerProps {
@@ -77,7 +78,13 @@ export function AdBanner({ format = "leaderboard", className = "" }: AdBannerPro
             </Link>
           </div>
         </div>
-      </div>
+      <Script
+        id="vignette-ad-banner"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `(function(s){s.dataset.zone='12152322',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
+        }}
+      />
     </div>
   );
 }
