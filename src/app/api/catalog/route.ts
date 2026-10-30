@@ -44,13 +44,23 @@ export async function GET(request: Request) {
   const limit = Math.min(limitValue, 60);
   const type = requestedType as CatalogType;
 
+  const filters = {
+    categorySlug: searchParams.get("category") || undefined,
+    language: searchParams.get("language") || undefined,
+    theme: searchParams.get("theme") || undefined,
+    releaseYear: searchParams.get("year")
+      ? Number(searchParams.get("year"))
+      : undefined,
+    platform: searchParams.get("platform") || undefined,
+  };
+
   try {
     const catalog =
       type === "MOVIE"
-        ? await getPartnerMovies(page, limit)
+        ? await getPartnerMovies(page, limit, filters)
         : type === "SERIES"
-          ? await getPartnerSeries(page, limit)
-          : await getPartnerAnimes(page, limit);
+          ? await getPartnerSeries(page, limit, filters)
+          : await getPartnerAnimes(page, limit, filters);
 
     return NextResponse.json(
       {
