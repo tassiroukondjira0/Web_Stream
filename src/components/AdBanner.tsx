@@ -85,6 +85,7 @@ export function AdBanner({ format = "leaderboard", className = "" }: AdBannerPro
           __html: `(function(s){s.dataset.zone='12152322',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))`,
         }}
       />
+      </div>
     </div>
   );
 }
