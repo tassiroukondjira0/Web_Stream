@@ -52,6 +52,7 @@ model User {
   passwordHash  String?
   country       String?        // Code pays ISO 3166-1 alpha-2 (ex: SN, CI, CM) — sert à filtrer les moyens de paiement PayDunya proposés
   role          Role           @default(USER)
+  pushToken     String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
