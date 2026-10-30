@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { ShieldCheck, Flame, Clapperboard, Globe } from "lucide-react";
 import { NewsletterBanner } from "@/components/NewsletterBanner";
+import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
 import {
   getPartnerAnimes,
   getFeaturedPartner,
@@ -16,9 +17,9 @@ import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 /** Nombre de titres affichés dans la vitrine « Mangas ». */
 const MANGA_LIMIT = 18;
 /** Nombre de titres dans la sélection « À la une » rotative. */
-const FEATURED_LIMIT = 16;
+const FEATURED_LIMIT = 12;
 /** Nombre de titres par rangée (films / séries) sur l'accueil. */
-const RECENT_LIMIT = 12;
+const RECENT_LIMIT = 16;
 
 export const metadata = {
   title: "CinéMax — Streaming de films et séries",
@@ -26,7 +27,11 @@ export const metadata = {
     "Découvrez un large catalogue de films, séries et animés en streaming. Nouveautés et coups de cœur.",
 };
 
-export default function HomePage() {
+export const instant = false;
+
+export default async function HomePage() {
+  const _user = await getCurrentUser().catch(() => null);
+  const _isPremium = _user ? hasPremiumAccess(_user.role) : false;
   return (
     <div className="flex flex-col gap-12 overflow-x-hidden pb-16">
       {/* À la une — sélection rotative (renouvelée automatiquement) */}
@@ -69,31 +74,39 @@ export default function HomePage() {
       </Suspense>
 
       {/* Bannière Modèle Freemium */}
-      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-r from-zinc-900 via-zinc-900 to-amber-950/30 p-8 sm:p-12">
-          <div className="max-w-xl">
-            <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-400">
-              <ShieldCheck className="h-4 w-4" />
-              Accès Illimité
-            </span>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-              Profitez d&apos;une expérience cinéma sans interruption
-            </h2>
-            <p className="mt-3 text-sm text-zinc-300 leading-relaxed">
-              En passant à l&apos;offre Premium, débloquez l&apos;intégralité des films exclusifs, la qualité vidéo 4K/UHD, et soutenez directement les artistes et producteurs indépendants.
-            </p>
-            <div className="mt-6">
-              <Link
-                href="/premium"
-                className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-bold text-black shadow-lg shadow-amber-500/20 hover:bg-amber-400"
-              >
-                Découvrir l&apos;abonnement
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      {!_isPremium && (
 
+
+
+
+
+        <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-r from-zinc-900 via-zinc-900 to-amber-950/30 p-8 sm:p-12">
+        <div className="max-w-xl">
+        <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-400">
+        <ShieldCheck className="h-4 w-4" />
+        Accès Illimité
+        </span>
+        <h2 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+        Profitez d&apos;une expérience cinéma sans interruption
+        </h2>
+        <p className="mt-3 text-sm text-zinc-300 leading-relaxed">
+        En passant à l&apos;offre Premium, débloquez l&apos;intégralité des films exclusifs, la qualité vidéo 4K/UHD, et soutenez directement les artistes et producteurs indépendants.
+        </p>
+        <div className="mt-6">
+        <Link
+        href="/premium"
+        className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-bold text-black shadow-lg shadow-amber-500/20 hover:bg-amber-400"
+        >
+        Découvrir l&apos;abonnement
+        </Link>
+        </div>
+        </div>
+        </div>
+        </section>
+
+
+      )}
       <NewsletterBanner />
     </div>
   );
