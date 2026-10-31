@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
 import { resolveCatalogPlayback, resolvePlaybackByTmdbId } from "@/lib/vidzy";
@@ -15,20 +15,16 @@ import {
   resolvePartnerPlaybackSources,
   resolveFStreamTvPlaybackSources,
 } from "@/lib/partner-playback";
+import { publicOrigin } from "@/lib/public-origin";
 
 /** Résout une URL potentiellement relative en URL absolue basée sur la requête entrante. */
-function toAbsoluteUrl(url: string, requestUrl: string): string {
+function toAbsoluteUrl(url: string, origin: string): string {
   if (/^https?:\/\//i.test(url)) return url;
-  try {
-    const base = new URL(requestUrl);
-    return `${base.protocol}//${base.host}${url.startsWith("/") ? "" : "/"}${url}`;
-  } catch {
-    return url;
-  }
+  return `${origin}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+export async function GET(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
   const id = searchParams.get("id");
   const rawType = (searchParams.get("type") || "movie").toUpperCase();
   const contentType = rawType === "SERIES" || rawType === "TV" ? "SERIES" : "MOVIE";
@@ -147,7 +143,7 @@ export async function GET(request: Request) {
         episode: s.episode,
         // Résoudre les URLs relatives (/api/embed?...) en URLs absolues
         // pour que les clients mobiles puissent les charger dans un WebView.
-        url: toAbsoluteUrl(s.url, request.url),
+        url: toAbsoluteUrl(s.url, publicOrigin(request)),
       })),
     });
   } catch (error) {
