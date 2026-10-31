@@ -55,17 +55,21 @@
     "@capacitor/android": "^8.5.3",
     "@capacitor/cli": "^8.5.3",
     "@capacitor/ios": "^8.5.3",
+    "@eslint/js": "^10.0.1",
     "@tailwindcss/turbopack": "^4.3.3",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
+    "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.3",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.13.0",
     "prisma": "6.4.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "typescript-eslint": "^8.72.1"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
