@@ -432,6 +432,10 @@ export async function GET(request: NextRequest) {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",
+      // Le CDN Vidzy renvoie 403 sur les playlists/segments dont le `Referer`
+      // n'est pas un domaine Vidzy (y compris celui de l'app). Sans Referer,
+      // les requêtes passent : on supprime donc le référant du document.
+      "Referrer-Policy": "no-referrer",
     },
   });
 }
