@@ -4,10 +4,16 @@ import { useEffect, useState } from "react";
 import { Download, X, Smartphone } from "lucide-react";
 
 /**
- * Chemin vers le fichier APK dans le dossier public.
- * L'APK est généré par le build Gradle de CinéMax Mobile (Expo).
+ * Lien direct vers le build APK sur EAS Build (Expo).
+ * Chaque nouveau build EAS génère un nouveau lien — mettez à jour cette constante après un build.
  */
-const APK_DOWNLOAD_URL = "/downloads/cinemax.apk";
+const APK_DOWNLOAD_URL = "https://expo.dev/accounts/tassirou/projects/cinemax-mobile/builds/050909d7-d764-4e20-aec1-e375e96446ca";
+
+/**
+ * Lien d'installation iOS via EAS Build.
+ * Après le build iOS, remplacez cette URL par le lien EAS Build réel.
+ */
+const IOS_INSTALL_URL = "https://expo.dev/accounts/your-account/projects/cinemax-mobile/builds/your-build-id";
 
 /** Clé localStorage pour retenir que l'utilisateur a fermé le bandeau. */
 const DISMISS_KEY = "cinemax-app-banner-dismissed";
@@ -16,25 +22,34 @@ const DISMISS_KEY = "cinemax-app-banner-dismissed";
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Bandeau intelligent de téléchargement de l'app Android.
+ * Bandeau intelligent de téléchargement de l'app CinéMax.
  *
  * Affiché uniquement lorsque :
- * - L'utilisateur navigue depuis un navigateur Android
+ * - L'utilisateur navigue depuis un navigateur Android ou iOS
  * - L'utilisateur n'a pas fermé le bandeau récemment
  *
- * Invisible sur desktop, iOS (pas d'APK sideloading simple).
+ * Détecte automatiquement la plateforme et propose le bon téléchargement.
  */
 export function AndroidAppBanner() {
   const [visible, setVisible] = useState(false);
+  const [platform, setPlatform] = useState<"android" | "ios" | null>(null);
 
   useEffect(() => {
     // Ne rien afficher côté serveur
     if (typeof window === "undefined") return;
 
-    // Détecte Android via User-Agent
+    // Détecte la plateforme via User-Agent
     const ua = navigator.userAgent;
     const isAndroid = /android/i.test(ua);
-    if (!isAndroid) return;
+    const isIOS = /iphone|ipad|ipod/i.test(ua);
+
+    if (isAndroid) {
+      setPlatform("android");
+    } else if (isIOS) {
+      setPlatform("ios");
+    } else {
+      return; // Desktop ou autre — on n'affiche rien
+    }
 
     // Vérifie si l'utilisateur a fermé le bandeau récemment
     try {
@@ -51,7 +66,7 @@ export function AndroidAppBanner() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  if (!visible) return null;
+  if (!visible || !platform) return null;
 
   function handleDismiss() {
     setVisible(false);
@@ -61,6 +76,11 @@ export function AndroidAppBanner() {
       // Ignore
     }
   }
+
+  const isAndroid = platform === "android";
+  const downloadUrl = isAndroid ? APK_DOWNLOAD_URL : IOS_INSTALL_URL;
+  const downloadLabel = isAndroid ? "APK" : "iOS";
+  const platformLabel = isAndroid ? "Android" : "iOS";
 
   return (
     <div className="relative z-[60] flex items-center gap-3 border-b border-emerald-500/20 bg-gradient-to-r from-zinc-950 via-zinc-900 to-emerald-950/30 px-4 py-2.5 sm:px-6">
@@ -75,19 +95,20 @@ export function AndroidAppBanner() {
           CinéMax est disponible en app !
         </p>
         <p className="text-xs text-zinc-400 hidden sm:block">
-          Téléchargez l&apos;application Android pour une meilleure expérience.
+          Téléchargez l&apos;application {platformLabel} pour une meilleure expérience.
         </p>
       </div>
 
       {/* Bouton de téléchargement */}
       <a
-        href={APK_DOWNLOAD_URL}
-        download="CineMax.apk"
+        href={downloadUrl}
+        target="_blank"
+        rel="noopener noreferrer"
         className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-bold text-black shadow-lg shadow-emerald-500/20 transition-colors hover:bg-emerald-400 sm:px-4 sm:py-2 sm:text-sm"
       >
         <Download className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Télécharger</span>
-        <span className="sm:hidden">APK</span>
+        <span className="sm:hidden">{downloadLabel}</span>
       </a>
 
       {/* Bouton fermer */}
