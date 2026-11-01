@@ -35,7 +35,10 @@ export async function POST(request: Request) {
       where = { role: { notIn: ["ADMIN", "SUPER_ADMIN"] } };
     }
 
-    const users = await prisma.user.findMany({ where, select: { id: true } });
+    const users = await prisma.user.findMany({
+      where,
+      select: { id: true, pushToken: true },
+    });
     if (users.length === 0) {
       return NextResponse.json({ error: "Aucun utilisateur ciblé" }, { status: 400 });
     }
@@ -50,10 +53,37 @@ export async function POST(request: Request) {
       })),
     });
 
+    // Envoyer les push notifications Expo aux appareils mobiles
+    const tokens = users
+      .map((u) => u.pushToken)
+      .filter((t): t is string => !!t && t.trim() !== '');
+
+    if (tokens.length > 0) {
+      try {
+        await fetch('https://exp.host/--/api/v2/push/send', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: tokens,
+            sound: 'default',
+            title,
+            body: message,
+            data: link ? { link } : undefined,
+          }),
+        });
+        console.log(`Push Expo envoyé à ${tokens.length} appareil(s)`);
+      } catch (pushError) {
+        console.error('Erreur push Expo:', pushError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       count: users.length,
-      message: `Notification envoyée à ${users.length} utilisateur(s)`,
+      pushSent: tokens.length,
+      message: `Notification envoyée à ${users.length} utilisateur(s) (${tokens.length} push)`,
     });
   } catch (error) {
     console.error("admin notifications error:", error);
