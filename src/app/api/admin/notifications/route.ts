@@ -20,7 +20,10 @@ export async function POST(request: Request) {
     const title = typeof body?.title === "string" ? body.title.trim() : "";
     const message = typeof body?.message === "string" ? body.message.trim() : "";
     const link = typeof body?.link === "string" ? body.link.trim() : null;
-    const target = body?.target === "SUBSCRIBERS" ? "SUBSCRIBERS" : "ALL";
+    const target: "ALL" | "SUBSCRIBERS" | "MOBILE_APP" =
+      body?.target === "SUBSCRIBERS" ? "SUBSCRIBERS"
+      : body?.target === "MOBILE_APP" ? "MOBILE_APP"
+      : "ALL";
     const type = body?.type === "ANNONCE" ? "ANNONCE" : "NOUVEAUTE";
 
     if (!title || !message) {
@@ -30,6 +33,9 @@ export async function POST(request: Request) {
     let where: Prisma.UserWhereInput = {};
     if (target === "SUBSCRIBERS") {
       where = { role: "SUBSCRIBER" };
+    } else if (target === "MOBILE_APP") {
+      // Pour l'appli mobile, on cible uniquement les utilisateurs ayant un pushToken enregistré
+      where = { NOT: [{ pushToken: null }, { pushToken: "" }] } as Prisma.UserWhereInput;
     } else {
       // Exclure les administrateurs et super administrateurs des destinataires
       where = { role: { notIn: ["ADMIN", "SUPER_ADMIN"] } };
@@ -43,15 +49,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Aucun utilisateur ciblé" }, { status: 400 });
     }
 
-    await prisma.notification.createMany({
-      data: users.map((u) => ({
-        userId: u.id,
-        title,
-        message,
-        link,
-        type,
-      })),
-    });
+    // Créer les notifications in-app (sauf pour MOBILE_APP qui envoie push uniquement)
+    if (target !== "MOBILE_APP") {
+      await prisma.notification.createMany({
+        data: users.map((u) => ({
+          userId: u.id,
+          title,
+          message,
+          link,
+          type,
+        })),
+      });
+    }
 
     // Envoyer les push notifications Expo aux appareils mobiles
     const tokens = users
@@ -79,11 +88,14 @@ export async function POST(request: Request) {
       }
     }
 
+    const inAppCount = target === "MOBILE_APP" ? 0 : users.length;
     return NextResponse.json({
       success: true,
-      count: users.length,
+      count: inAppCount,
       pushSent: tokens.length,
-      message: `Notification envoyée à ${users.length} utilisateur(s) (${tokens.length} push)`,
+      message: target === "MOBILE_APP"
+        ? `Push envoyé à ${tokens.length} appareil(s) mobile(s)`
+        : `Notification envoyée à ${users.length} utilisateur(s) (${tokens.length} push)`,
     });
   } catch (error) {
     console.error("admin notifications error:", error);

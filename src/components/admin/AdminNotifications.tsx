@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, Send, Users, Star } from "lucide-react";
+import { Bell, Send, Users, Star, Smartphone } from "lucide-react";
 
-type Target = "ALL" | "SUBSCRIBERS";
+type Target = "ALL" | "SUBSCRIBERS" | "MOBILE_APP";
 type AnnouncementType = "NOUVEAUTE" | "ANNONCE";
 
 export function AdminNotifications() {
@@ -189,7 +189,26 @@ export function AdminNotifications() {
                 <Star className="h-4 w-4" />
                 Abonnés Premium uniquement
               </button>
+              <button
+                type="button"
+                onClick={() => setTarget("MOBILE_APP")}
+                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm ${
+                  target === "MOBILE_APP"
+                    ? "bg-sky-600 text-white"
+                    : "border border-white/10 bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                }`}
+              >
+                <Smartphone className="h-4 w-4" />
+                Utilisateurs Appli mobile
+              </button>
             </div>
+            <p className="mt-1 text-xs text-zinc-500">
+              {target === "ALL"
+                ? "Tous les utilisateurs (site web + appli mobile)"
+                : target === "SUBSCRIBERS"
+                ? "Seuls les abonnés Premium (site web + appli mobile)"
+                : "Uniquement les appareils mobiles enregistrés (push uniquement)"}
+            </p>
           </div>
         </div>
 

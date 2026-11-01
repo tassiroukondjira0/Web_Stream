@@ -51,8 +51,8 @@ export default function AdminNotificationsPage() {
         Centre de notifications
       </h1>
       <p className="text-zinc-400 mb-8">
-        Envoyez une notification in-app à tous vos utilisateurs ou aux
-        abonnés Premium uniquement.
+        Envoyez une notification in-app à tous vos utilisateurs, aux abonnés Premium,
+        ou une push notification uniquement aux appareils mobiles.
       </p>
       <AdminNotifications />
     </div>
