@@ -4,14 +4,18 @@ import { useEffect, useState } from "react";
 import { Download, X, Smartphone } from "lucide-react";
 
 /**
- * Lien direct vers le build APK sur EAS Build (Expo).
- * Chaque nouveau build EAS génère un nouveau lien — mettez à jour cette constante après un build.
+ * URL de l'API qui retourne les informations du dernier build EAS.
+ * Le webhook `/api/eas-webhook` met à jour automatiquement `public/build-info.json`
+ * après chaque build réussi.
  */
-const APK_DOWNLOAD_URL = "https://expo.dev/accounts/tassirou/projects/cinemax-mobile/builds/050909d7-d764-4e20-aec1-e375e96446ca";
+const BUILD_INFO_URL = "/build-info.json";
+
+/** URL de fallback si le fetch échoue (dernier build connu). */
+const FALLBACK_ANDROID_URL = "https://expo.dev/accounts/tassirou/projects/cinemax-mobile/builds/050909d7-d764-4e20-aec1-e375e96446ca";
 
 /**
  * Lien d'installation iOS via EAS Build.
- * Après le build iOS, remplacez cette URL par le lien EAS Build réel.
+ * Après le build iOS, mettez à jour cette URL.
  */
 const IOS_INSTALL_URL = "https://expo.dev/accounts/your-account/projects/cinemax-mobile/builds/your-build-id";
 
@@ -22,6 +26,25 @@ const DISMISS_KEY = "cinemax-app-banner-dismissed";
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
+ * Récupère dynamiquement le lien de téléchargement Android depuis le fichier
+ * build-info.json mis à jour automatiquement par le webhook EAS.
+ */
+async function fetchAndroidDownloadUrl(): Promise<string> {
+  try {
+    const res = await fetch(BUILD_INFO_URL, {
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.buildUrl || FALLBACK_ANDROID_URL;
+    }
+  } catch {
+    // Ignore — on utilise le fallback
+  }
+  return FALLBACK_ANDROID_URL;
+}
+
+/**
  * Bandeau intelligent de téléchargement de l'app CinéMax.
  *
  * Affiché uniquement lorsque :
@@ -29,10 +52,12 @@ const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
  * - L'utilisateur n'a pas fermé le bandeau récemment
  *
  * Détecte automatiquement la plateforme et propose le bon téléchargement.
+ * Le lien Android est récupéré dynamiquement depuis le dernier build EAS.
  */
 export function AndroidAppBanner() {
   const [visible, setVisible] = useState(false);
   const [platform, setPlatform] = useState<"android" | "ios" | null>(null);
+  const [androidUrl, setAndroidUrl] = useState(FALLBACK_ANDROID_URL);
 
   useEffect(() => {
     // Ne rien afficher côté serveur
@@ -45,6 +70,8 @@ export function AndroidAppBanner() {
 
     if (isAndroid) {
       setPlatform("android");
+      // Récupérer le dernier lien de build Android
+      fetchAndroidDownloadUrl().then(setAndroidUrl);
     } else if (isIOS) {
       setPlatform("ios");
     } else {
@@ -78,7 +105,7 @@ export function AndroidAppBanner() {
   }
 
   const isAndroid = platform === "android";
-  const downloadUrl = isAndroid ? APK_DOWNLOAD_URL : IOS_INSTALL_URL;
+  const downloadUrl = isAndroid ? androidUrl : IOS_INSTALL_URL;
   const downloadLabel = isAndroid ? "APK" : "iOS";
   const platformLabel = isAndroid ? "Android" : "iOS";
 
