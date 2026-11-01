@@ -7,8 +7,6 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageViewTracker } from "@/components/PageViewTracker";
-import { CapacitorInit } from "@/components/CapacitorInit";
-import { AndroidAppBanner } from "@/components/AndroidAppBanner";
 import { AdScript } from "@/components/AdScript";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { getMetadataBase } from "@/lib/env";
@@ -92,11 +90,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
         <Suspense fallback={null}>
           <PageViewTracker />
-          <CapacitorInit />
           <PullToRefresh />
-        </Suspense>
-        <Suspense fallback={null}>
-          <AndroidAppBanner />
         </Suspense>
         <AdScript />
         <Suspense fallback={<NavbarFallback />}>
