@@ -81,6 +81,14 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Le CDN Vidzy renvoie 403 sur les playlists/segments dont le
+        // `Referer` n'appartient pas à un domaine Vidzy (y compris le nôtre).
+        // On supprime donc le référant du document d'embed uniquement ; les
+        // autres routes conservent la politique globale.
+        source: "/api/embed/:path*",
+        headers: [{ key: "Referrer-Policy", value: "no-referrer" }],
+      },
     ];
   },
 };
