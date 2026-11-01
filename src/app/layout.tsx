@@ -8,6 +8,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { AdScript } from "@/components/AdScript";
+import { AndroidAppBanner } from "@/components/AndroidAppBanner";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { getMetadataBase } from "@/lib/env";
 
@@ -91,6 +92,9 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <PageViewTracker />
           <PullToRefresh />
+        </Suspense>
+        <Suspense fallback={null}>
+          <AndroidAppBanner />
         </Suspense>
         <AdScript />
         <Suspense fallback={<NavbarFallback />}>
