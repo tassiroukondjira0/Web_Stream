@@ -11,7 +11,7 @@ import { Download, X, Smartphone } from "lucide-react";
 const BUILD_INFO_URL = "/build-info.json";
 
 /** URL de fallback si le fetch échoue (dernier build connu). */
-const FALLBACK_ANDROID_URL = "https://expo.dev/accounts/tassirou/projects/cinemax-mobile/builds/050909d7-d764-4e20-aec1-e375e96446ca";
+const FALLBACK_ANDROID_URL = "https://expo.dev/artifacts/eas/fPiBCc5g-YXQRKR-OAZuQb-58surUssd64dL-1eagEs.apk";
 
 /**
  * Lien d'installation iOS via EAS Build.
@@ -36,7 +36,9 @@ async function fetchAndroidDownloadUrl(): Promise<string> {
     });
     if (res.ok) {
       const data = await res.json();
-      return data.buildUrl || FALLBACK_ANDROID_URL;
+      // Prioriser l'URL directe de l'APK (artifactUrl) pour le téléchargement direct
+      // Si artifactUrl n'est pas disponible, utiliser buildUrl (page EAS) comme fallback
+      return data.artifactUrl || data.buildUrl || FALLBACK_ANDROID_URL;
     }
   } catch {
     // Ignore — on utilise le fallback
