@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
  * Quand un build Android est terminé avec succès, EAS envoie un POST vers cette URL.
  * Le payload contient le `buildId` et les `artifacts`. On stocke les informations
  * dans la base de données (table `build_info`) que l'endpoint `/api/build-info`
- * sert au composant AndroidAppBanner.
+ * sert au composant Footer pour le téléchargement.
  *
  * Configuration EAS :
  *   npx eas-cli webhook create --event BUILD --url https://web-stream-mncx.onrender.com/api/eas-webhook --secret <SECRET>
@@ -38,12 +38,6 @@ export async function POST(request: Request) {
     }
 
     // Extraire les informations du build
-    // Le payload EAS contient :
-    // - id: le build ID
-    // - status: "new", "in_progress", "finished", "errored"
-    // - platform: "android" ou "ios"
-    // - artifacts.applicationUrl: URL directe de l'APK/IPA
-    // - artifacts.buildUrl: URL de la page de détails du build
     const {
       id: buildId,
       status,
@@ -52,7 +46,6 @@ export async function POST(request: Request) {
     } = payload;
 
     // Ne traiter que les builds Android terminés avec succès
-    // EAS peut envoyer "finished" ou "FINISHED" selon les versions
     const isFinished = status.toLowerCase() === "finished";
     const isAndroid = platform.toLowerCase() === "android";
     
@@ -79,7 +72,6 @@ export async function POST(request: Request) {
     const buildUrl = `https://expo.dev/accounts/tassirou/projects/cinemax-mobile/builds/${buildId}`;
 
     // Stocker les informations dans la base de données
-    // On utilise upsert pour mettre à jour si un enregistrement avec ce buildId existe déjà
     await prisma.buildInfo.upsert({
       where: { buildId },
       update: {

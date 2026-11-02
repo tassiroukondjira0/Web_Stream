@@ -7,12 +7,9 @@ interface SessionUser {
   role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN";
 }
 
-/** URL de fallback si le fetch de l'API échoue (dernier build connu). */
-const FALLBACK_ANDROID_URL = "https://expo.dev/artifacts/eas/GnIzVS4hKyr7s2sI8DZYjrWuo6E5tWq_T6j5E6sdGJs.apk";
-
 export function Footer() {
   const [user, setUser] = useState<SessionUser | null>(null);
-  const [apkUrl, setApkUrl] = useState(FALLBACK_ANDROID_URL);
+  const [apkUrl, setApkUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me", { credentials: "include" })
@@ -27,13 +24,10 @@ export function Footer() {
         return null;
       })
       .then((data) => {
-        // Prioriser artifactUrl (lien direct APK), puis buildUrl (page EAS)
         if (data?.artifactUrl) setApkUrl(data.artifactUrl);
         else if (data?.buildUrl) setApkUrl(data.buildUrl);
       })
-      .catch(() => {
-        // Fallback déjà défini dans le state initial
-      });
+      .catch(() => {});
   }, []);
 
   const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
@@ -72,16 +66,18 @@ export function Footer() {
           <div>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-200">Application</h3>
             <ul className="mt-4 space-y-2 text-sm">
-              <li>
-                <a
-                  href={apkUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 hover:text-white"
-                >
-                  📱 Télécharger l&apos;APK Android
-                </a>
-              </li>
+              {apkUrl && (
+                <li>
+                  <a
+                    href={apkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 hover:text-white"
+                  >
+                    📱 Télécharger l&apos;APK Android
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
 
