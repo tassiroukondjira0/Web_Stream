@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { User, ListPlus, Sparkles } from "lucide-react";
 import { ProviderPosterCard } from "@/components/ProviderPosterCard";
-import { providerSlugHref } from "@/lib/provider-catalog";
+import { providerSlugHref } from "@/lib/provider-catalog.types";
 
 interface UserProfile {
   id: string;

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MediaItem } from "@/lib/catalog";
-import { AccessLevel, MediaType } from "@prisma/client";
+import { AccessLevel, MediaType } from "@/generated/client";
 
 const DB_READY = process.env.DATABASE_READY === "true";
 
@@ -127,9 +127,9 @@ export async function GET(request: Request) {
         medias: items,
         stats: {
           totalMedias: items.length,
-          published: items.filter((m) => m.isPublished).length,
-          premium: items.filter((m) => m.accessLevel === "PREMIUM").length,
-          free: items.filter((m) => m.accessLevel === "FREE").length,
+          published: items.filter((m: MediaItem) => m.isPublished).length,
+          premium: items.filter((m: MediaItem) => m.accessLevel === "PREMIUM").length,
+          free: items.filter((m: MediaItem) => m.accessLevel === "FREE").length,
           partnerTotal,
         },
       });

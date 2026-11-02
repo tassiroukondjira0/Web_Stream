@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { PaymentStatus, Prisma, Role, SubscriptionPlan, SubscriptionStatus } from "@prisma/client";
+import { PaymentStatus, Prisma, Role, SubscriptionPlan, SubscriptionStatus } from "@/generated/client";
 import { prisma } from "@/lib/prisma";
 
 /**

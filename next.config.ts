@@ -12,6 +12,11 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   /* config options here */
+  serverExternalPackages: ["pg", "@prisma/adapter-pg", "@prisma/client", "prisma"],
+  webpack: (config) => {
+    config.externals = [...(config.externals || []), "pg", "@prisma/adapter-pg"];
+    return config;
+  },
   images: {
     remotePatterns: [
       {

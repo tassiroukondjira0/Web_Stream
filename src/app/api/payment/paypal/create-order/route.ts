@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { PaymentStatus } from "@prisma/client";
+import { PaymentStatus } from "@/generated/client";
 import { getCurrentUser } from "@/lib/auth";
 import { getAppUrl } from "@/lib/env";
 import { PREMIUM_PLANS, isPremiumPlan, type CountryCode } from "@/lib/payments";

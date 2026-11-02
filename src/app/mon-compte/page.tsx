@@ -17,7 +17,7 @@ import {
   EyeOff,
   KeyRound,
 } from "lucide-react";
-import { providerSlugHref } from "@/lib/provider-catalog";
+import { providerSlugHref } from "@/lib/provider-catalog.types";
 
 interface UserProfile {
   id: string;

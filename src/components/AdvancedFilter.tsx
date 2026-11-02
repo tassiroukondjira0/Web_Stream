@@ -6,7 +6,7 @@ import {
   CATALOG_LANGUAGES,
   CATALOG_PLATFORMS,
   CATALOG_THEMES,
-} from "@/lib/provider-catalog";
+} from "@/lib/provider-catalog.types";
 import { type Category, getAllCategories } from "@/lib/categories";
 
 interface AdvancedFilterProps {
