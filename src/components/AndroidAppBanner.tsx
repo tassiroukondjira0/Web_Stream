@@ -5,10 +5,10 @@ import { Download, X, Smartphone } from "lucide-react";
 
 /**
  * URL de l'API qui retourne les informations du dernier build EAS.
- * Le webhook `/api/eas-webhook` met à jour automatiquement `public/build-info.json`
- * après chaque build réussi.
+ * Le webhook `/api/eas-webhook` met à jour la base de données après chaque build réussi.
+ * L'endpoint `/api/build-info` sert ces données au composant.
  */
-const BUILD_INFO_URL = "/build-info.json";
+const BUILD_INFO_URL = "/api/build-info";
 
 /** URL de fallback si le fetch échoue (dernier build connu). */
 const FALLBACK_ANDROID_URL = "https://expo.dev/artifacts/eas/GnIzVS4hKyr7s2sI8DZYjrWuo6E5tWq_T6j5E6sdGJs.apk";

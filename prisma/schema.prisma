@@ -43,6 +43,19 @@ enum PaymentStatus {
   REFUNDED
 }
 
+/// Stocke les informations du dernier build EAS (mis à jour par le webhook)
+model BuildInfo {
+  id          String   @id @default(cuid())
+  buildId     String   @unique
+  buildUrl    String
+  artifactUrl String
+  platform    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("build_info")
+}
+
 model User {
   id            String         @id @default(cuid())
   name          String?

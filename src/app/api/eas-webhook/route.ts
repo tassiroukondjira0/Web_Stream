@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 /**
  * Webhook EAS Build — reçoit les notifications après chaque build.
  *
  * Quand un build Android est terminé avec succès, EAS envoie un POST vers cette URL.
- * Le payload contient le `buildId` et l'`artifactUrl`. On stocke le buildId dans un
- * fichier JSON public que le bandeau AndroidAppBanner lit côté client.
+ * Le payload contient le `buildId` et les `artifacts`. On stocke les informations
+ * dans la base de données (table `build_info`) que l'endpoint `/api/build-info`
+ * sert au composant AndroidAppBanner.
  *
  * Configuration EAS :
  *   npx eas-cli webhook create --event BUILD --url https://web-stream-mncx.onrender.com/api/eas-webhook --secret <SECRET>
@@ -13,13 +15,8 @@ import { NextResponse } from "next/server";
  * Le secret doit être stocké dans la variable d'environnement `EAS_WEBHOOK_SECRET`.
  */
 
-const BUILD_INFO_PATH = "./public/build-info.json";
-
 export async function POST(request: Request) {
   try {
-    const fs = await import("fs");
-    const path = await import("path");
-
     // Lire le body une seule fois
     const bodyText = await request.text();
     const payload = JSON.parse(bodyText);
@@ -81,19 +78,24 @@ export async function POST(request: Request) {
     // Construire l'URL du build EAS
     const buildUrl = `https://expo.dev/accounts/tassirou/projects/cinemax-mobile/builds/${buildId}`;
 
-    // Écrire les informations dans le fichier JSON public
-    const buildInfo = {
-      buildId,
-      buildUrl,
-      artifactUrl,
-      platform,
-      updatedAt: new Date().toISOString(),
-    };
+    // Stocker les informations dans la base de données
+    // On utilise upsert pour mettre à jour si un enregistrement avec ce buildId existe déjà
+    await prisma.buildInfo.upsert({
+      where: { buildId },
+      update: {
+        buildUrl,
+        artifactUrl,
+        platform,
+      },
+      create: {
+        buildId,
+        buildUrl,
+        artifactUrl,
+        platform,
+      },
+    });
 
-    const fullPath = path.resolve(process.cwd(), BUILD_INFO_PATH);
-    fs.writeFileSync(fullPath, JSON.stringify(buildInfo, null, 2), "utf-8");
-
-    console.log("[EAS Webhook] Build info updated:", buildInfo);
+    console.log("[EAS Webhook] Build info saved to database:", { buildId, artifactUrl });
 
     return NextResponse.json(
       {
