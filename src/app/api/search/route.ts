@@ -31,12 +31,15 @@ export async function GET(request: Request) {
     let partnerResults: { title: string; href: string; type: string; posterUrl: string | null }[] = [];
     try {
       const assets = await searchPartnerAssets(q, limit);
-      partnerResults = assets.slice(0, limit).map((a) => ({
-        title: a.title,
-        href: providerItemHref(a),
-        type: "Catalogue",
-        posterUrl: a.posterUrl,
-      }));
+      partnerResults = assets.slice(0, limit).map((a) => {
+        const typeLabel = a.contentType === "MOVIE" ? "Film" : a.contentType === "SERIES" ? "Série" : "Animé";
+        return {
+          title: a.title,
+          href: providerItemHref(a),
+          type: typeLabel,
+          posterUrl: a.posterUrl,
+        };
+      });
     } catch {
       partnerResults = [];
     }
