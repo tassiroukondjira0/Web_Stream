@@ -11,7 +11,7 @@ import { Download, X, Smartphone } from "lucide-react";
 const BUILD_INFO_URL = "/build-info.json";
 
 /** URL de fallback si le fetch échoue (dernier build connu). */
-const FALLBACK_ANDROID_URL = "https://expo.dev/artifacts/eas/fPiBCc5g-YXQRKR-OAZuQb-58surUssd64dL-1eagEs.apk";
+const FALLBACK_ANDROID_URL = "https://expo.dev/artifacts/eas/GnIzVS4hKyr7s2sI8DZYjrWuo6E5tWq_T6j5E6sdGJs.apk";
 
 /**
  * Lien d'installation iOS via EAS Build.

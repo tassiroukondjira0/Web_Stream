@@ -41,20 +41,40 @@ export async function POST(request: Request) {
     }
 
     // Extraire les informations du build
+    // Le payload EAS contient :
+    // - id: le build ID
+    // - status: "new", "in_progress", "finished", "errored"
+    // - platform: "android" ou "ios"
+    // - artifacts.applicationUrl: URL directe de l'APK/IPA
+    // - artifacts.buildUrl: URL de la page de détails du build
     const {
       id: buildId,
       status,
       platform,
-      artifactUrl,
+      artifacts,
     } = payload;
 
     // Ne traiter que les builds Android terminés avec succès
-    if (status !== "finished" || platform !== "android") {
+    // EAS peut envoyer "finished" ou "FINISHED" selon les versions
+    const isFinished = status.toLowerCase() === "finished";
+    const isAndroid = platform.toLowerCase() === "android";
+    
+    if (!isFinished || !isAndroid) {
       return NextResponse.json(
         {
           message: `Ignored: status=${status}, platform=${platform}`,
         },
         { status: 200 }
+      );
+    }
+
+    // Extraire l'URL de l'APK depuis artifacts
+    const artifactUrl = artifacts?.applicationUrl || artifacts?.buildUrl;
+    if (!artifactUrl) {
+      console.error("[EAS Webhook] No artifact URL found in payload");
+      return NextResponse.json(
+        { error: "No artifact URL in payload" },
+        { status: 500 }
       );
     }
 
