@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { shouldOptimizeImage } from "@/lib/image";
-import { ShieldCheck, Plus, Trash2, CheckCircle2, AlertTriangle, Eye, EyeOff, Lock, Download, Pencil, RefreshCw, Database, Library } from "lucide-react";
+import { ShieldCheck, Plus, Trash2, CheckCircle2, AlertTriangle, Eye, EyeOff, Lock, Download, Pencil, RefreshCw, Database, Library, Radio } from "lucide-react";
 import { TrafficCharts } from "@/components/admin/TrafficCharts";
 
 interface SyncRunRecord {
@@ -72,6 +72,7 @@ export default function AdminDashboardPage() {
   const [syncPages, setSyncPages] = useState(2);
   const [syncing, setSyncing] = useState(false);
   const [tmdbSyncing, setTmdbSyncing] = useState(false);
+  const [coverageRunning, setCoverageRunning] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
 
   // Titres partenaires (ProviderAsset) — publication contrôlée par l'admin
@@ -383,6 +384,31 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleCoverage = async () => {
+    setCoverageRunning(true);
+    setSyncMessage("Vérification de la couverture Vidzy en cours...");
+
+    try {
+      const res = await fetch("/api/admin/coverage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checkVidzy: true }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSyncMessage(data.message || "Couverture mise à jour.");
+        loadData();
+      } else {
+        setSyncMessage(data.message || "Erreur lors de la passe de couverture.");
+      }
+    } catch {
+      setSyncMessage("Erreur réseau lors de la passe de couverture.");
+    } finally {
+      setCoverageRunning(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-24 text-center text-sm text-zinc-400">
@@ -523,6 +549,15 @@ export default function AdminDashboardPage() {
             >
               <RefreshCw className={`h-4 w-4 ${tmdbSyncing ? "animate-spin" : ""}`} />
               {tmdbSyncing ? "Synchro TMDB…" : "Synchro TMDB"}
+            </button>
+            <button
+              type="button"
+              onClick={handleCoverage}
+              disabled={coverageRunning}
+              className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-semibold text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Radio className={`h-4 w-4 ${coverageRunning ? "animate-spin" : ""}`} />
+              {coverageRunning ? "Vérification..." : "Couverture Vidzy"}
             </button>
           </form>
         </div>

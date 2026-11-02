@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser, hasAdminAccess } from "@/lib/auth";
+import { getCurrentUser, hasSuperAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
   fetchPopularMovies,
@@ -104,9 +104,9 @@ async function importSeriesSeasons(
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  if (!user || !hasAdminAccess(user.role)) {
+  if (!user || !hasSuperAdminAccess(user.role)) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée au super administrateur." },
       { status: 403 }
     );
   }

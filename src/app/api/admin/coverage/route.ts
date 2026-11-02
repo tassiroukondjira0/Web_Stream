@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser, hasAdminAccess } from "@/lib/auth";
+import { getCurrentUser, hasSuperAdminAccess } from "@/lib/auth";
 import { markProviderCoverage } from "@/modules/providers/coverage";
 
 /**
@@ -11,16 +11,16 @@ import { markProviderCoverage } from "@/modules/providers/coverage";
  * Seuls les administrateurs peuvent déclencher cette opération.
  */
 
-async function requireAdmin() {
+async function requireSuperAdmin() {
   const user = await getCurrentUser();
-  if (!user || !hasAdminAccess(user.role)) return null;
+  if (!user || !hasSuperAdminAccess(user.role)) return null;
   return user;
 }
 
 export async function POST(request: Request) {
-  if (!(await requireAdmin())) {
+  if (!(await requireSuperAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée au super administrateur." },
       { status: 403 },
     );
   }

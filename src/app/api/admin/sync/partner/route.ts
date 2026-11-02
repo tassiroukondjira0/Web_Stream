@@ -13,16 +13,16 @@ import { syncPartnerCatalog } from "@/modules/providers/partner/partner.sync";
 
 const MAX_PAGES = 20;
 
-async function requireAdmin() {
+async function requireSuperAdmin() {
   const user = await getCurrentUser();
-  if (!user || !hasAdminAccess(user.role)) return null;
+  if (!user || !hasSuperAdminAccess(user.role)) return null;
   return user;
 }
 
 export async function GET() {
-  if (!(await requireAdmin())) {
+  if (!(await requireSuperAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée au super administrateur." },
       { status: 403 },
     );
   }
@@ -66,9 +66,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!(await requireAdmin())) {
+  if (!(await requireSuperAdmin())) {
     return NextResponse.json(
-      { error: "FORBIDDEN", message: "Action réservée aux administrateurs." },
+      { error: "FORBIDDEN", message: "Action réservée au super administrateur." },
       { status: 403 },
     );
   }
