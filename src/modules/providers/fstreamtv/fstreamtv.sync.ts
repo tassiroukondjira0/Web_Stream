@@ -17,7 +17,7 @@ import type { PartnerItem } from "../partner/partner.types";
 
 const DEFAULT_PAGES = 5;
 const MAX_PAGES = 1500; // garde-fou : couvre tout le catalogue (films ~1115, séries ~615)
-const PRUNE_AFTER_DAYS = 30;
+const PRUNE_AFTER_DAYS = 90;
 /** Pages téléchargées simultanément (vitesse sans marteler le site). */
 const FETCH_CONCURRENCY = 8;
 

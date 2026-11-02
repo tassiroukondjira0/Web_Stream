@@ -23,7 +23,7 @@ import type { FrenchMangaItem } from "./frenchmanga.types";
 
 const DEFAULT_PAGES = 3;
 const MAX_PAGES = 130; // garde-fou : couvre le catalogue sans l'aspirer d'un coup
-const PRUNE_AFTER_DAYS = 30;
+const PRUNE_AFTER_DAYS = 90;
 /** Pages téléchargées simultanément (anti-bot + vitesse). */
 const FETCH_CONCURRENCY = 5;
 

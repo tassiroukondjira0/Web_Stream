@@ -27,7 +27,7 @@ const MAX_PAGES = 3500; // garde-fou : couvre tout le catalogue (films ~1410, s�
  */
 const DEFAULT_ANIME_PAGES = 80;
 const MAX_ANIME_PAGES = 400;
-const PRUNE_AFTER_DAYS = 30;
+const PRUNE_AFTER_DAYS = 90;
 /** Pages téléchargées simultanément (anti-bot + vitesse). */
 const FETCH_CONCURRENCY = 8;
 
