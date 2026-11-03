@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { shouldOptimizeImage } from "@/lib/image";
+import { cleanTitle } from "@/lib/title-clean";
 import { PosterPlaceholder } from "./PosterPlaceholder";
 
 /** Carte de catalogue générique utilisée partout (homepage, catalogue, recherche). */
@@ -19,8 +20,8 @@ export function ProviderPosterCard({
   badge?: string;
   badgeTone?: "sky" | "fuchsia";
 }) {
-  // S'assurer qu'il y a toujours un titre affiché
-  const displayTitle = title || "Média";
+  // S'assurer qu'il y a toujours un titre affiché (nettoyé des préfixes/suffixes de type)
+  const displayTitle = cleanTitle(title) || "Média";
 
   const imgSrc = posterUrl || undefined;
 

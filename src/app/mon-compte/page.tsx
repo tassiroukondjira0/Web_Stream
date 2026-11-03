@@ -18,6 +18,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import { providerSlugHref } from "@/lib/provider-catalog.types";
+import { cleanTitle } from "@/lib/title-clean";
 
 interface UserProfile {
   id: string;
@@ -550,14 +551,13 @@ function formatTime(seconds: number): string {
     : `${m}:${String(s).padStart(2, "0")}`;
 }
 
-/** Libellé lisible à partir d'un slug (sans appel réseau). */
+/** Libellé lisible à partir d'un slug (sans appel réseau), sans suffixe de type. */
 function prettyTitle(slug: string): string {
   const m = slug.match(/^(partner|frenchmanga|tmdb|fstreamtv)-(movie|series|anime)-(.+)$/);
   if (m) {
-    const [, , kind, id] = m;
-    return `${humanize(id)} ${kind === "movie" ? "· Film" : kind === "series" ? "· Série" : "· Animé"}`;
+    return cleanTitle(humanize(m[3]));
   }
-  return humanize(slug);
+  return cleanTitle(humanize(slug));
 }
 
 function humanize(value: string): string {

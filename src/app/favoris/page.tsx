@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { User, Bookmark, Sparkles } from "lucide-react";
 import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 import { providerSlugHref } from "@/lib/provider-catalog.types";
+import { cleanTitle } from "@/lib/title-clean";
 
 interface UserProfile {
   id: string;
@@ -153,14 +154,13 @@ function slugToHref(slug: string): string {
   return providerSlugHref(slug);
 }
 
-/** Libellé lisible à partir d'un slug (sans appel réseau). */
+/** Libellé lisible à partir d'un slug (sans appel réseau), sans suffixe de type. */
 function prettyTitle(slug: string): string {
   const m = slug.match(/^(partner|frenchmanga|tmdb|fstreamtv)-(movie|series|anime)-(.+)$/);
   if (m) {
-    const [, , kind, id] = m;
-    return `${humanize(id)} ${kind === "movie" ? "· Film" : kind === "series" ? "· Série" : "· Animé"}`;
+    return cleanTitle(humanize(m[3]));
   }
-  return humanize(slug);
+  return cleanTitle(humanize(slug));
 }
 
 function humanize(value: string): string {

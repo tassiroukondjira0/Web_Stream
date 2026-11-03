@@ -252,8 +252,8 @@ async function MangaSection() {
  */
 async function FeaturedSection() {
   await connection();
-
-  const { items, renewalLabel } = await getFeaturedPartner(FEATURED_LIMIT);
+  const now = new Date();
+  const { items, renewalLabel } = await getFeaturedPartner(FEATURED_LIMIT, now);
   if (items.length === 0) return null;
 
   return (

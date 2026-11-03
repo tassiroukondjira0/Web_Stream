@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { shouldOptimizeImage } from "@/lib/image";
+import { cleanTitle } from "@/lib/title-clean";
 import { PosterPlaceholder } from "./PosterPlaceholder";
 
 /** Carte de catalogue générique (affiche l'affiche ou un placeholder). */
@@ -23,13 +24,14 @@ function PosterCard({
   badgeTone?: "sky" | "fuchsia";
 }) {
   const imgSrc = posterUrl || undefined;
+  const displayTitle = cleanTitle(title);
 
   return (
     <a href={href} className="group relative block overflow-hidden rounded-xl bg-zinc-800/60">
       {imgSrc ? (
         <Image
           src={imgSrc}
-          alt={title}
+          alt={displayTitle}
           width={300}
           height={450}
           unoptimized={!shouldOptimizeImage(imgSrc)}
@@ -37,7 +39,7 @@ function PosterCard({
           className="aspect-[2/3] w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
       ) : (
-        <PosterPlaceholder title={title} />
+        <PosterPlaceholder title={displayTitle} />
       )}
       {badge && (
         <span
@@ -49,7 +51,7 @@ function PosterCard({
         </span>
       )}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 text-xs font-medium text-white">
-        {title}
+        {displayTitle}
         {year && <span className="ml-1">({year})</span>}
       </div>
     </a>

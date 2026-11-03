@@ -228,7 +228,7 @@ export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCata
  */
 export async function getFeaturedPartner(
   limit = 12,
-  now: Date = new Date(),
+  now: Date,
 ): Promise<FeaturedSelection> {
   const empty: FeaturedSelection = { items: [], renewalAt: "", renewalLabel: "", period: -1 };
   if (process.env.DATABASE_READY !== "true") return empty;
