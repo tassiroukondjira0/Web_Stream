@@ -117,6 +117,8 @@ export default async function HomePage() {
  * Données issues de la base synchronisée (ProviderAsset publiés par l'admin).
  */
 async function RecentSection() {
+  await connection();
+
   const [movies, series] = await Promise.all([
     getPartnerMovies(1, RECENT_LIMIT),
     getPartnerSeries(1, RECENT_LIMIT),

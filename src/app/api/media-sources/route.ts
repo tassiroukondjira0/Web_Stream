@@ -1,7 +1,7 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+﻿
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { fetchTmdbOverviewByTitle } from "@/lib/tmdb";
-import { resolveCatalogPlayback, resolvePlaybackByTmdbId } from "@/lib/vidzy";
+import { resolvePlaybackByTmdbId } from "@/lib/vidzy";
 import { providerSources, vidzySources, type PlayerSource } from "@/lib/player-sources";
 import {
   fetchMovieEmbeds as fetchFStreamTvMovieEmbeds,
@@ -13,7 +13,6 @@ import {
 } from "@/modules/providers/partner/partner.client";
 import {
   resolvePartnerPlaybackSources,
-  resolveFStreamTvPlaybackSources,
 } from "@/lib/partner-playback";
 import { publicOrigin } from "@/lib/public-origin";
 
@@ -55,42 +54,52 @@ export async function GET(request: NextRequest) {
 
     const sources: PlayerSource[] = [];
 
-    // 2. Si c'est du catalogue TMDB pur (ID numérique)
+    // 2. Catalogue TMDB pur
     if (provider === "TMDB" || /^\d{1,10}$/.test(id)) {
       const isSeries = contentType === "SERIES";
-      const playback = await resolvePlaybackByTmdbId(id, isSeries ? "tv" : "movie").catch(() => null);
+      const playback = await resolvePlaybackByTmdbId(
+        id,
+        isSeries ? "tv" : "movie"
+      ).catch(() => null);
+
       if (playback?.available) {
         sources.push(...vidzySources(playback));
       }
 
       if (title) {
-        const partnerSources = await resolvePartnerPlaybackSources(title, contentType, releaseYear).catch(() => []);
+        const partnerSources = await resolvePartnerPlaybackSources(
+          title,
+          contentType,
+          releaseYear
+        ).catch(() => []);
+
         sources.push(...partnerSources);
       }
     } else if (provider === "FSTREAMTV") {
-      // 3. Fournisseur FStreamTv
+      // 3. Fournisseur FStreamTV
       if (contentType === "MOVIE") {
-        const [playback, embeds] = await Promise.all([
-          title ? resolveCatalogPlayback(title, "MOVIE", releaseYear).catch(() => null) : null,
-          fetchFStreamTvMovieEmbeds(id).catch(() => []),
-        ]);
-
-        if (playback?.available) {
-          sources.push(...vidzySources(playback));
-        }
+        // Recherche uniquement avec l'identifiant exact du fournisseur.
+        // On évite les correspondances approximatives par titre.
+        const embeds = await fetchFStreamTvMovieEmbeds(id).catch(() => []);
 
         if (embeds.length > 0) {
           sources.push(
             ...providerSources(
-              embeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
+              embeds.map(({ host, url }) => ({
+                lang: "vf",
+                episode: 1,
+                host,
+                url,
+              })),
               1,
               "fstreamtv"
             )
           );
         }
       } else {
-        // Série FStreamTv
+        // Série FStreamTV
         const detail = await fetchFStreamTvSeriesDetail(id).catch(() => null);
+
         if (detail?.streams && detail.streams.length > 0) {
           sources.push(...providerSources(detail.streams, 1, "fstreamtv"));
         }
@@ -98,19 +107,18 @@ export async function GET(request: NextRequest) {
     } else {
       // 4. Fournisseur Partenaire (FrenchStream)
       if (contentType === "MOVIE") {
-        const [playback, embeds] = await Promise.all([
-          title ? resolveCatalogPlayback(title, "MOVIE", releaseYear).catch(() => null) : null,
-          fetchPartnerMovieEmbeds(id).catch(() => []),
-        ]);
-
-        if (playback?.available) {
-          sources.push(...vidzySources(playback));
-        }
+        // Recherche uniquement avec l'identifiant exact du fournisseur.
+        const embeds = await fetchPartnerMovieEmbeds(id).catch(() => []);
 
         if (embeds.length > 0) {
           sources.push(
             ...providerSources(
-              embeds.map(({ host, url }) => ({ lang: "vf", episode: 1, host, url })),
+              embeds.map(({ host, url }) => ({
+                lang: "vf",
+                episode: 1,
+                host,
+                url,
+              })),
               1,
               "frenchstream"
             )
@@ -118,6 +126,7 @@ export async function GET(request: NextRequest) {
         }
       } else {
         const detail = await fetchPartnerSeriesDetail(id).catch(() => null);
+
         if (detail?.streams && detail.streams.length > 0) {
           sources.push(...providerSources(detail.streams, 1, "frenchstream"));
         }
@@ -126,28 +135,33 @@ export async function GET(request: NextRequest) {
 
     // Déduplication par URL
     const seen = new Set<string>();
-    const uniqueSources = sources.filter((s) => {
-      if (!s.url || seen.has(s.url)) return false;
-      seen.add(s.url);
+
+    const uniqueSources = sources.filter((source) => {
+      if (!source.url || seen.has(source.url)) return false;
+
+      seen.add(source.url);
       return true;
     });
 
     return NextResponse.json({
       title,
       contentType,
-      sources: uniqueSources.map((s) => ({
-        host: s.host,
-        label: s.label,
-        lang: s.lang.toUpperCase(),
-        season: s.season,
-        episode: s.episode,
-        // Résoudre les URLs relatives (/api/embed?...) en URLs absolues
-        // pour que les clients mobiles puissent les charger dans un WebView.
-        url: toAbsoluteUrl(s.url, publicOrigin(request)),
+      sources: uniqueSources.map((source) => ({
+        host: source.host,
+        label: source.label,
+        lang: source.lang.toUpperCase(),
+        season: source.season,
+        episode: source.episode,
+        // Résoudre les URLs relatives pour les clients mobiles.
+        url: toAbsoluteUrl(source.url, publicOrigin(request)),
       })),
     });
   } catch (error) {
     console.error("Erreur media-sources :", error);
-    return NextResponse.json({ error: "Impossible de récupérer les sources de lecture." }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "Impossible de récupérer les sources de lecture." },
+      { status: 500 }
+    );
   }
 }
