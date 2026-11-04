@@ -32,8 +32,11 @@ export type UserMinAggregateOutputType = {
   image: string | null
   passwordHash: string | null
   country: string | null
+  phoneNumber: string | null
   role: $Enums.Role | null
   pushToken: string | null
+  verificationCode: string | null
+  verificationCodeExpiry: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -46,8 +49,11 @@ export type UserMaxAggregateOutputType = {
   image: string | null
   passwordHash: string | null
   country: string | null
+  phoneNumber: string | null
   role: $Enums.Role | null
   pushToken: string | null
+  verificationCode: string | null
+  verificationCodeExpiry: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -60,8 +66,11 @@ export type UserCountAggregateOutputType = {
   image: number
   passwordHash: number
   country: number
+  phoneNumber: number
   role: number
   pushToken: number
+  verificationCode: number
+  verificationCodeExpiry: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -76,8 +85,11 @@ export type UserMinAggregateInputType = {
   image?: true
   passwordHash?: true
   country?: true
+  phoneNumber?: true
   role?: true
   pushToken?: true
+  verificationCode?: true
+  verificationCodeExpiry?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -90,8 +102,11 @@ export type UserMaxAggregateInputType = {
   image?: true
   passwordHash?: true
   country?: true
+  phoneNumber?: true
   role?: true
   pushToken?: true
+  verificationCode?: true
+  verificationCodeExpiry?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -104,8 +119,11 @@ export type UserCountAggregateInputType = {
   image?: true
   passwordHash?: true
   country?: true
+  phoneNumber?: true
   role?: true
   pushToken?: true
+  verificationCode?: true
+  verificationCodeExpiry?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -191,8 +209,11 @@ export type UserGroupByOutputType = {
   image: string | null
   passwordHash: string | null
   country: string | null
+  phoneNumber: string | null
   role: $Enums.Role
   pushToken: string | null
+  verificationCode: string | null
+  verificationCodeExpiry: Date | null
   createdAt: Date
   updatedAt: Date
   _count: UserCountAggregateOutputType | null
@@ -226,8 +247,11 @@ export type UserWhereInput = {
   image?: Prisma.StringNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringNullableFilter<"User"> | string | null
   country?: Prisma.StringNullableFilter<"User"> | string | null
+  phoneNumber?: Prisma.StringNullableFilter<"User"> | string | null
   role?: Prisma.EnumRoleFilter<"User"> | $Enums.Role
   pushToken?: Prisma.StringNullableFilter<"User"> | string | null
+  verificationCode?: Prisma.StringNullableFilter<"User"> | string | null
+  verificationCodeExpiry?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   bookmarks?: Prisma.BookmarkListRelationFilter
@@ -248,8 +272,11 @@ export type UserOrderByWithRelationInput = {
   image?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   country?: Prisma.SortOrderInput | Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
   pushToken?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationCodeExpiry?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   bookmarks?: Prisma.BookmarkOrderByRelationAggregateInput
@@ -273,8 +300,11 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   image?: Prisma.StringNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringNullableFilter<"User"> | string | null
   country?: Prisma.StringNullableFilter<"User"> | string | null
+  phoneNumber?: Prisma.StringNullableFilter<"User"> | string | null
   role?: Prisma.EnumRoleFilter<"User"> | $Enums.Role
   pushToken?: Prisma.StringNullableFilter<"User"> | string | null
+  verificationCode?: Prisma.StringNullableFilter<"User"> | string | null
+  verificationCodeExpiry?: Prisma.DateTimeNullableFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
   bookmarks?: Prisma.BookmarkListRelationFilter
@@ -295,8 +325,11 @@ export type UserOrderByWithAggregationInput = {
   image?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
   country?: Prisma.SortOrderInput | Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrderInput | Prisma.SortOrder
   role?: Prisma.SortOrder
   pushToken?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationCode?: Prisma.SortOrderInput | Prisma.SortOrder
+  verificationCodeExpiry?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
@@ -315,8 +348,11 @@ export type UserScalarWhereWithAggregatesInput = {
   image?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   passwordHash?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   country?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  phoneNumber?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   role?: Prisma.EnumRoleWithAggregatesFilter<"User"> | $Enums.Role
   pushToken?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  verificationCode?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  verificationCodeExpiry?: Prisma.DateTimeNullableWithAggregatesFilter<"User"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"User"> | Date | string
 }
@@ -329,8 +365,11 @@ export type UserCreateInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
@@ -351,8 +390,11 @@ export type UserUncheckedCreateInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
@@ -373,8 +415,11 @@ export type UserUpdateInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
@@ -395,8 +440,11 @@ export type UserUncheckedUpdateInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
@@ -417,8 +465,11 @@ export type UserCreateManyInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -431,8 +482,11 @@ export type UserUpdateManyMutationInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -445,8 +499,11 @@ export type UserUncheckedUpdateManyInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -459,8 +516,11 @@ export type UserCountOrderByAggregateInput = {
   image?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   country?: Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrder
   role?: Prisma.SortOrder
   pushToken?: Prisma.SortOrder
+  verificationCode?: Prisma.SortOrder
+  verificationCodeExpiry?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -473,8 +533,11 @@ export type UserMaxOrderByAggregateInput = {
   image?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   country?: Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrder
   role?: Prisma.SortOrder
   pushToken?: Prisma.SortOrder
+  verificationCode?: Prisma.SortOrder
+  verificationCodeExpiry?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -487,8 +550,11 @@ export type UserMinOrderByAggregateInput = {
   image?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
   country?: Prisma.SortOrder
+  phoneNumber?: Prisma.SortOrder
   role?: Prisma.SortOrder
   pushToken?: Prisma.SortOrder
+  verificationCode?: Prisma.SortOrder
+  verificationCodeExpiry?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -637,8 +703,11 @@ export type UserCreateWithoutNotificationsInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
@@ -658,8 +727,11 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
@@ -695,8 +767,11 @@ export type UserUpdateWithoutNotificationsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
@@ -716,8 +791,11 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
@@ -737,8 +815,11 @@ export type UserCreateWithoutSubscriptionsInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
@@ -758,8 +839,11 @@ export type UserUncheckedCreateWithoutSubscriptionsInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
@@ -795,8 +879,11 @@ export type UserUpdateWithoutSubscriptionsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
@@ -816,8 +903,11 @@ export type UserUncheckedUpdateWithoutSubscriptionsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
@@ -837,8 +927,11 @@ export type UserCreateWithoutWatchHistoryInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
@@ -858,8 +951,11 @@ export type UserUncheckedCreateWithoutWatchHistoryInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
@@ -895,8 +991,11 @@ export type UserUpdateWithoutWatchHistoryInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
@@ -916,8 +1015,11 @@ export type UserUncheckedUpdateWithoutWatchHistoryInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
@@ -937,8 +1039,11 @@ export type UserCreateWithoutPlaybackProgressInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
@@ -958,8 +1063,11 @@ export type UserUncheckedCreateWithoutPlaybackProgressInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
@@ -995,8 +1103,11 @@ export type UserUpdateWithoutPlaybackProgressInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
@@ -1016,8 +1127,11 @@ export type UserUncheckedUpdateWithoutPlaybackProgressInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
@@ -1037,8 +1151,11 @@ export type UserCreateWithoutBookmarksInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
@@ -1058,8 +1175,11 @@ export type UserUncheckedCreateWithoutBookmarksInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
@@ -1095,8 +1215,11 @@ export type UserUpdateWithoutBookmarksInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
@@ -1116,8 +1239,11 @@ export type UserUncheckedUpdateWithoutBookmarksInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
@@ -1137,8 +1263,11 @@ export type UserCreateWithoutWishlistInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
@@ -1158,8 +1287,11 @@ export type UserUncheckedCreateWithoutWishlistInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
@@ -1195,8 +1327,11 @@ export type UserUpdateWithoutWishlistInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
@@ -1216,8 +1351,11 @@ export type UserUncheckedUpdateWithoutWishlistInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
@@ -1237,8 +1375,11 @@ export type UserCreateWithoutPageViewsInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
@@ -1258,8 +1399,11 @@ export type UserUncheckedCreateWithoutPageViewsInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
@@ -1295,8 +1439,11 @@ export type UserUpdateWithoutPageViewsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
@@ -1316,8 +1463,11 @@ export type UserUncheckedUpdateWithoutPageViewsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
@@ -1337,8 +1487,11 @@ export type UserCreateWithoutReviewsInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
@@ -1358,8 +1511,11 @@ export type UserUncheckedCreateWithoutReviewsInput = {
   image?: string | null
   passwordHash?: string | null
   country?: string | null
+  phoneNumber?: string | null
   role?: $Enums.Role
   pushToken?: string | null
+  verificationCode?: string | null
+  verificationCodeExpiry?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
@@ -1395,8 +1551,11 @@ export type UserUpdateWithoutReviewsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
@@ -1416,8 +1575,11 @@ export type UserUncheckedUpdateWithoutReviewsInput = {
   image?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   country?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phoneNumber?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   role?: Prisma.EnumRoleFieldUpdateOperationsInput | $Enums.Role
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  verificationCodeExpiry?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
@@ -1531,8 +1693,11 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   image?: boolean
   passwordHash?: boolean
   country?: boolean
+  phoneNumber?: boolean
   role?: boolean
   pushToken?: boolean
+  verificationCode?: boolean
+  verificationCodeExpiry?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   bookmarks?: boolean | Prisma.User$bookmarksArgs<ExtArgs>
@@ -1554,8 +1719,11 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   image?: boolean
   passwordHash?: boolean
   country?: boolean
+  phoneNumber?: boolean
   role?: boolean
   pushToken?: boolean
+  verificationCode?: boolean
+  verificationCodeExpiry?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1568,8 +1736,11 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   image?: boolean
   passwordHash?: boolean
   country?: boolean
+  phoneNumber?: boolean
   role?: boolean
   pushToken?: boolean
+  verificationCode?: boolean
+  verificationCodeExpiry?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["user"]>
@@ -1582,13 +1753,16 @@ export type UserSelectScalar = {
   image?: boolean
   passwordHash?: boolean
   country?: boolean
+  phoneNumber?: boolean
   role?: boolean
   pushToken?: boolean
+  verificationCode?: boolean
+  verificationCodeExpiry?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "passwordHash" | "country" | "role" | "pushToken" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "passwordHash" | "country" | "phoneNumber" | "role" | "pushToken" | "verificationCode" | "verificationCodeExpiry" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   bookmarks?: boolean | Prisma.User$bookmarksArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
@@ -1623,8 +1797,11 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     image: string | null
     passwordHash: string | null
     country: string | null
+    phoneNumber: string | null
     role: $Enums.Role
     pushToken: string | null
+    verificationCode: string | null
+    verificationCodeExpiry: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["user"]>
@@ -2065,8 +2242,11 @@ export interface UserFieldRefs {
   readonly image: Prisma.FieldRef<"User", 'String'>
   readonly passwordHash: Prisma.FieldRef<"User", 'String'>
   readonly country: Prisma.FieldRef<"User", 'String'>
+  readonly phoneNumber: Prisma.FieldRef<"User", 'String'>
   readonly role: Prisma.FieldRef<"User", 'Role'>
   readonly pushToken: Prisma.FieldRef<"User", 'String'>
+  readonly verificationCode: Prisma.FieldRef<"User", 'String'>
+  readonly verificationCodeExpiry: Prisma.FieldRef<"User", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"User", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"User", 'DateTime'>
 }

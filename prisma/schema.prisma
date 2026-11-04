@@ -28,8 +28,11 @@ model User {
   image            String?
   passwordHash     String?
   country          String?
+  phoneNumber      String?
   role             Role               @default(USER)
   pushToken        String?
+  verificationCode String?
+  verificationCodeExpiry DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   bookmarks        Bookmark[]

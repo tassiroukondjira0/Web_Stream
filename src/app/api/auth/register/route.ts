@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { hashPassword, signSessionToken, COOKIE_NAME, sessionCookieOptions } from "@/lib/auth";
 import { readRequestBodyLimited } from "@/lib/request-body";
 import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { sendVerificationEmail, generateVerificationCode } from "@/lib/emailjs";
 
 // Mémoire tampon pour tests si la base PostgreSQL locale n'est pas encore démarrée
-const memoryUsers = new Map<string, { id: string; email: string; name: string; passwordHash: string; role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN" }>();
+const memoryUsers = new Map<string, { id: string; email: string; name: string; passwordHash: string; country: string | null; phoneNumber: string | null; role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN" }>();
 
 export async function POST(request: Request) {
   try {
@@ -23,7 +24,7 @@ export async function POST(request: Request) {
     if (!input || typeof input !== "object") {
       return NextResponse.json({ error: "Requête invalide." }, { status: 400 });
     }
-    const { name, email, password } = input as Record<string, unknown>;
+    const { name, email, password, country, phoneNumber } = input as Record<string, unknown>;
 
     if (
       typeof email !== "string" || typeof password !== "string" ||
@@ -31,9 +32,20 @@ export async function POST(request: Request) {
       (name !== undefined && (typeof name !== "string" || name.length > 100))
     ) {
       return NextResponse.json(
-        { error: "Un e-mail valide et un mot de passe de 8 �� 128 caract��res sont requis." },
+        { error: "Un e-mail valide et un mot de passe de 8 à 128 caractères sont requis." },
         { status: 400 }
       );
+    }
+
+    // Validation obligatoire du pays et du numéro de téléphone
+    if (typeof country !== "string" || !country.trim()) {
+      return NextResponse.json({ error: "Le pays est obligatoire." }, { status: 400 });
+    }
+    if (typeof phoneNumber !== "string" || !phoneNumber.trim()) {
+      return NextResponse.json({ error: "Le numéro de téléphone est obligatoire." }, { status: 400 });
+    }
+    if (phoneNumber.trim().length > 20) {
+      return NextResponse.json({ error: "Le numéro de téléphone est trop long." }, { status: 400 });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
@@ -73,7 +85,7 @@ export async function POST(request: Request) {
 
     const hashedPassword = await hashPassword(password);
 
-    let user: { id: string; email: string; name: string; role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN" };
+    let user: { id: string; email: string; name: string; country: string | null; phoneNumber: string | null; role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN" };
 
     if (process.env.DATABASE_READY === "true") {
       const existingUser = await prisma.user.findUnique({
@@ -87,19 +99,34 @@ export async function POST(request: Request) {
         );
       }
 
+      // Générer un code de vérification
+      const verificationCode = generateVerificationCode();
+      const codeExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
       const created = await prisma.user.create({
         data: {
           name: typeof name === "string" ? name.trim() || "Utilisateur" : "Utilisateur",
           email: normalizedEmail,
           passwordHash: hashedPassword,
+          country: typeof country === "string" && country.trim() ? country.trim() : null,
+          phoneNumber: typeof phoneNumber === "string" && phoneNumber.trim() ? phoneNumber.trim() : null,
           role: "USER",
+          verificationCode,
+          verificationCodeExpiry: codeExpiry,
         },
+      });
+
+      // Envoyer l'email de vérification (non bloquant)
+      sendVerificationEmail(normalizedEmail, verificationCode).catch((err) => {
+        console.error('Erreur envoi email vérification:', err);
       });
 
       user = {
         id: created.id,
         email: created.email,
         name: created.name || "Utilisateur",
+        country: created.country,
+        phoneNumber: created.phoneNumber,
         role: created.role,
       };
     } else {
@@ -117,10 +144,12 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         name: typeof name === "string" ? name.trim() || "Utilisateur" : "Utilisateur",
         passwordHash: hashedPassword,
+        country: typeof country === "string" && country.trim() ? country.trim() : null,
+        phoneNumber: typeof phoneNumber === "string" && phoneNumber.trim() ? phoneNumber.trim() : null,
         role,
       };
       memoryUsers.set(normalizedEmail, newUser);
-      user = { id: newUser.id, email: newUser.email, name: newUser.name, role: newUser.role };
+      user = { id: newUser.id, email: newUser.email, name: newUser.name, country: newUser.country, phoneNumber: newUser.phoneNumber, role: newUser.role };
     }
 
     const sessionToken = await signSessionToken(user);

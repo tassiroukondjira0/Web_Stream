@@ -3,15 +3,41 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, User, ArrowRight } from "lucide-react";
+import { Lock, Mail, User, ArrowRight, MapPin, Phone } from "lucide-react";
+
+const COUNTRIES = [
+  { code: "CI", name: "Côte d'Ivoire", prefix: "+225" },
+  { code: "SN", name: "Sénégal", prefix: "+221" },
+  { code: "ML", name: "Mali", prefix: "+223" },
+  { code: "BF", name: "Burkina Faso", prefix: "+226" },
+  { code: "GN", name: "Guinée", prefix: "+224" },
+  { code: "CM", name: "Cameroun", prefix: "+237" },
+  { code: "FR", name: "France", prefix: "+33" },
+  { code: "BE", name: "Belgique", prefix: "+32" },
+  { code: "CA", name: "Canada", prefix: "+1" },
+  { code: "CD", name: "RD Congo", prefix: "+243" },
+  { code: "CG", name: "Congo", prefix: "+242" },
+  { code: "TG", name: "Togo", prefix: "+228" },
+  { code: "BJ", name: "Bénin", prefix: "+229" },
+  { code: "NE", name: "Niger", prefix: "+227" },
+  { code: "GA", name: "Gabon", prefix: "+241" },
+  { code: "GQ", name: "Guinée équatoriale", prefix: "+240" },
+  { code: "CF", name: "Centrafrique", prefix: "+236" },
+  { code: "MC", name: "Mauritanie", prefix: "+222" },
+  { code: "OTHER", name: "Autre", prefix: "" },
+];
 
 export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [country, setCountry] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const selectedCountry = COUNTRIES.find((c) => c.code === country);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,7 +48,7 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, country, phoneNumber }),
       });
 
       const data = await res.json();
@@ -102,6 +128,41 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="12 caractères minimum"
+                className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300">Pays</label>
+            <div className="relative mt-1">
+              <MapPin className="absolute left-3.5 top-3 h-4 w-4 text-zinc-500" />
+              <select
+                required
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 appearance-none"
+              >
+                <option value="" className="bg-zinc-900 text-zinc-500">Sélectionnez votre pays</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code} className="bg-zinc-900 text-white">
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-zinc-300">Numéro de téléphone</label>
+            <div className="relative mt-1">
+              <Phone className="absolute left-3.5 top-3 h-4 w-4 text-zinc-500" />
+              <input
+                type="tel"
+                required
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
+                placeholder={selectedCountry ? `${selectedCountry.prefix} XX XX XX XX` : "Votre numéro"}
                 className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder-zinc-500 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
               />
             </div>
