@@ -230,14 +230,14 @@ export type UserWhereInput = {
   pushToken?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
-  subscriptions?: Prisma.SubscriptionListRelationFilter
-  watchHistory?: Prisma.WatchHistoryListRelationFilter
   bookmarks?: Prisma.BookmarkListRelationFilter
-  wishlist?: Prisma.WishlistItemListRelationFilter
+  notifications?: Prisma.NotificationListRelationFilter
   pageViews?: Prisma.PageViewListRelationFilter
   playbackProgress?: Prisma.PlaybackProgressListRelationFilter
-  notifications?: Prisma.NotificationListRelationFilter
   reviews?: Prisma.ReviewListRelationFilter
+  subscriptions?: Prisma.SubscriptionListRelationFilter
+  watchHistory?: Prisma.WatchHistoryListRelationFilter
+  wishlist?: Prisma.WishlistItemListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -252,14 +252,14 @@ export type UserOrderByWithRelationInput = {
   pushToken?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  subscriptions?: Prisma.SubscriptionOrderByRelationAggregateInput
-  watchHistory?: Prisma.WatchHistoryOrderByRelationAggregateInput
   bookmarks?: Prisma.BookmarkOrderByRelationAggregateInput
-  wishlist?: Prisma.WishlistItemOrderByRelationAggregateInput
+  notifications?: Prisma.NotificationOrderByRelationAggregateInput
   pageViews?: Prisma.PageViewOrderByRelationAggregateInput
   playbackProgress?: Prisma.PlaybackProgressOrderByRelationAggregateInput
-  notifications?: Prisma.NotificationOrderByRelationAggregateInput
   reviews?: Prisma.ReviewOrderByRelationAggregateInput
+  subscriptions?: Prisma.SubscriptionOrderByRelationAggregateInput
+  watchHistory?: Prisma.WatchHistoryOrderByRelationAggregateInput
+  wishlist?: Prisma.WishlistItemOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -277,14 +277,14 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   pushToken?: Prisma.StringNullableFilter<"User"> | string | null
   createdAt?: Prisma.DateTimeFilter<"User"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"User"> | Date | string
-  subscriptions?: Prisma.SubscriptionListRelationFilter
-  watchHistory?: Prisma.WatchHistoryListRelationFilter
   bookmarks?: Prisma.BookmarkListRelationFilter
-  wishlist?: Prisma.WishlistItemListRelationFilter
+  notifications?: Prisma.NotificationListRelationFilter
   pageViews?: Prisma.PageViewListRelationFilter
   playbackProgress?: Prisma.PlaybackProgressListRelationFilter
-  notifications?: Prisma.NotificationListRelationFilter
   reviews?: Prisma.ReviewListRelationFilter
+  subscriptions?: Prisma.SubscriptionListRelationFilter
+  watchHistory?: Prisma.WatchHistoryListRelationFilter
+  wishlist?: Prisma.WishlistItemListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -333,14 +333,14 @@ export type UserCreateInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
-  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -355,14 +355,14 @@ export type UserUncheckedCreateInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
-  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -377,14 +377,14 @@ export type UserUpdateInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
-  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -399,14 +399,14 @@ export type UserUncheckedUpdateInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
-  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -641,13 +641,13 @@ export type UserCreateWithoutNotificationsInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
-  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutNotificationsInput = {
@@ -662,13 +662,13 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
-  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutNotificationsInput = {
@@ -699,13 +699,13 @@ export type UserUpdateWithoutNotificationsInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
-  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotificationsInput = {
@@ -720,13 +720,13 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
-  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSubscriptionsInput = {
@@ -741,13 +741,13 @@ export type UserCreateWithoutSubscriptionsInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSubscriptionsInput = {
@@ -762,13 +762,13 @@ export type UserUncheckedCreateWithoutSubscriptionsInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSubscriptionsInput = {
@@ -799,13 +799,13 @@ export type UserUpdateWithoutSubscriptionsInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSubscriptionsInput = {
@@ -820,13 +820,13 @@ export type UserUncheckedUpdateWithoutSubscriptionsInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutWatchHistoryInput = {
@@ -841,13 +841,13 @@ export type UserCreateWithoutWatchHistoryInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutWatchHistoryInput = {
@@ -862,13 +862,13 @@ export type UserUncheckedCreateWithoutWatchHistoryInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutWatchHistoryInput = {
@@ -899,13 +899,13 @@ export type UserUpdateWithoutWatchHistoryInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWatchHistoryInput = {
@@ -920,13 +920,13 @@ export type UserUncheckedUpdateWithoutWatchHistoryInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPlaybackProgressInput = {
@@ -941,13 +941,13 @@ export type UserCreateWithoutPlaybackProgressInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
   subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
   watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
-  bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
   wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
-  pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
-  reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPlaybackProgressInput = {
@@ -962,13 +962,13 @@ export type UserUncheckedCreateWithoutPlaybackProgressInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
   subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
   watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
-  bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
   wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
-  pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
-  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPlaybackProgressInput = {
@@ -999,13 +999,13 @@ export type UserUpdateWithoutPlaybackProgressInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
   subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
   watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
-  bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
   wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
-  pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
-  reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPlaybackProgressInput = {
@@ -1020,13 +1020,13 @@ export type UserUncheckedUpdateWithoutPlaybackProgressInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
   subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
   watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
-  bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
   wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
-  pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
-  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutBookmarksInput = {
@@ -1041,13 +1041,13 @@ export type UserCreateWithoutBookmarksInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
+  playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
   subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
   watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
   wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
-  pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
-  playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
-  reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutBookmarksInput = {
@@ -1062,13 +1062,13 @@ export type UserUncheckedCreateWithoutBookmarksInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
+  playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
   subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
   watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
   wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
-  pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
-  playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
-  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutBookmarksInput = {
@@ -1099,13 +1099,13 @@ export type UserUpdateWithoutBookmarksInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
+  playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
   subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
   watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
   wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
-  pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
-  playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
-  reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBookmarksInput = {
@@ -1120,13 +1120,13 @@ export type UserUncheckedUpdateWithoutBookmarksInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
+  playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
   subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
   watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
   wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
-  pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
-  playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
-  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutWishlistInput = {
@@ -1141,13 +1141,13 @@ export type UserCreateWithoutWishlistInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
-  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutWishlistInput = {
@@ -1162,13 +1162,13 @@ export type UserUncheckedCreateWithoutWishlistInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
-  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutWishlistInput = {
@@ -1199,13 +1199,13 @@ export type UserUpdateWithoutWishlistInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
-  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutWishlistInput = {
@@ -1220,13 +1220,13 @@ export type UserUncheckedUpdateWithoutWishlistInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
-  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutPageViewsInput = {
@@ -1241,13 +1241,13 @@ export type UserCreateWithoutPageViewsInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
+  reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
   subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
   watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
-  bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
   wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
-  playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
-  reviews?: Prisma.ReviewCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutPageViewsInput = {
@@ -1262,13 +1262,13 @@ export type UserUncheckedCreateWithoutPageViewsInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
+  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
   subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
   watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
-  bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
   wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
-  playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
-  reviews?: Prisma.ReviewUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutPageViewsInput = {
@@ -1299,13 +1299,13 @@ export type UserUpdateWithoutPageViewsInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
+  reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
   subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
   watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
-  bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
   wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
-  playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
-  reviews?: Prisma.ReviewUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutPageViewsInput = {
@@ -1320,13 +1320,13 @@ export type UserUncheckedUpdateWithoutPageViewsInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
+  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
   subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
   watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
-  bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
   wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
-  playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
-  reviews?: Prisma.ReviewUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutReviewsInput = {
@@ -1341,13 +1341,13 @@ export type UserCreateWithoutReviewsInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
-  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutReviewsInput = {
@@ -1362,13 +1362,13 @@ export type UserUncheckedCreateWithoutReviewsInput = {
   pushToken?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
-  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
   bookmarks?: Prisma.BookmarkUncheckedCreateNestedManyWithoutUserInput
-  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   pageViews?: Prisma.PageViewUncheckedCreateNestedManyWithoutUserInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedCreateNestedManyWithoutUserInput
-  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  subscriptions?: Prisma.SubscriptionUncheckedCreateNestedManyWithoutUserInput
+  watchHistory?: Prisma.WatchHistoryUncheckedCreateNestedManyWithoutUserInput
+  wishlist?: Prisma.WishlistItemUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutReviewsInput = {
@@ -1399,13 +1399,13 @@ export type UserUpdateWithoutReviewsInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
-  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutReviewsInput = {
@@ -1420,13 +1420,13 @@ export type UserUncheckedUpdateWithoutReviewsInput = {
   pushToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
-  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
   bookmarks?: Prisma.BookmarkUncheckedUpdateManyWithoutUserNestedInput
-  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   pageViews?: Prisma.PageViewUncheckedUpdateManyWithoutUserNestedInput
   playbackProgress?: Prisma.PlaybackProgressUncheckedUpdateManyWithoutUserNestedInput
-  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  subscriptions?: Prisma.SubscriptionUncheckedUpdateManyWithoutUserNestedInput
+  watchHistory?: Prisma.WatchHistoryUncheckedUpdateManyWithoutUserNestedInput
+  wishlist?: Prisma.WishlistItemUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1435,25 +1435,25 @@ export type UserUncheckedUpdateWithoutReviewsInput = {
  */
 
 export type UserCountOutputType = {
-  subscriptions: number
-  watchHistory: number
   bookmarks: number
-  wishlist: number
+  notifications: number
   pageViews: number
   playbackProgress: number
-  notifications: number
   reviews: number
+  subscriptions: number
+  watchHistory: number
+  wishlist: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  subscriptions?: boolean | UserCountOutputTypeCountSubscriptionsArgs
-  watchHistory?: boolean | UserCountOutputTypeCountWatchHistoryArgs
   bookmarks?: boolean | UserCountOutputTypeCountBookmarksArgs
-  wishlist?: boolean | UserCountOutputTypeCountWishlistArgs
+  notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
   pageViews?: boolean | UserCountOutputTypeCountPageViewsArgs
   playbackProgress?: boolean | UserCountOutputTypeCountPlaybackProgressArgs
-  notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
   reviews?: boolean | UserCountOutputTypeCountReviewsArgs
+  subscriptions?: boolean | UserCountOutputTypeCountSubscriptionsArgs
+  watchHistory?: boolean | UserCountOutputTypeCountWatchHistoryArgs
+  wishlist?: boolean | UserCountOutputTypeCountWishlistArgs
 }
 
 /**
@@ -1469,20 +1469,6 @@ export type UserCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountSubscriptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.SubscriptionWhereInput
-}
-
-/**
- * UserCountOutputType without action
- */
-export type UserCountOutputTypeCountWatchHistoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.WatchHistoryWhereInput
-}
-
-/**
- * UserCountOutputType without action
- */
 export type UserCountOutputTypeCountBookmarksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.BookmarkWhereInput
 }
@@ -1490,8 +1476,8 @@ export type UserCountOutputTypeCountBookmarksArgs<ExtArgs extends runtime.Types.
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountWishlistArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.WishlistItemWhereInput
+export type UserCountOutputTypeCountNotificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NotificationWhereInput
 }
 
 /**
@@ -1511,15 +1497,29 @@ export type UserCountOutputTypeCountPlaybackProgressArgs<ExtArgs extends runtime
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountNotificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.NotificationWhereInput
+export type UserCountOutputTypeCountReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ReviewWhereInput
 }
 
 /**
  * UserCountOutputType without action
  */
-export type UserCountOutputTypeCountReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ReviewWhereInput
+export type UserCountOutputTypeCountSubscriptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.SubscriptionWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountWatchHistoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WatchHistoryWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountWishlistArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.WishlistItemWhereInput
 }
 
 
@@ -1535,14 +1535,14 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   pushToken?: boolean
   createdAt?: boolean
   updatedAt?: boolean
-  subscriptions?: boolean | Prisma.User$subscriptionsArgs<ExtArgs>
-  watchHistory?: boolean | Prisma.User$watchHistoryArgs<ExtArgs>
   bookmarks?: boolean | Prisma.User$bookmarksArgs<ExtArgs>
-  wishlist?: boolean | Prisma.User$wishlistArgs<ExtArgs>
+  notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   pageViews?: boolean | Prisma.User$pageViewsArgs<ExtArgs>
   playbackProgress?: boolean | Prisma.User$playbackProgressArgs<ExtArgs>
-  notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   reviews?: boolean | Prisma.User$reviewsArgs<ExtArgs>
+  subscriptions?: boolean | Prisma.User$subscriptionsArgs<ExtArgs>
+  watchHistory?: boolean | Prisma.User$watchHistoryArgs<ExtArgs>
+  wishlist?: boolean | Prisma.User$wishlistArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1590,14 +1590,14 @@ export type UserSelectScalar = {
 
 export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "emailVerified" | "image" | "passwordHash" | "country" | "role" | "pushToken" | "createdAt" | "updatedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  subscriptions?: boolean | Prisma.User$subscriptionsArgs<ExtArgs>
-  watchHistory?: boolean | Prisma.User$watchHistoryArgs<ExtArgs>
   bookmarks?: boolean | Prisma.User$bookmarksArgs<ExtArgs>
-  wishlist?: boolean | Prisma.User$wishlistArgs<ExtArgs>
+  notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   pageViews?: boolean | Prisma.User$pageViewsArgs<ExtArgs>
   playbackProgress?: boolean | Prisma.User$playbackProgressArgs<ExtArgs>
-  notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   reviews?: boolean | Prisma.User$reviewsArgs<ExtArgs>
+  subscriptions?: boolean | Prisma.User$subscriptionsArgs<ExtArgs>
+  watchHistory?: boolean | Prisma.User$watchHistoryArgs<ExtArgs>
+  wishlist?: boolean | Prisma.User$wishlistArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1606,14 +1606,14 @@ export type UserIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "User"
   objects: {
-    subscriptions: Prisma.$SubscriptionPayload<ExtArgs>[]
-    watchHistory: Prisma.$WatchHistoryPayload<ExtArgs>[]
     bookmarks: Prisma.$BookmarkPayload<ExtArgs>[]
-    wishlist: Prisma.$WishlistItemPayload<ExtArgs>[]
+    notifications: Prisma.$NotificationPayload<ExtArgs>[]
     pageViews: Prisma.$PageViewPayload<ExtArgs>[]
     playbackProgress: Prisma.$PlaybackProgressPayload<ExtArgs>[]
-    notifications: Prisma.$NotificationPayload<ExtArgs>[]
     reviews: Prisma.$ReviewPayload<ExtArgs>[]
+    subscriptions: Prisma.$SubscriptionPayload<ExtArgs>[]
+    watchHistory: Prisma.$WatchHistoryPayload<ExtArgs>[]
+    wishlist: Prisma.$WishlistItemPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -2021,14 +2021,14 @@ readonly fields: UserFieldRefs;
  */
 export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  subscriptions<T extends Prisma.User$subscriptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  watchHistory<T extends Prisma.User$watchHistoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$watchHistoryArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WatchHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   bookmarks<T extends Prisma.User$bookmarksArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$bookmarksArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookmarkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  wishlist<T extends Prisma.User$wishlistArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$wishlistArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WishlistItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   pageViews<T extends Prisma.User$pageViewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$pageViewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PageViewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   playbackProgress<T extends Prisma.User$playbackProgressArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$playbackProgressArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PlaybackProgressPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   reviews<T extends Prisma.User$reviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$reviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  subscriptions<T extends Prisma.User$subscriptionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$subscriptionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SubscriptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  watchHistory<T extends Prisma.User$watchHistoryArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$watchHistoryArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WatchHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  wishlist<T extends Prisma.User$wishlistArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$wishlistArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$WishlistItemPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2462,54 +2462,6 @@ export type UserDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
 }
 
 /**
- * User.subscriptions
- */
-export type User$subscriptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Subscription
-   */
-  select?: Prisma.SubscriptionSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Subscription
-   */
-  omit?: Prisma.SubscriptionOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.SubscriptionInclude<ExtArgs> | null
-  where?: Prisma.SubscriptionWhereInput
-  orderBy?: Prisma.SubscriptionOrderByWithRelationInput | Prisma.SubscriptionOrderByWithRelationInput[]
-  cursor?: Prisma.SubscriptionWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.SubscriptionScalarFieldEnum | Prisma.SubscriptionScalarFieldEnum[]
-}
-
-/**
- * User.watchHistory
- */
-export type User$watchHistoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the WatchHistory
-   */
-  select?: Prisma.WatchHistorySelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the WatchHistory
-   */
-  omit?: Prisma.WatchHistoryOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.WatchHistoryInclude<ExtArgs> | null
-  where?: Prisma.WatchHistoryWhereInput
-  orderBy?: Prisma.WatchHistoryOrderByWithRelationInput | Prisma.WatchHistoryOrderByWithRelationInput[]
-  cursor?: Prisma.WatchHistoryWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.WatchHistoryScalarFieldEnum | Prisma.WatchHistoryScalarFieldEnum[]
-}
-
-/**
  * User.bookmarks
  */
 export type User$bookmarksArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2534,27 +2486,27 @@ export type User$bookmarksArgs<ExtArgs extends runtime.Types.Extensions.Internal
 }
 
 /**
- * User.wishlist
+ * User.notifications
  */
-export type User$wishlistArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+export type User$notificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   /**
-   * Select specific fields to fetch from the WishlistItem
+   * Select specific fields to fetch from the Notification
    */
-  select?: Prisma.WishlistItemSelect<ExtArgs> | null
+  select?: Prisma.NotificationSelect<ExtArgs> | null
   /**
-   * Omit specific fields from the WishlistItem
+   * Omit specific fields from the Notification
    */
-  omit?: Prisma.WishlistItemOmit<ExtArgs> | null
+  omit?: Prisma.NotificationOmit<ExtArgs> | null
   /**
    * Choose, which related nodes to fetch as well
    */
-  include?: Prisma.WishlistItemInclude<ExtArgs> | null
-  where?: Prisma.WishlistItemWhereInput
-  orderBy?: Prisma.WishlistItemOrderByWithRelationInput | Prisma.WishlistItemOrderByWithRelationInput[]
-  cursor?: Prisma.WishlistItemWhereUniqueInput
+  include?: Prisma.NotificationInclude<ExtArgs> | null
+  where?: Prisma.NotificationWhereInput
+  orderBy?: Prisma.NotificationOrderByWithRelationInput | Prisma.NotificationOrderByWithRelationInput[]
+  cursor?: Prisma.NotificationWhereUniqueInput
   take?: number
   skip?: number
-  distinct?: Prisma.WishlistItemScalarFieldEnum | Prisma.WishlistItemScalarFieldEnum[]
+  distinct?: Prisma.NotificationScalarFieldEnum | Prisma.NotificationScalarFieldEnum[]
 }
 
 /**
@@ -2606,30 +2558,6 @@ export type User$playbackProgressArgs<ExtArgs extends runtime.Types.Extensions.I
 }
 
 /**
- * User.notifications
- */
-export type User$notificationsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the Notification
-   */
-  select?: Prisma.NotificationSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the Notification
-   */
-  omit?: Prisma.NotificationOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.NotificationInclude<ExtArgs> | null
-  where?: Prisma.NotificationWhereInput
-  orderBy?: Prisma.NotificationOrderByWithRelationInput | Prisma.NotificationOrderByWithRelationInput[]
-  cursor?: Prisma.NotificationWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.NotificationScalarFieldEnum | Prisma.NotificationScalarFieldEnum[]
-}
-
-/**
  * User.reviews
  */
 export type User$reviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -2651,6 +2579,78 @@ export type User$reviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
   take?: number
   skip?: number
   distinct?: Prisma.ReviewScalarFieldEnum | Prisma.ReviewScalarFieldEnum[]
+}
+
+/**
+ * User.subscriptions
+ */
+export type User$subscriptionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Subscription
+   */
+  select?: Prisma.SubscriptionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Subscription
+   */
+  omit?: Prisma.SubscriptionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.SubscriptionInclude<ExtArgs> | null
+  where?: Prisma.SubscriptionWhereInput
+  orderBy?: Prisma.SubscriptionOrderByWithRelationInput | Prisma.SubscriptionOrderByWithRelationInput[]
+  cursor?: Prisma.SubscriptionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.SubscriptionScalarFieldEnum | Prisma.SubscriptionScalarFieldEnum[]
+}
+
+/**
+ * User.watchHistory
+ */
+export type User$watchHistoryArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WatchHistory
+   */
+  select?: Prisma.WatchHistorySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WatchHistory
+   */
+  omit?: Prisma.WatchHistoryOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WatchHistoryInclude<ExtArgs> | null
+  where?: Prisma.WatchHistoryWhereInput
+  orderBy?: Prisma.WatchHistoryOrderByWithRelationInput | Prisma.WatchHistoryOrderByWithRelationInput[]
+  cursor?: Prisma.WatchHistoryWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WatchHistoryScalarFieldEnum | Prisma.WatchHistoryScalarFieldEnum[]
+}
+
+/**
+ * User.wishlist
+ */
+export type User$wishlistArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the WishlistItem
+   */
+  select?: Prisma.WishlistItemSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the WishlistItem
+   */
+  omit?: Prisma.WishlistItemOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WishlistItemInclude<ExtArgs> | null
+  where?: Prisma.WishlistItemWhereInput
+  orderBy?: Prisma.WishlistItemOrderByWithRelationInput | Prisma.WishlistItemOrderByWithRelationInput[]
+  cursor?: Prisma.WishlistItemWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.WishlistItemScalarFieldEnum | Prisma.WishlistItemScalarFieldEnum[]
 }
 
 /**

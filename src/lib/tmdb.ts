@@ -173,7 +173,7 @@ export interface MediaDraft {
   title: string;
   slug: string;
   synopsis: string;
-  type: "MOVIE" | "SERIES";
+  type: "MOVIE" | "SERIES" | "ANIME";
   accessLevel: "FREE" | "PREMIUM";
   releaseYear: number;
   durationMinutes: number | null;
@@ -189,7 +189,7 @@ export interface MediaDraft {
  */
 export function tmdbToMediaDraft(
   item: TmdbMovie,
-  type: "MOVIE" | "SERIES" = "MOVIE"
+  type: "MOVIE" | "SERIES" | "ANIME" = "MOVIE"
 ): MediaDraft {
   const rawTitle = (type === "SERIES" ? item.name : item.title) || item.title || item.name || "";
   const rawDate = (type === "SERIES" ? item.first_air_date : item.release_date) || item.release_date || item.first_air_date || "";

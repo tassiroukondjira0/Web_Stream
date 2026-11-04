@@ -158,15 +158,15 @@ export type MediaCategoryWhereInput = {
   NOT?: Prisma.MediaCategoryWhereInput | Prisma.MediaCategoryWhereInput[]
   mediaId?: Prisma.StringFilter<"MediaCategory"> | string
   categoryId?: Prisma.StringFilter<"MediaCategory"> | string
-  media?: Prisma.XOR<Prisma.MediaScalarRelationFilter, Prisma.MediaWhereInput>
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
+  media?: Prisma.XOR<Prisma.MediaScalarRelationFilter, Prisma.MediaWhereInput>
 }
 
 export type MediaCategoryOrderByWithRelationInput = {
   mediaId?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
-  media?: Prisma.MediaOrderByWithRelationInput
   category?: Prisma.CategoryOrderByWithRelationInput
+  media?: Prisma.MediaOrderByWithRelationInput
 }
 
 export type MediaCategoryWhereUniqueInput = Prisma.AtLeast<{
@@ -176,8 +176,8 @@ export type MediaCategoryWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.MediaCategoryWhereInput | Prisma.MediaCategoryWhereInput[]
   mediaId?: Prisma.StringFilter<"MediaCategory"> | string
   categoryId?: Prisma.StringFilter<"MediaCategory"> | string
-  media?: Prisma.XOR<Prisma.MediaScalarRelationFilter, Prisma.MediaWhereInput>
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
+  media?: Prisma.XOR<Prisma.MediaScalarRelationFilter, Prisma.MediaWhereInput>
 }, "mediaId_categoryId">
 
 export type MediaCategoryOrderByWithAggregationInput = {
@@ -197,8 +197,8 @@ export type MediaCategoryScalarWhereWithAggregatesInput = {
 }
 
 export type MediaCategoryCreateInput = {
-  media: Prisma.MediaCreateNestedOneWithoutCategoriesInput
   category: Prisma.CategoryCreateNestedOneWithoutMediasInput
+  media: Prisma.MediaCreateNestedOneWithoutCategoriesInput
 }
 
 export type MediaCategoryUncheckedCreateInput = {
@@ -207,8 +207,8 @@ export type MediaCategoryUncheckedCreateInput = {
 }
 
 export type MediaCategoryUpdateInput = {
-  media?: Prisma.MediaUpdateOneRequiredWithoutCategoriesNestedInput
   category?: Prisma.CategoryUpdateOneRequiredWithoutMediasNestedInput
+  media?: Prisma.MediaUpdateOneRequiredWithoutCategoriesNestedInput
 }
 
 export type MediaCategoryUncheckedUpdateInput = {
@@ -457,22 +457,22 @@ export type MediaCategoryUncheckedUpdateManyWithoutMediaInput = {
 export type MediaCategorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   mediaId?: boolean
   categoryId?: boolean
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mediaCategory"]>
 
 export type MediaCategorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   mediaId?: boolean
   categoryId?: boolean
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mediaCategory"]>
 
 export type MediaCategorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   mediaId?: boolean
   categoryId?: boolean
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["mediaCategory"]>
 
 export type MediaCategorySelectScalar = {
@@ -482,23 +482,23 @@ export type MediaCategorySelectScalar = {
 
 export type MediaCategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"mediaId" | "categoryId", ExtArgs["result"]["mediaCategory"]>
 export type MediaCategoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
 }
 export type MediaCategoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
 }
 export type MediaCategoryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
 }
 
 export type $MediaCategoryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "MediaCategory"
   objects: {
-    media: Prisma.$MediaPayload<ExtArgs>
     category: Prisma.$CategoryPayload<ExtArgs>
+    media: Prisma.$MediaPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     mediaId: string
@@ -897,8 +897,8 @@ readonly fields: MediaCategoryFieldRefs;
  */
 export interface Prisma__MediaCategoryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  media<T extends Prisma.MediaDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MediaDefaultArgs<ExtArgs>>): Prisma.Prisma__MediaClient<runtime.Types.Result.GetResult<Prisma.$MediaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   category<T extends Prisma.CategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  media<T extends Prisma.MediaDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MediaDefaultArgs<ExtArgs>>): Prisma.Prisma__MediaClient<runtime.Types.Result.GetResult<Prisma.$MediaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

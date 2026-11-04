@@ -46,7 +46,7 @@ function dbMediaToItem(m: {
     title: m.title,
     slug: m.slug,
     synopsis: m.synopsis,
-    type: m.type as "MOVIE" | "SERIES",
+    type: m.type as "MOVIE" | "SERIES" | "ANIME",
     accessLevel: m.accessLevel as "FREE" | "PREMIUM",
     releaseYear: m.releaseYear,
     durationMinutes: m.durationMinutes,

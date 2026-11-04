@@ -21,7 +21,8 @@ export type Role = (typeof Role)[keyof typeof Role]
 
 export const MediaType = {
   MOVIE: 'MOVIE',
-  SERIES: 'SERIES'
+  SERIES: 'SERIES',
+  ANIME: 'ANIME'
 } as const
 
 export type MediaType = (typeof MediaType)[keyof typeof MediaType]

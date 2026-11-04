@@ -19,7 +19,7 @@ export async function VidzyPlayer({
   basePath: string;
   slug: string;
   title: string;
-  contentType: "MOVIE" | "SERIES";
+  contentType: "MOVIE" | "SERIES" | "ANIME";
   year: number | null;
   searchParams: { lang?: string; season?: string; ep?: string; host?: string };
 }) {

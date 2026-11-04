@@ -244,9 +244,9 @@ export type WatchHistoryWhereInput = {
   totalSeconds?: Prisma.IntFilter<"WatchHistory"> | number
   completed?: Prisma.BoolFilter<"WatchHistory"> | boolean
   updatedAt?: Prisma.DateTimeFilter<"WatchHistory"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  media?: Prisma.XOR<Prisma.MediaScalarRelationFilter, Prisma.MediaWhereInput>
   episode?: Prisma.XOR<Prisma.EpisodeNullableScalarRelationFilter, Prisma.EpisodeWhereInput> | null
+  media?: Prisma.XOR<Prisma.MediaScalarRelationFilter, Prisma.MediaWhereInput>
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }
 
 export type WatchHistoryOrderByWithRelationInput = {
@@ -258,9 +258,9 @@ export type WatchHistoryOrderByWithRelationInput = {
   totalSeconds?: Prisma.SortOrder
   completed?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
-  user?: Prisma.UserOrderByWithRelationInput
-  media?: Prisma.MediaOrderByWithRelationInput
   episode?: Prisma.EpisodeOrderByWithRelationInput
+  media?: Prisma.MediaOrderByWithRelationInput
+  user?: Prisma.UserOrderByWithRelationInput
 }
 
 export type WatchHistoryWhereUniqueInput = Prisma.AtLeast<{
@@ -276,9 +276,9 @@ export type WatchHistoryWhereUniqueInput = Prisma.AtLeast<{
   totalSeconds?: Prisma.IntFilter<"WatchHistory"> | number
   completed?: Prisma.BoolFilter<"WatchHistory"> | boolean
   updatedAt?: Prisma.DateTimeFilter<"WatchHistory"> | Date | string
-  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
-  media?: Prisma.XOR<Prisma.MediaScalarRelationFilter, Prisma.MediaWhereInput>
   episode?: Prisma.XOR<Prisma.EpisodeNullableScalarRelationFilter, Prisma.EpisodeWhereInput> | null
+  media?: Prisma.XOR<Prisma.MediaScalarRelationFilter, Prisma.MediaWhereInput>
+  user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
 }, "id" | "userId_mediaId_episodeId">
 
 export type WatchHistoryOrderByWithAggregationInput = {
@@ -317,9 +317,9 @@ export type WatchHistoryCreateInput = {
   totalSeconds?: number
   completed?: boolean
   updatedAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutWatchHistoryInput
-  media: Prisma.MediaCreateNestedOneWithoutWatchHistoryInput
   episode?: Prisma.EpisodeCreateNestedOneWithoutWatchHistoryInput
+  media: Prisma.MediaCreateNestedOneWithoutWatchHistoryInput
+  user: Prisma.UserCreateNestedOneWithoutWatchHistoryInput
 }
 
 export type WatchHistoryUncheckedCreateInput = {
@@ -339,9 +339,9 @@ export type WatchHistoryUpdateInput = {
   totalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutWatchHistoryNestedInput
-  media?: Prisma.MediaUpdateOneRequiredWithoutWatchHistoryNestedInput
   episode?: Prisma.EpisodeUpdateOneWithoutWatchHistoryNestedInput
+  media?: Prisma.MediaUpdateOneRequiredWithoutWatchHistoryNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutWatchHistoryNestedInput
 }
 
 export type WatchHistoryUncheckedUpdateInput = {
@@ -576,8 +576,8 @@ export type WatchHistoryCreateWithoutUserInput = {
   totalSeconds?: number
   completed?: boolean
   updatedAt?: Date | string
-  media: Prisma.MediaCreateNestedOneWithoutWatchHistoryInput
   episode?: Prisma.EpisodeCreateNestedOneWithoutWatchHistoryInput
+  media: Prisma.MediaCreateNestedOneWithoutWatchHistoryInput
 }
 
 export type WatchHistoryUncheckedCreateWithoutUserInput = {
@@ -636,8 +636,8 @@ export type WatchHistoryCreateWithoutMediaInput = {
   totalSeconds?: number
   completed?: boolean
   updatedAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutWatchHistoryInput
   episode?: Prisma.EpisodeCreateNestedOneWithoutWatchHistoryInput
+  user: Prisma.UserCreateNestedOneWithoutWatchHistoryInput
 }
 
 export type WatchHistoryUncheckedCreateWithoutMediaInput = {
@@ -682,8 +682,8 @@ export type WatchHistoryCreateWithoutEpisodeInput = {
   totalSeconds?: number
   completed?: boolean
   updatedAt?: Date | string
-  user: Prisma.UserCreateNestedOneWithoutWatchHistoryInput
   media: Prisma.MediaCreateNestedOneWithoutWatchHistoryInput
+  user: Prisma.UserCreateNestedOneWithoutWatchHistoryInput
 }
 
 export type WatchHistoryUncheckedCreateWithoutEpisodeInput = {
@@ -738,8 +738,8 @@ export type WatchHistoryUpdateWithoutUserInput = {
   totalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  media?: Prisma.MediaUpdateOneRequiredWithoutWatchHistoryNestedInput
   episode?: Prisma.EpisodeUpdateOneWithoutWatchHistoryNestedInput
+  media?: Prisma.MediaUpdateOneRequiredWithoutWatchHistoryNestedInput
 }
 
 export type WatchHistoryUncheckedUpdateWithoutUserInput = {
@@ -778,8 +778,8 @@ export type WatchHistoryUpdateWithoutMediaInput = {
   totalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutWatchHistoryNestedInput
   episode?: Prisma.EpisodeUpdateOneWithoutWatchHistoryNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutWatchHistoryNestedInput
 }
 
 export type WatchHistoryUncheckedUpdateWithoutMediaInput = {
@@ -818,8 +818,8 @@ export type WatchHistoryUpdateWithoutEpisodeInput = {
   totalSeconds?: Prisma.IntFieldUpdateOperationsInput | number
   completed?: Prisma.BoolFieldUpdateOperationsInput | boolean
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  user?: Prisma.UserUpdateOneRequiredWithoutWatchHistoryNestedInput
   media?: Prisma.MediaUpdateOneRequiredWithoutWatchHistoryNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutWatchHistoryNestedInput
 }
 
 export type WatchHistoryUncheckedUpdateWithoutEpisodeInput = {
@@ -853,9 +853,9 @@ export type WatchHistorySelect<ExtArgs extends runtime.Types.Extensions.Internal
   totalSeconds?: boolean
   completed?: boolean
   updatedAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   episode?: boolean | Prisma.WatchHistory$episodeArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["watchHistory"]>
 
 export type WatchHistorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -867,9 +867,9 @@ export type WatchHistorySelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   totalSeconds?: boolean
   completed?: boolean
   updatedAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   episode?: boolean | Prisma.WatchHistory$episodeArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["watchHistory"]>
 
 export type WatchHistorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -881,9 +881,9 @@ export type WatchHistorySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   totalSeconds?: boolean
   completed?: boolean
   updatedAt?: boolean
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   episode?: boolean | Prisma.WatchHistory$episodeArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["watchHistory"]>
 
 export type WatchHistorySelectScalar = {
@@ -899,27 +899,27 @@ export type WatchHistorySelectScalar = {
 
 export type WatchHistoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "mediaId" | "episodeId" | "progressSeconds" | "totalSeconds" | "completed" | "updatedAt", ExtArgs["result"]["watchHistory"]>
 export type WatchHistoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   episode?: boolean | Prisma.WatchHistory$episodeArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type WatchHistoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   episode?: boolean | Prisma.WatchHistory$episodeArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 export type WatchHistoryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
-  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
   episode?: boolean | Prisma.WatchHistory$episodeArgs<ExtArgs>
+  media?: boolean | Prisma.MediaDefaultArgs<ExtArgs>
+  user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
 }
 
 export type $WatchHistoryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "WatchHistory"
   objects: {
-    user: Prisma.$UserPayload<ExtArgs>
-    media: Prisma.$MediaPayload<ExtArgs>
     episode: Prisma.$EpisodePayload<ExtArgs> | null
+    media: Prisma.$MediaPayload<ExtArgs>
+    user: Prisma.$UserPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1324,9 +1324,9 @@ readonly fields: WatchHistoryFieldRefs;
  */
 export interface Prisma__WatchHistoryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
-  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-  media<T extends Prisma.MediaDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MediaDefaultArgs<ExtArgs>>): Prisma.Prisma__MediaClient<runtime.Types.Result.GetResult<Prisma.$MediaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   episode<T extends Prisma.WatchHistory$episodeArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.WatchHistory$episodeArgs<ExtArgs>>): Prisma.Prisma__EpisodeClient<runtime.Types.Result.GetResult<Prisma.$EpisodePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  media<T extends Prisma.MediaDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.MediaDefaultArgs<ExtArgs>>): Prisma.Prisma__MediaClient<runtime.Types.Result.GetResult<Prisma.$MediaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.

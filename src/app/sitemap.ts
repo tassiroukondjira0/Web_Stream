@@ -27,6 +27,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
+      url: `${baseUrl}/animes`,
+      lastModified: new Date("2026-10-12"),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
       url: `${baseUrl}/nouveautes`,
       lastModified: new Date("2026-10-12"),
       changeFrequency: "daily",
@@ -62,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const dynamicPages: MetadataRoute.Sitemap = medias
     .filter((m) => m.isPublished)
     .map((item) => ({
-      url: item.type === "MOVIE" ? `${baseUrl}/films/${item.slug}` : `${baseUrl}/series/${item.slug}`,
+      url: item.type === "MOVIE" ? `${baseUrl}/films/${item.slug}` : item.type === "ANIME" ? `${baseUrl}/animes/${item.slug}` : `${baseUrl}/series/${item.slug}`,
       lastModified: new Date("2026-10-12"),
       changeFrequency: "weekly" as const,
       priority: 0.85,

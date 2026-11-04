@@ -8,7 +8,7 @@ export interface MediaItem {
   title: string;
   slug: string;
   synopsis: string;
-  type: "MOVIE" | "SERIES";
+  type: "MOVIE" | "SERIES" | "ANIME";
   accessLevel: "FREE" | "PREMIUM";
   releaseYear: number;
   durationMinutes: number | null;
