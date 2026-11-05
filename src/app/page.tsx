@@ -3,6 +3,8 @@ import { connection } from "next/server";
 import Link from "next/link";
 import { ShieldCheck, Flame, Clapperboard, Globe } from "lucide-react";
 import { NewsletterBanner } from "@/components/NewsletterBanner";
+import { HeroSection } from "@/components/HeroSection";
+import { GenreChips } from "@/components/GenreChips";
 import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
 import {
   getPartnerAnimes,
@@ -11,15 +13,16 @@ import {
   getPartnerSeries,
   providerItemHref,
 } from "@/lib/provider-catalog";
+import type { AssetFilters } from "@/lib/provider-catalog.types";
 import { PosterCarousel } from "@/components/PosterCarousel";
 import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 
 /** Nombre de titres affichés dans la vitrine « Mangas ». */
-const MANGA_LIMIT = 18;
+const MANGA_LIMIT = 22;
 /** Nombre de titres dans la sélection « À la une » rotative. */
-const FEATURED_LIMIT = 12;
+const FEATURED_LIMIT = 18;
 /** Nombre de titres par rangée (films / séries) sur l'accueil. */
-const RECENT_LIMIT = 16;
+const RECENT_LIMIT = 18;
 
 export const metadata = {
   title: "CinéMax — Streaming de films et séries",
@@ -29,11 +32,21 @@ export const metadata = {
 
 export const instant = false;
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams: Promise<Record<string, string | null>> }) {
   const _user = await getCurrentUser().catch(() => null);
   const _isPremium = _user ? hasPremiumAccess(_user.role) : false;
+  const params = await searchParams;
+  const genre = params.genre?.trim() || null;
+  const genreFilters: AssetFilters = genre ? { categorySlug: genre } : {};
+
   return (
     <div className="flex flex-col gap-12 overflow-x-hidden pb-16">
+      {/* Hero section immersive — style streamix */}
+      <HeroSection />
+
+      {/* Genre chips — filtres par genre avec icônes */}
+      <GenreChips activeGenre={genre} />
+
       {/* À la une — sélection rotative (renouvelée automatiquement) */}
       <Suspense
         fallback={
@@ -44,7 +57,7 @@ export default async function HomePage() {
           </section>
         }
       >
-        <FeaturedSection />
+        <FeaturedSection filters={genreFilters} />
       </Suspense>
 
       {/* Films & séries — nouveautés en haut du catalogue */}
@@ -57,7 +70,7 @@ export default async function HomePage() {
           </section>
         }
       >
-        <RecentSection />
+        <RecentSection filters={genreFilters} />
       </Suspense>
 
       {/* Mangas / animés */}
@@ -70,7 +83,7 @@ export default async function HomePage() {
           </section>
         }
       >
-        <MangaSection />
+        <MangaSection filters={genreFilters} />
       </Suspense>
 
       {/* Bannière Modèle Freemium */}
@@ -116,12 +129,12 @@ export default async function HomePage() {
  * Nouveautés du catalogue — films puis séries, affichés en haut de page.
  * Données issues de la base synchronisée (ProviderAsset publiés par l'admin).
  */
-async function RecentSection() {
+async function RecentSection({ filters }: { filters?: AssetFilters }) {
   await connection();
 
   const [movies, series] = await Promise.all([
-    getPartnerMovies(1, RECENT_LIMIT),
-    getPartnerSeries(1, RECENT_LIMIT),
+    getPartnerMovies(1, RECENT_LIMIT, filters),
+    getPartnerSeries(1, RECENT_LIMIT, filters),
   ]);
 
   const hasMovies = movies.items.length > 0;
@@ -134,22 +147,25 @@ async function RecentSection() {
       {hasMovies && (
         <div className="mb-10">
           <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clapperboard className="h-5 w-5 text-sky-500" />
-              <div>
+            <div>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+                Notre catalogue
+              </span>
+              <div className="flex items-center gap-2">
+                <Clapperboard className="h-5 w-5 text-sky-500" />
                 <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
                   Films récents
                 </h2>
-                <p className="text-xs text-zinc-400 sm:text-sm">
-                  Les derniers films ajoutés
-                </p>
               </div>
+              <p className="mt-0.5 text-xs text-zinc-400 sm:text-sm">
+                Les derniers films ajoutés
+              </p>
             </div>
             <Link
               href="/films"
-              className="text-xs font-medium text-sky-400 hover:text-sky-300 sm:text-sm"
+              className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white sm:text-sm"
             >
-              Tout voir →
+              Tout voir
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-5">
@@ -169,22 +185,25 @@ async function RecentSection() {
       {hasSeries && (
         <div>
           <div className="mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Globe className="h-5 w-5 text-sky-500" />
-              <div>
+            <div>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+                Notre catalogue
+              </span>
+              <div className="flex items-center gap-2">
+                <Globe className="h-5 w-5 text-sky-500" />
                 <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
                   Séries récentes
                 </h2>
-                <p className="text-xs text-zinc-400 sm:text-sm">
-                  Les dernières séries ajoutées
-                </p>
               </div>
+              <p className="mt-0.5 text-xs text-zinc-400 sm:text-sm">
+                Les dernières séries ajoutées
+              </p>
             </div>
             <Link
               href="/series"
-              className="text-xs font-medium text-sky-400 hover:text-sky-300 sm:text-sm"
+              className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white sm:text-sm"
             >
-              Tout voir →
+              Tout voir
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 lg:gap-5">
@@ -205,26 +224,30 @@ async function RecentSection() {
 }
 
 /** Mangas / animés — vitrine horizontale. */
-async function MangaSection() {
-  const animes = await getPartnerAnimes(1, MANGA_LIMIT);
+async function MangaSection({ filters }: { filters?: AssetFilters }) {
+  await connection();
+  const animes = await getPartnerAnimes(1, MANGA_LIMIT, filters);
   if (animes.items.length === 0) return null;
 
   return (
     <section className="mx-auto max-w-7xl overflow-hidden px-4 sm:px-6 lg:px-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+            Découvrir
+          </span>
           <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
             Mangas & animés
           </h2>
-          <p className="text-xs text-zinc-400 sm:text-sm">
+          <p className="mt-0.5 text-xs text-zinc-400 sm:text-sm">
             Les derniers animés ajoutés
           </p>
         </div>
         <Link
           href="/animes"
-          className="text-xs font-medium text-fuchsia-400 hover:text-fuchsia-300 sm:text-sm"
+          className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white sm:text-sm"
         >
-          Tout voir →
+          Tout voir
         </Link>
       </div>
       <div className="mt-6">
@@ -250,7 +273,7 @@ async function MangaSection() {
  * automatiquement à intervalles réguliers : sélection
  * déterministe calculée côté données (getFeaturedPartner) — aucun cron requis.
  */
-async function FeaturedSection() {
+async function FeaturedSection({ filters }: { filters?: AssetFilters }) {
   await connection();
   const now = new Date();
   const { items, renewalLabel } = await getFeaturedPartner(FEATURED_LIMIT, now);
@@ -259,17 +282,22 @@ async function FeaturedSection() {
   return (
     <section className="mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="min-w-0 rounded-2xl border border-fuchsia-500/20 bg-gradient-to-r from-zinc-900 via-zinc-900 to-fuchsia-950/30 p-4 sm:p-6 lg:p-8">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-lg shadow-purple-600/30">
-            <Flame className="h-5 w-5 text-white" />
+        <div>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+            La sélection CinéMax
           </span>
-          <div className="min-w-0">
-            <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-              À la une
-            </h2>
-            <p className="text-xs text-zinc-400 sm:text-sm">
-              Les films les plus tendance du moment.
-            </p>
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-purple-600 shadow-lg shadow-purple-600/30">
+              <Flame className="h-5 w-5 text-white" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+                À la une
+              </h2>
+              <p className="text-xs text-zinc-400 sm:text-sm">
+                Les films les plus tendance du moment.
+              </p>
+            </div>
           </div>
         </div>
 

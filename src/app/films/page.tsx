@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import Link from "next/link";
 import {
   getPartnerMovies,
@@ -27,6 +28,7 @@ interface FilmsPageProps {
 }
 
 async function FilmsContent({ searchParams }: FilmsPageProps) {
+  await connection();
   const { page, categorie, language, theme, year, plateforme } = await searchParams;
 
   const partnerPage = Math.max(1, parseInt(page || "1", 10) || 1);

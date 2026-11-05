@@ -51,7 +51,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: "#09090b",
+  themeColor: "#0b1120",
   viewportFit: "cover",
 };
 
@@ -88,7 +88,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}>
-      <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100">
+      <body className="min-h-full flex flex-col bg-background text-zinc-100">
         <Suspense fallback={null}>
           <PageViewTracker />
           <PullToRefresh />

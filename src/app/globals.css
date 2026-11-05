@@ -23,15 +23,15 @@
 }
 
 :root {
-  --background: #09090b;
+  --background: #0b1120;
   --foreground: #fafafa;
-  --card: #121217;
+  --card: #121829;
   --card-foreground: #fafafa;
   --primary: #7c3aed;
   --primary-foreground: #ffffff;
-  --muted: #27272a;
+  --muted: #1e293b;
   --muted-foreground: #a1a1aa;
-  --accent: #1e1e24;
+  --accent: #151d30;
   --accent-foreground: #ffffff;
 }
 

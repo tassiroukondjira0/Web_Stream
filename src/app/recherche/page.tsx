@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import Link from "next/link";
 import Image from "next/image";
 import { shouldOptimizeImage } from "@/lib/image";
@@ -19,6 +20,7 @@ interface SearchPageProps {
 }
 
 async function SearchContent({ searchParams }: SearchPageProps) {
+  await connection();
   const { q } = await searchParams;
   const query = (q || "").trim().toLowerCase();
   const allMedias = await getAllMedias();

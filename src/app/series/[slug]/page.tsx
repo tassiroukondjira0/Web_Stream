@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getMediaBySlug } from "@/lib/catalog";
@@ -41,6 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 async function SeriesContent({ params, searchParams }: PageProps) {
+  await connection();
   const { slug } = await params;
   const serie = await getMediaBySlug(slug);
 

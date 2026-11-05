@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { connection } from "next/server";
 import Link from "next/link";
 import { getLatestPartnerAssets, providerItemHref } from "@/lib/provider-catalog";
 import { ProviderPosterCard } from "@/components/ProviderPosterCard";
@@ -20,6 +21,7 @@ function badgeFor(item: {
 }
 
 async function NouveautesContent() {
+  await connection();
   // Vrai catalogue synchronisé (ProviderAsset) — plus les titres de démonstration.
   const items = await getLatestPartnerAssets(48);
 

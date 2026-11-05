@@ -17,6 +17,11 @@ const NAV_LINKS = [
   { href: "/nouveautes", label: "Nouveautés", icon: Clock },
 ];
 
+/** Style streamix : boutons avec icônes, état actif avec fond subtil */
+const navButtonBase = "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200";
+const navButtonInactive = `${navButtonBase} text-zinc-400 hover:text-white hover:bg-white/5`;
+const navButtonActive = `${navButtonBase} text-white bg-white/10`;
+
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -74,32 +79,29 @@ export function Navbar() {
                 aria-label="Navigation principale"
                 className="absolute left-2 right-2 top-16 overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/95 shadow-2xl backdrop-blur-xl"
               >
-                <ul className="py-2">
+                <div className="py-2">
                   {NAV_LINKS.map((link) => {
                     const active =
                       link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+                    const Icon = link.icon;
                     return (
-                      <li key={link.href}>
-                        <Link
-                          href={link.href}
-                          onClick={() => setMenuOpen(false)}
-                          aria-current={active ? "page" : undefined}
-                          className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors ${
-                            active
-                              ? "bg-violet-600/10 text-white"
-                              : "text-zinc-300 hover:bg-white/5 hover:text-white"
-                          }`}
-                        >
-                          <link.icon
-                            className={`h-4 w-4 ${active ? "text-violet-500" : "text-zinc-500"}`}
-                          />
-                          {link.label}
-                          {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-violet-500" />}
-                        </Link>
-                      </li>
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setMenuOpen(false)}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all duration-200 ${
+                          active
+                            ? "text-white bg-white/10"
+                            : "text-zinc-400 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <Icon className={`h-4 w-4 shrink-0 ${active ? "text-white" : "text-zinc-500"}`} />
+                        {link.label}
+                      </Link>
                     );
                   })}
-                </ul>
+                </div>
               </nav>
             )}
           </div>
@@ -114,20 +116,20 @@ export function Navbar() {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-6 text-sm font-medium text-zinc-300 md:flex">
+          <nav className="hidden items-center gap-1 md:flex" aria-label="Navigation principale">
             {NAV_LINKS.map((link) => {
               const active =
                 link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+              const Icon = link.icon;
               return (
                 <Link
                   key={link.href}
                   href={link.href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative py-1 transition-colors after:absolute after:-bottom-1.5 after:left-0 after:h-0.5 after:w-full after:rounded-full after:bg-violet-500 after:transition-transform after:duration-300 hover:text-white ${
-                    active ? "text-white after:scale-x-100" : "after:scale-x-0"
-                  }`}
+                  className={active ? navButtonActive : navButtonInactive}
                 >
-                  {link.label}
+                  <Icon className="h-4 w-4 shrink-0 transition-colors" />
+                  <span className="truncate">{link.label}</span>
                 </Link>
               );
             })}
