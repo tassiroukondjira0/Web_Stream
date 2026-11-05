@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { readRequestBodyLimited } from "@/lib/request-body";
 import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 import { sendVerificationEmail, generateVerificationCode } from "@/lib/emailjs";
+import { cleanupExpiredCodes } from "@/lib/cleanup-codes";
 
 /**
  * POST /api/auth/verify
@@ -11,6 +12,9 @@ import { sendVerificationEmail, generateVerificationCode } from "@/lib/emailjs";
  */
 export async function POST(request: Request) {
   try {
+    // Nettoie les codes expirés avant de traiter la requête
+    await cleanupExpiredCodes();
+
     const retryAfter = rateLimit(request, "auth-verify", 10, 5 * 60_000);
     if (retryAfter) return tooManyRequests(retryAfter);
 
@@ -85,6 +89,9 @@ export async function POST(request: Request) {
  */
 export async function PUT(request: Request) {
   try {
+    // Nettoie les codes expirés avant de traiter la requête
+    await cleanupExpiredCodes();
+
     const retryAfter = rateLimit(request, "auth-verify-resend", 3, 5 * 60_000);
     if (retryAfter) return tooManyRequests(retryAfter);
 

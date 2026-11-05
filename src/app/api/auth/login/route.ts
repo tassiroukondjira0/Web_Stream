@@ -56,7 +56,16 @@ export async function POST(request: Request) {
         email: dbUser.email,
         name: dbUser.name || "Utilisateur",
         role: dbUser.role,
+        emailVerified: dbUser.emailVerified ? true : false,
       };
+
+      // Bloquer la connexion si l'email n'est pas vérifié
+      if (!dbUser.emailVerified) {
+        return NextResponse.json({
+          error: "Vérifiez d'abord votre adresse email avant de vous connecter.",
+          emailVerified: false,
+        }, { status: 403 });
+      }
 
       const sessionToken = await signSessionToken(user);
       const res = NextResponse.json({ success: true, user, token: sessionToken });

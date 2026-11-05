@@ -85,7 +85,7 @@ export async function POST(request: Request) {
 
     const hashedPassword = await hashPassword(password);
 
-    let user: { id: string; email: string; name: string; country: string | null; phoneNumber: string | null; role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN" };
+    let user: { id: string; email: string; name: string; country: string | null; phoneNumber: string | null; role: "USER" | "SUBSCRIBER" | "ADMIN" | "SUPER_ADMIN"; emailVerified: boolean };
 
     if (process.env.DATABASE_READY === "true") {
       const existingUser = await prisma.user.findUnique({
@@ -116,10 +116,14 @@ export async function POST(request: Request) {
         },
       });
 
-      // Envoyer l'email de vérification (non bloquant)
-      sendVerificationEmail(normalizedEmail, verificationCode).catch((err) => {
-        console.error('Erreur envoi email vérification:', err);
-      });
+      // Envoyer l'email de vérification (bloquant — on attend la réponse)
+      try {
+        await sendVerificationEmail(normalizedEmail, verificationCode);
+        console.log('Email de vérification envoyé à', normalizedEmail);
+      } catch (emailErr) {
+        console.error('Erreur envoi email vérification:', emailErr);
+        // On continue même si l'email échoue — l'utilisateur peut demander un renvoi
+      }
 
       user = {
         id: created.id,
@@ -128,6 +132,7 @@ export async function POST(request: Request) {
         country: created.country,
         phoneNumber: created.phoneNumber,
         role: created.role,
+        emailVerified: created.emailVerified ? true : false,
       };
     } else {
       if (memoryUsers.has(normalizedEmail)) {
@@ -149,7 +154,7 @@ export async function POST(request: Request) {
         role,
       };
       memoryUsers.set(normalizedEmail, newUser);
-      user = { id: newUser.id, email: newUser.email, name: newUser.name, country: newUser.country, phoneNumber: newUser.phoneNumber, role: newUser.role };
+      user = { id: newUser.id, email: newUser.email, name: newUser.name, country: newUser.country, phoneNumber: newUser.phoneNumber, role: newUser.role, emailVerified: false };
     }
 
     const sessionToken = await signSessionToken(user);
