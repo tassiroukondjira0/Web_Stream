@@ -17,7 +17,8 @@ export async function sendVerificationEmail(to: string, code: string) {
       time: '10',
     },
     {
-      publicKey: process.env.EMAILJS_SECRET_KEY || '',
+      publicKey: process.env.EMAILJS_PUBLIC_KEY || '',
+      privateKey: process.env.EMAILJS_SECRET_KEY || '',
     }
   );
 }
@@ -35,7 +36,8 @@ export async function sendPasswordResetEmail(to: string, code: string) {
       time: '10',
     },
     {
-      publicKey: process.env.EMAILJS_SECRET_KEY || '',
+      publicKey: process.env.EMAILJS_PUBLIC_KEY || '',
+      privateKey: process.env.EMAILJS_SECRET_KEY || '',
     }
   );
 }
