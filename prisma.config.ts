@@ -3,6 +3,7 @@ import { defineConfig } from "prisma/config";
 
 export default defineConfig({
   datasource: {
-    url: process.env.DATABASE_URL ?? "",
+    // Prisma CLI (db push, migrate) nécessite une connexion directe, pas le pooler.
+    url: process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "",
   },
 });

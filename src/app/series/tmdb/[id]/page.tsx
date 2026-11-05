@@ -79,6 +79,15 @@ export default async function TmdbSeriesPage({ params, searchParams }: TmdbSerie
     })
     .catch(() => null);
 
+  // Un film accédé via /series/ doit être redirigé vers /films/.
+  if (asset?.contentType === "MOVIE") {
+    const query = new URLSearchParams();
+    if (sp.lang) query.set("lang", sp.lang);
+    if (sp.host) query.set("host", sp.host);
+    const qs = query.toString();
+    redirect(`/films/tmdb/${id}${qs ? `?${qs}` : ""}`);
+  }
+
   // Une série TV animée (genre Animation) appartient à la section « Animes ».
   if (asset?.contentType === "ANIME") {
     const query = new URLSearchParams();

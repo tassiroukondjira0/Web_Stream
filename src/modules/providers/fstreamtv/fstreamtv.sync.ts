@@ -102,12 +102,32 @@ export async function syncFStreamTvCatalog(
       trendingRank: startRank + i,
     }));
 
+  // Détection des doublons : un même externalId peut apparaître dans les
+  // sections films ET séries du site source. On garde le type de la section
+  // films (MOVIE) et on supprime l'entrée SERIES pour éviter les doublons.
+  const movieIds = new Set(movieRows.map((r) => r.item.externalId));
+  const seriesDeduped = seriesRows.filter((r) => !movieIds.has(r.item.externalId));
+
   let upserted = 0;
   if (!dryRun) {
     upserted += await bulkUpsertProviderAssets(toBulk(movieRows, 1));
-    upserted += await bulkUpsertProviderAssets(toBulk(seriesRows, movieRows.length + 1));
+    upserted += await bulkUpsertProviderAssets(toBulk(seriesDeduped, movieRows.length + 1));
+    // Supprime les anciennes entrées SERIES qui ont été supplantées par MOVIE
+    // cette synchro (le site a déplacé le titre de séries vers films).
+    const dupSeriesIds = seriesRows
+      .filter((r) => movieIds.has(r.item.externalId))
+      .map((r) => r.item.externalId);
+    if (dupSeriesIds.length > 0) {
+      await prisma.providerAsset.deleteMany({
+        where: {
+          provider: FSTREAMTV_PROVIDER,
+          contentType: "SERIES",
+          externalId: { in: dupSeriesIds },
+        },
+      });
+    }
   } else {
-    upserted = movieRows.length + seriesRows.length;
+    upserted = movieRows.length + seriesDeduped.length;
   }
 
   let pruned = 0;

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Flame, Swords, Heart, Sparkles, Eye, Compass, Tv, Clapperboard, X } from "lucide-react";
+import { Flame, Swords, Heart, Sparkles, Eye, Compass, Tv, Clapperboard, X, Film, BookOpen } from "lucide-react";
 
 /**
  * Genre chips horizontaux inspirés de streamix.ca.
@@ -12,21 +12,24 @@ interface GenreChipDef {
   genre: string | null;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  type?: "content" | "genre";
 }
 
 const GENRE_CHIPS: GenreChipDef[] = [
   { genre: null, label: "Tous", icon: Flame },
-  { genre: "action", label: "Action", icon: Swords },
-  { genre: "romance", label: "Romance", icon: Heart },
-  { genre: "animation", label: "Animation", icon: Sparkles },
-  { genre: "horreur", label: "Horreur", icon: Eye },
-  { genre: "fantastique", label: "Fantastique", icon: Compass },
-  { genre: "comedie", label: "Comédie", icon: Sparkles },
-  { genre: "drame", label: "Drame", icon: Eye },
-  { genre: "thriller", label: "Thriller", icon: Swords },
-  { genre: "science-fiction", label: "Sci-Fi", icon: Compass },
-  { genre: "documentaire", label: "Documentaire", icon: Tv },
-  { genre: "aventure", label: "Aventure", icon: Clapperboard },
+  { genre: "series", label: "Séries", icon: Tv, type: "content" },
+  { genre: "anime", label: "Animés", icon: BookOpen, type: "content" },
+  { genre: "action", label: "Action", icon: Swords, type: "genre" },
+  { genre: "romance", label: "Romance", icon: Heart, type: "genre" },
+  { genre: "animation", label: "Animation", icon: Sparkles, type: "genre" },
+  { genre: "horreur", label: "Horreur", icon: Eye, type: "genre" },
+  { genre: "fantastique", label: "Fantastique", icon: Compass, type: "genre" },
+  { genre: "comedie", label: "Comédie", icon: Sparkles, type: "genre" },
+  { genre: "drame", label: "Drame", icon: Eye, type: "genre" },
+  { genre: "thriller", label: "Thriller", icon: Swords, type: "genre" },
+  { genre: "science-fiction", label: "Sci-Fi", icon: Compass, type: "genre" },
+  { genre: "documentaire", label: "Documentaire", icon: Film, type: "genre" },
+  { genre: "aventure", label: "Aventure", icon: Clapperboard, type: "genre" },
 ];
 
 export function GenreChips({ activeGenre }: { activeGenre?: string | null }) {
@@ -43,10 +46,16 @@ export function GenreChips({ activeGenre }: { activeGenre?: string | null }) {
     (genre: string | null) => {
       setSelected(genre);
       const params = new URLSearchParams(searchParams.toString());
+      // Reset both filters
+      params.delete("genre");
+      params.delete("type");
       if (genre) {
-        params.set("genre", genre);
-      } else {
-        params.delete("genre");
+        const chip = GENRE_CHIPS.find((c) => c.genre === genre);
+        if (chip?.type === "content") {
+          params.set("type", genre);
+        } else {
+          params.set("genre", genre);
+        }
       }
       const query = params.toString();
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });

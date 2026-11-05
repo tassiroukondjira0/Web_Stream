@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
+import { redirect } from "next/navigation";
 import { ChevronLeft, Play, Calendar, Tv } from "lucide-react";
 import { BookmarkButton } from "@/components/BookmarkButton";
 import { WishlistButton } from "@/components/WishlistButton";
@@ -77,9 +78,19 @@ export default async function FStreamTvSeriesPage({
         posterUrl: true,
         totalEpisodes: true,
         releaseYear: true,
+        contentType: true,
       },
     })
     .catch(() => null);
+
+  // Un film accédé via /series/ doit être redirigé vers /films/.
+  if (asset?.contentType === "MOVIE") {
+    const query = new URLSearchParams();
+    if (sp.lang) query.set("lang", sp.lang);
+    if (sp.host) query.set("host", sp.host);
+    const qs = query.toString();
+    redirect(`/films/fstreamtv/${id}${qs ? `?${qs}` : ""}`);
+  }
 
   const title = asset?.title ?? "Série";
 

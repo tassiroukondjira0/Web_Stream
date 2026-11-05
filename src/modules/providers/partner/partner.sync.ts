@@ -186,11 +186,18 @@ export async function syncPartnerCatalog(
   );
   const animationComplete = animationPagesResult.some((rows) => rows.length === 0);
 
+  // Détection des doublons : un même externalId peut apparaître dans les
+  // sections films ET séries du site source. On garde le type film (MOVIE)
+  // et on exclut l'entrée séries pour éviter les doublons.
+  const movieExternalIds = new Set(
+    films.filter((item) => item.externalId && item.title).map((item) => item.externalId),
+  );
+
   const movieRows = films
     .filter((item) => item.externalId && item.title)
     .map((item) => ({ item, contentType: "MOVIE" as const, sourceType: "movie" as const }));
   const seriesRows = series
-    .filter((item) => item.externalId && item.title)
+    .filter((item) => item.externalId && item.title && !movieExternalIds.has(item.externalId))
     .map((item) => ({
       item,
       contentType: animationIds.has(item.externalId)

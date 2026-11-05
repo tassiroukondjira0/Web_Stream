@@ -37,6 +37,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
   const _isPremium = _user ? hasPremiumAccess(_user.role) : false;
   const params = await searchParams;
   const genre = params.genre?.trim() || null;
+  const typeFilter = params.type?.trim() || null;
   const genreFilters: AssetFilters = genre ? { categorySlug: genre } : {};
 
   return (
@@ -58,7 +59,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       </Suspense>
 
       {/* Genre chips — filtres par genre avec icônes */}
-      <GenreChips activeGenre={genre} />
+      <GenreChips activeGenre={genre || typeFilter} />
 
       {/* Films & séries — nouveautés en haut du catalogue */}
       <Suspense
@@ -70,7 +71,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </section>
         }
       >
-        <RecentSection filters={genreFilters} />
+        <RecentSection filters={genreFilters} typeFilter={typeFilter} />
       </Suspense>
 
       {/* Mangas / animés */}
@@ -83,7 +84,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </section>
         }
       >
-        <MangaSection filters={genreFilters} />
+        <MangaSection filters={genreFilters} typeFilter={typeFilter} />
       </Suspense>
 
       {/* Bannière Modèle Freemium */}
@@ -128,13 +129,19 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
 /**
  * Nouveautés du catalogue — films puis séries, affichés en haut de page.
  * Données issues de la base synchronisée (ProviderAsset publiés par l'admin).
+ * Si typeFilter est "series", seuls les séries sont affichés.
  */
-async function RecentSection({ filters }: { filters?: AssetFilters }) {
+async function RecentSection({ filters, typeFilter }: { filters?: AssetFilters; typeFilter?: string | null }) {
   await connection();
 
+  // Si le filtre est "series", ne charger que les séries
   const [movies, series] = await Promise.all([
-    getPartnerMovies(1, RECENT_LIMIT, filters),
-    getPartnerSeries(1, RECENT_LIMIT, filters),
+    typeFilter === "series"
+      ? Promise.resolve({ items: [], page: 1, pageSize: RECENT_LIMIT, totalItems: 0, totalPages: 0 })
+      : getPartnerMovies(1, RECENT_LIMIT, filters),
+    typeFilter === "anime"
+      ? Promise.resolve({ items: [], page: 1, pageSize: RECENT_LIMIT, totalItems: 0, totalPages: 0 })
+      : getPartnerSeries(1, RECENT_LIMIT, filters),
   ]);
 
   const hasMovies = movies.items.length > 0;
@@ -224,9 +231,14 @@ async function RecentSection({ filters }: { filters?: AssetFilters }) {
 }
 
 /** Mangas / animés — vitrine horizontale. */
-async function MangaSection({ filters }: { filters?: AssetFilters }) {
+async function MangaSection({ filters, typeFilter }: { filters?: AssetFilters; typeFilter?: string | null }) {
   await connection();
-  const animes = await getPartnerAnimes(1, MANGA_LIMIT, filters);
+  
+  // Si le filtre est "anime", charger les animés ; sinon si "series", ne rien afficher
+  const animes = typeFilter === "series"
+    ? { items: [], page: 1, pageSize: MANGA_LIMIT, totalItems: 0, totalPages: 0 }
+    : await getPartnerAnimes(1, MANGA_LIMIT, filters);
+  
   if (animes.items.length === 0) return null;
 
   return (
