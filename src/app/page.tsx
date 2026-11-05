@@ -44,9 +44,6 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       {/* Hero section immersive — style streamix */}
       <HeroSection />
 
-      {/* Genre chips — filtres par genre avec icônes */}
-      <GenreChips activeGenre={genre} />
-
       {/* À la une — sélection rotative (renouvelée automatiquement) */}
       <Suspense
         fallback={
@@ -59,6 +56,9 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
       >
         <FeaturedSection filters={genreFilters} />
       </Suspense>
+
+      {/* Genre chips — filtres par genre avec icônes */}
+      <GenreChips activeGenre={genre} />
 
       {/* Films & séries — nouveautés en haut du catalogue */}
       <Suspense
