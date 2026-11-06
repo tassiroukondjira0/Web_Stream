@@ -25,6 +25,9 @@ import {
   Eye as EyeIcon,
   Crown,
   Settings,
+  Target,
+  Search,
+  X,
 } from "lucide-react";
 import { TrafficCharts } from "@/components/admin/TrafficCharts";
 import { AdminSidebar, MobileHamburger } from "@/components/admin/AdminSidebar";
@@ -102,6 +105,18 @@ export default function AdminDashboardPage() {
   const [tmdbSyncing, setTmdbSyncing] = useState(false);
   const [coverageRunning, setCoverageRunning] = useState(false);
   const [syncMessage, setSyncMessage] = useState("");
+
+  // Synchro ciblée
+  const [showTargetedSync, setShowTargetedSync] = useState(false);
+  const [targetedSearch, setTargetedSearch] = useState("");
+  const [targetedSearchQuery, setTargetedSearchQuery] = useState("");
+  const [targetedResults, setTargetedResults] = useState<
+    { id: string; externalId: string; title: string; contentType: string; provider: string }[]
+  >([]);
+  const [targetedSelected, setTargetedSelected] = useState<Set<string>>(new Set());
+  const [targetedSearching, setTargetedSearching] = useState(false);
+  const [targetedSyncing, setTargetedSyncing] = useState(false);
+  const [targetedMessage, setTargetedMessage] = useState("");
 
   // Titres partenaires (ProviderAsset) — publication contrôlée par l'admin
   interface PartnerAsset {
@@ -410,6 +425,96 @@ export default function AdminDashboardPage() {
     } finally {
       setTmdbSyncing(false);
     }
+  };
+
+  // --- Synchro ciblée ---
+
+  const searchTargetedTitles = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetedSearch.trim()) return;
+    setTargetedSearching(true);
+    setTargetedMessage("");
+    setTargetedSearchQuery(targetedSearch.trim());
+
+    try {
+      const res = await fetch(`/api/admin/provider-assets?q=${encodeURIComponent(targetedSearch.trim())}&provider=FRENCHSTREAM&pageSize=30`);
+      if (res.ok) {
+        const data = await res.json();
+        const items = (data.items || []).map((a: any) => ({
+          id: a.id,
+          externalId: a.externalId,
+          title: a.title,
+          contentType: a.contentType,
+          provider: a.provider,
+        }));
+        setTargetedResults(items);
+        if (items.length === 0) {
+          setTargetedMessage("Aucun titre trouvé pour cette recherche.");
+        } else {
+          setTargetedMessage(`${items.length} titre(s) trouvé(s). Sélectionnez les titres à synchroniser.`);
+        }
+      }
+    } catch {
+      setTargetedMessage("Erreur lors de la recherche.");
+    } finally {
+      setTargetedSearching(false);
+    }
+  };
+
+  const toggleTargetedSelection = (externalId: string) => {
+    setTargetedSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(externalId)) next.delete(externalId);
+      else next.add(externalId);
+      return next;
+    });
+  };
+
+  const selectAllTargeted = () => {
+    if (targetedSelected.size === targetedResults.length) {
+      setTargetedSelected(new Set());
+    } else {
+      setTargetedSelected(new Set(targetedResults.map((r) => r.externalId)));
+    }
+  };
+
+  const handleTargetedSync = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (targetedSelected.size === 0) {
+      setTargetedMessage("Sélectionnez au moins un titre.");
+      return;
+    }
+    setTargetedSyncing(true);
+    setTargetedMessage("");
+
+    try {
+      const res = await fetch("/api/admin/sync/targeted", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ externalIds: Array.from(targetedSelected) }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setTargetedMessage(data.message || "Synchro ciblée terminée.");
+        setTargetedSelected(new Set());
+        loadData();
+      } else {
+        setTargetedMessage(data.message || "Erreur lors de la synchro ciblée.");
+      }
+    } catch {
+      setTargetedMessage("Erreur réseau lors de la synchro ciblée.");
+    } finally {
+      setTargetedSyncing(false);
+    }
+  };
+
+  const closeTargetedSync = () => {
+    setShowTargetedSync(false);
+    setTargetedSearch("");
+    setTargetedSearchQuery("");
+    setTargetedResults([]);
+    setTargetedSelected(new Set());
+    setTargetedMessage("");
   };
 
   const handleCoverage = async () => {
@@ -770,6 +875,14 @@ export default function AdminDashboardPage() {
                     >
                       <Radio className={`h-4 w-4 ${coverageRunning ? "animate-spin" : ""}`} />
                       {coverageRunning ? "Vérif..." : "Vidzy"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowTargetedSync(true)}
+                      className="inline-flex items-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2 font-semibold text-violet-300 hover:bg-violet-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Target className="h-4 w-4" />
+                      Ciblée
                     </button>
                   </form>
                 </div>
@@ -1159,6 +1272,156 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de synchro ciblée */}
+      {showTargetedSync && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#0f1629] p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Target className="h-5 w-5 text-violet-400" />
+                  Synchronisation ciblée
+                </h3>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Recherchez un ou plusieurs titres et lancez la synchro uniquement pour ceux-ci.
+                </p>
+              </div>
+              <button
+                onClick={closeTargetedSync}
+                className="rounded-lg p-2 text-zinc-400 hover:bg-white/5 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Recherche */}
+            <form onSubmit={searchTargetedTitles} className="mb-4 flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                <input
+                  type="text"
+                  value={targetedSearch}
+                  onChange={(e) => setTargetedSearch(e.target.value)}
+                  placeholder="Rechercher un titre (ex: Oppenheimer, Avatar...)"
+                  className="w-full rounded-xl border border-white/10 bg-black/50 py-2.5 pl-10 pr-4 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={targetedSearching || !targetedSearch.trim()}
+                className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {targetedSearching ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                Rechercher
+              </button>
+            </form>
+
+            {/* Message */}
+            {targetedMessage && (
+              <div className={`mb-4 rounded-xl border p-3 text-xs ${
+                targetedSyncing
+                  ? "border-violet-500/30 bg-violet-500/10 text-violet-300"
+                  : targetedMessage.includes("terminée")
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                  : "border-white/10 bg-black/40 text-zinc-300"
+              }`}>
+                {targetedSyncing && "Synchronisation en cours..."}
+                {!targetedSyncing && targetedMessage}
+              </div>
+            )}
+
+            {/* Résultats */}
+            {targetedResults.length > 0 && (
+              <>
+                <div className="mb-3 flex items-center justify-between">
+                  <span className="text-xs text-zinc-400">
+                    {targetedSelected.size} / {targetedResults.length} sélectionné(s)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={selectAllTargeted}
+                    className="text-xs text-violet-400 hover:text-violet-300"
+                  >
+                    {targetedSelected.size === targetedResults.length ? "Tout désélectionner" : "Tout sélectionner"}
+                  </button>
+                </div>
+
+                <div className="max-h-60 space-y-1 overflow-y-auto rounded-xl border border-white/[0.06] p-2">
+                  {targetedResults.map((item) => {
+                    const isSelected = targetedSelected.has(item.externalId);
+                    return (
+                      <button
+                        key={item.externalId}
+                        type="button"
+                        onClick={() => toggleTargetedSelection(item.externalId)}
+                        className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                          isSelected
+                            ? "bg-violet-600/20 text-violet-200"
+                            : "text-zinc-300 hover:bg-white/5"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${
+                            isSelected
+                              ? "border-violet-400 bg-violet-500 text-white"
+                              : "border-zinc-600"
+                          }`}
+                        >
+                          {isSelected && <CheckCircle2 className="h-3 w-3" />}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm">{item.title}</span>
+                        <span className="flex-shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] text-zinc-500">
+                          {item.contentType}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Bouton de synchro */}
+                <div className="mt-4 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={closeTargetedSync}
+                    className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-zinc-800"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleTargetedSync}
+                    disabled={targetedSyncing || targetedSelected.size === 0}
+                    className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${targetedSyncing ? "animate-spin" : ""}`} />
+                    {targetedSyncing
+                      ? "Synchro en cours..."
+                      : `Synchroniser (${targetedSelected.size})`}
+                  </button>
+                </div>
+              </>
+            )}
+
+            {/* Pas encore recherché */}
+            {!targetedSearchQuery && targetedResults.length === 0 && !targetedMessage && (
+              <div className="py-10 text-center">
+                <Search className="mx-auto h-8 w-8 text-zinc-700" />
+                <p className="mt-3 text-sm text-zinc-500">
+                  Tapez le nom d&apos;un titre pour commencer la recherche.
+                </p>
+                <p className="mt-1 text-xs text-zinc-600">
+                  Vous pouvez aussi entrer un ID numérique directement.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -15,7 +15,10 @@ import { reclassifyProviderAssets, touchProviderAssets } from "../reclass";
 import {
   PARTNER_PROVIDER,
   fetchAnimationSeriesPage,
+  fetchFicheMeta,
+  fetchMovieEmbeds,
   fetchPartnerCatalogPage,
+  fetchSeriesDetail,
 } from "./partner.client";
 import type { PartnerItem } from "./partner.types";
 
@@ -158,6 +161,116 @@ export async function classifyPartnerAnimes(
     }
   }
 
+  return report;
+}
+
+/**
+ * Synchronisation ciblée : met à jour les métadonnées et les sources d'un
+ * ensemble de titres identifiés par leur `externalId` (ID du partenaire).
+ *
+ * Pour chaque titre, on récupère la fiche (métadonnées + embeds/flux) et on
+ * met à jour l'enregistrement ProviderAsset correspondant. Contrairement à
+ * `syncPartnerCatalog`, cette fonction ne parcourt pas les pages du catalogue
+ * et ne purge pas les assets obsolètes.
+ */
+export interface TargetedSyncReport {
+  provider: string;
+  requested: number;
+  /** Titres trouvés et mis à jour. */
+  updated: number;
+  /** Titres non trouvés (externalId inconnu). */
+  notFound: number;
+  /** Erreurs lors du fetch. */
+  errors: number;
+  durationMs: number;
+}
+
+export async function syncTargetedTitles(
+  externalIds: string[],
+): Promise<TargetedSyncReport> {
+  const startedAt = Date.now();
+  const validIds = externalIds.filter((id) => /^\d{1,10}$/.test(id));
+  const report: TargetedSyncReport = {
+    provider: PARTNER_PROVIDER,
+    requested: externalIds.length,
+    updated: 0,
+    notFound: 0,
+    errors: 0,
+    durationMs: 0,
+  };
+
+  if (validIds.length === 0) {
+    report.notFound = externalIds.length;
+    report.durationMs = Date.now() - startedAt;
+    return report;
+  }
+
+  // Récupère les ProviderAsset existants pour ces externalIds.
+  const existing = await prisma.providerAsset.findMany({
+    where: {
+      provider: PARTNER_PROVIDER,
+      externalId: { in: validIds },
+    },
+    select: { externalId: true, contentType: true, id: true },
+  });
+
+  const existingMap = new Map(existing.map((a) => [a.externalId, a]));
+
+  // Traite chaque titre en parallèle (borné).
+  const results: { externalId: string; ok: boolean; found: boolean }[] = new Array(validIds.length);
+  let next = 0;
+  async function worker(): Promise<void> {
+    for (;;) {
+      const idx = next++;
+      if (idx >= validIds.length) return;
+      const extId = validIds[idx];
+      try {
+        const asset = existingMap.get(extId);
+        if (!asset) {
+          results[idx] = { externalId: extId, ok: false, found: false };
+          continue;
+        }
+
+        // Récupère les métadonnées de la fiche.
+        const meta = await fetchFicheMeta(extId);
+
+        // Met à jour les métadonnées dans ProviderAsset.
+        await prisma.providerAsset.update({
+          where: { id: asset.id },
+          data: {
+            ...(meta.releaseYear ? { releaseYear: meta.releaseYear } : {}),
+            lastSeenAt: new Date(),
+          },
+        });
+
+        // Pour les séries, on récupère aussi les détails (flux).
+        if (asset.contentType === "SERIES" || asset.contentType === "ANIME") {
+          await fetchSeriesDetail(extId);
+        } else {
+          await fetchMovieEmbeds(extId);
+        }
+
+        results[idx] = { externalId: extId, ok: true, found: true };
+      } catch {
+        results[idx] = { externalId: extId, ok: false, found: true };
+      }
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(FETCH_CONCURRENCY, validIds.length) }, worker),
+  );
+
+  for (const r of results) {
+    if (r.found && r.ok) report.updated++;
+    else if (!r.found) report.notFound++;
+    else report.errors++;
+  }
+
+  // Les externalIds qui n'étaient pas valides (format) comptent comme notFound.
+  report.notFound += externalIds.length - validIds.length;
+
+  report.durationMs = Date.now() - startedAt;
   return report;
 }
 
