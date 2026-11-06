@@ -51,7 +51,7 @@ async function SearchContent({ searchParams }: SearchPageProps) {
   const hasResults = results.length > 0 || partnerResults.length > 0;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="w-full max-w-none px-4 py-8 sm:px-6 lg:px-8">
       {/* Formulaire de recherche */}
       <div className="mx-auto max-w-2xl text-center">
         <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
@@ -105,7 +105,7 @@ async function SearchContent({ searchParams }: SearchPageProps) {
             )}
 
             {results.length > 0 && (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:gap-6">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 lg:gap-6">
                 {results.map((item) => (
                   <Link
                     key={item.slug}
@@ -130,7 +130,7 @@ async function SearchContent({ searchParams }: SearchPageProps) {
                         src={item.posterUrl}
                         alt={item.title}
                         fill
-                        sizes="(max-width: 640px) 50vw, 20vw"
+                        sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 17vw, (max-width: 1536px) 15vw, 12vw"
                         unoptimized={!shouldOptimizeImage(item.posterUrl)}
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
@@ -165,7 +165,7 @@ async function SearchContent({ searchParams }: SearchPageProps) {
                     {partnerResults.length > 1 ? "s" : ""}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:gap-6">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 lg:gap-6">
                   {partnerResults.map((item) => (
                     <ProviderPosterCard
                       key={`fs-${item.contentType}-${item.externalId}`}
