@@ -55,6 +55,8 @@ export async function POST(request: Request) {
         id: dbUser.id,
         email: dbUser.email,
         name: dbUser.name || "Utilisateur",
+        country: dbUser.country,
+        phoneNumber: dbUser.phoneNumber,
         role: dbUser.role,
         emailVerified: dbUser.emailVerified ? true : false,
       };
