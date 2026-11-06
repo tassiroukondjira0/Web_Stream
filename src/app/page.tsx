@@ -20,7 +20,7 @@ import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 /** Nombre de titres affichés dans la vitrine « Mangas ». */
 const MANGA_LIMIT = 22;
 /** Nombre de titres dans la sélection « À la une » rotative. */
-const FEATURED_LIMIT = 18;
+const FEATURED_LIMIT = 12;
 /** Nombre de titres par rangée (films / séries) sur l'accueil. */
 const RECENT_LIMIT = 18;
 
