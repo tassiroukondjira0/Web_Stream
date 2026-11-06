@@ -502,7 +502,7 @@ export default function AdminDashboardPage() {
               <p className="text-[11px] text-zinc-500">
                 <span className="inline-flex items-center gap-1">
                   <ShieldCheck className="h-3 w-3 text-violet-400" />
-                  Espace d'Administration
+                  Espace d&#39;Administration
                 </span>
               </p>
             </div>
@@ -958,7 +958,7 @@ export default function AdminDashboardPage() {
                 {activeTab === "settings" && "Paramètres"}
               </h3>
               <p className="mt-2 max-w-sm text-xs text-zinc-600">
-                Cette section est accessible via le menu latéral ou directement à l'URL correspondante.
+                Cette section est accessible via le menu latéral ou directement à l&#39;URL correspondante.
               </p>
             </div>
           )}

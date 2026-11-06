@@ -7,7 +7,7 @@ export function shouldOptimizeImage(src: string): boolean {
     return (
       url.protocol === "https:" &&
       url.hostname === "image.tmdb.org" &&
-      url.pathname.startsWith("/t/p/")
+      (url.pathname.startsWith("/t/p/") || url.pathname.startsWith("/p/"))
     );
   } catch {
     return false;

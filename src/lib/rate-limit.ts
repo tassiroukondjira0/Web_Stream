@@ -1,5 +1,16 @@
 const buckets = new Map<string, { count: number; resetAt: number }>();
 const MAX_BUCKETS = 20_000;
+let lastCleanup = Date.now();
+const CLEANUP_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+function cleanupExpiredBuckets() {
+  const now = Date.now();
+  if (now - lastCleanup < CLEANUP_INTERVAL) return;
+  lastCleanup = now;
+  for (const [key, bucket] of buckets) {
+    if (bucket.resetAt <= now) buckets.delete(key);
+  }
+}
 
 function clientAddress(request: Request): string {
   const realIp = request.headers.get("x-real-ip")?.trim();
@@ -36,6 +47,7 @@ export function rateLimit(
   windowMs: number,
 ): number | null {
   const now = Date.now();
+  cleanupExpiredBuckets();
   const key = `${scope}:${clientAddress(request)}`;
   const current = buckets.get(key);
   if (!current || current.resetAt <= now) {
