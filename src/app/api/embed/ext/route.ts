@@ -9,7 +9,6 @@ import {
   isExternalEmbedHost,
   isPrivateHostname,
   embedReferer,
-  partnerReferer,
   rememberRuntimeHost,
   runtimeHostList,
 } from "@/lib/embed-ext";

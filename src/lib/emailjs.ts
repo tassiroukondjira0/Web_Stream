@@ -56,11 +56,10 @@ export async function sendVerificationEmail(to: string, code: string) {
 
     console.log('[EmailJS] Email envoyé avec succès ! Response:', response);
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[EmailJS] Erreur lors de l\'envoi de l\'email:', error);
-    console.error('[EmailJS] Message d\'erreur:', error?.message || error);
-    console.error('[EmailJS] Status:', error?.status);
-    console.error('[EmailJS] Type:', error?.type);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('[EmailJS] Message d\'erreur:', msg);
     throw error;
   }
 }
@@ -95,11 +94,10 @@ export async function sendPasswordResetEmail(to: string, code: string) {
 
     console.log('[EmailJS] Email de réinitialisation envoyé avec succès ! Response:', response);
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[EmailJS] Erreur lors de l\'envoi de l\'email de réinitialisation:', error);
-    console.error('[EmailJS] Message d\'erreur:', error?.message || error);
-    console.error('[EmailJS] Status:', error?.status);
-    console.error('[EmailJS] Type:', error?.type);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('[EmailJS] Message d\'erreur:', msg);
     throw error;
   }
 }

@@ -17,26 +17,24 @@ interface AdminReview {
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<AdminReview[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
-    setLoading(true);
-    setError(null);
     try {
       const res = await fetch("/api/admin/reviews");
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Erreur");
       setReviews(data.reviews || []);
+      setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur");
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
-    load();
+    // Initial data fetch — standard pattern for client-side data loading
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
   }, []);
 
   const remove = async (id: string) => {
@@ -63,9 +61,7 @@ export default function AdminReviewsPage() {
         <h1 className="text-2xl font-bold text-white">Avis des utilisateurs</h1>
       </div>
 
-      {loading ? (
-        <p className="text-zinc-400">Chargement…</p>
-      ) : error ? (
+      {error ? (
         <p className="text-rose-400">{error}</p>
       ) : reviews.length === 0 ? (
         <p className="text-zinc-400">Aucun avis.</p>

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Flame, Swords, Heart, Sparkles, Eye, Compass, Tv, Clapperboard, X, Film, BookOpen } from "lucide-react";
 
 /**
@@ -36,11 +36,7 @@ export function GenreChips({ activeGenre }: { activeGenre?: string | null }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [selected, setSelected] = useState<string | null>(activeGenre || null);
-
-  useEffect(() => {
-    setSelected(activeGenre || null);
-  }, [activeGenre]);
+  const [selected, setSelected] = useState<string | null>(() => activeGenre || null);
 
   const handleSelect = useCallback(
     (genre: string | null) => {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
 import { syncTmdbCatalog } from "@/modules/providers/tmdb/tmdb.sync";

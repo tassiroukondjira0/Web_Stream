@@ -58,7 +58,6 @@ async function fetchAndroidDownloadUrl(): Promise<string> {
  */
 export function AndroidAppBanner() {
   const [visible, setVisible] = useState(false);
-  const [platform, setPlatform] = useState<"android" | "ios" | null>(null);
   const [androidUrl, setAndroidUrl] = useState(FALLBACK_ANDROID_URL);
 
   useEffect(() => {
@@ -71,12 +70,9 @@ export function AndroidAppBanner() {
     const isIOS = /iphone|ipad|ipod/i.test(ua);
 
     if (isAndroid) {
-      setPlatform("android");
       // Récupérer le dernier lien de build Android
       fetchAndroidDownloadUrl().then(setAndroidUrl);
-    } else if (isIOS) {
-      setPlatform("ios");
-    } else {
+    } else if (!isIOS) {
       return; // Desktop ou autre — on n'affiche rien
     }
 
@@ -95,7 +91,13 @@ export function AndroidAppBanner() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  if (!visible || !platform) return null;
+  if (!visible) return null;
+
+  // Détection plateforme côté client uniquement
+  const ua = typeof window !== "undefined" ? navigator.userAgent : "";
+  const isAndroidPage = /android/i.test(ua);
+  const isIOSPage = /iphone|ipad|ipod/i.test(ua);
+  if (!isAndroidPage && !isIOSPage) return null;
 
   function handleDismiss() {
     setVisible(false);
@@ -106,10 +108,9 @@ export function AndroidAppBanner() {
     }
   }
 
-  const isAndroid = platform === "android";
-  const downloadUrl = isAndroid ? androidUrl : IOS_INSTALL_URL;
-  const downloadLabel = isAndroid ? "APK" : "iOS";
-  const platformLabel = isAndroid ? "Android" : "iOS";
+  const downloadUrl = isAndroidPage ? androidUrl : IOS_INSTALL_URL;
+  const downloadLabel = isAndroidPage ? "APK" : "iOS";
+  const platformLabel = isAndroidPage ? "Android" : "iOS";
 
   return (
     <div className="relative z-[60] flex items-center gap-3 border-b border-emerald-500/20 bg-gradient-to-r from-zinc-950 via-zinc-900 to-emerald-950/30 px-4 py-2.5 sm:px-6">

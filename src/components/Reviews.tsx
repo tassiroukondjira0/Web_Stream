@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Star } from "lucide-react";
 
 interface ReviewItem {
@@ -20,15 +20,13 @@ export function Reviews({ mediaSlug }: ReviewsProps) {
   const [reviews, setReviews] = useState<ReviewItem[]>([]);
   const [average, setAverage] = useState(0);
   const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoading(true);
+  const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/reviews?slug=${encodeURIComponent(mediaSlug)}`);
       if (res.ok) {
@@ -43,19 +41,18 @@ export function Reviews({ mediaSlug }: ReviewsProps) {
       }
     } catch {
       // ignore
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [mediaSlug]);
 
   useEffect(() => {
-    fetch("/api/auth/me", { credentials: "include" })
+    void fetch("/api/auth/me", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setIsLoggedIn(Boolean(data?.user)))
       .catch(() => setIsLoggedIn(false));
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaSlug]);
+    // Initial data fetch — standard pattern for client-side data loading
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [mediaSlug, load]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,9 +109,7 @@ export function Reviews({ mediaSlug }: ReviewsProps) {
         )}
       </div>
 
-      {loading ? (
-        <p className="mt-3 text-sm text-zinc-400">Chargement des avis…</p>
-      ) : reviews.length === 0 ? (
+      {reviews.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-400">Aucun avis pour le moment.</p>
       ) : (
         <ul className="mt-4 space-y-4">

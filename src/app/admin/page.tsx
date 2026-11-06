@@ -4,8 +4,31 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { shouldOptimizeImage } from "@/lib/image";
-import { ShieldCheck, Plus, Trash2, CheckCircle2, AlertTriangle, Eye, EyeOff, Lock, Download, Pencil, RefreshCw, Database, Library, Radio } from "lucide-react";
+import {
+  ShieldCheck,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  Eye,
+  EyeOff,
+  Lock,
+  Download,
+  Pencil,
+  RefreshCw,
+  Database,
+  Library,
+  Radio,
+  TrendingUp,
+  Users,
+  Film,
+  Eye as EyeIcon,
+  Crown,
+  Settings,
+} from "lucide-react";
 import { TrafficCharts } from "@/components/admin/TrafficCharts";
+import { AdminSidebar, MobileHamburger } from "@/components/admin/AdminSidebar";
+import type { TabKey } from "@/components/admin/AdminSidebar";
 
 interface SyncRunRecord {
   id: string;
@@ -48,6 +71,11 @@ export default function AdminDashboardPage() {
   const [medias, setMedias] = useState<MediaRecord[]>([]);
   const [stats, setStats] = useState({ totalMedias: 0, published: 0, premium: 0, free: 0, partnerTotal: 0 });
   const [loading, setLoading] = useState(true);
+
+  // Dashboard layout
+  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Formulaire d'ajout
   const [showModal, setShowModal] = useState(false);
@@ -439,225 +467,179 @@ export default function AdminDashboardPage() {
     );
   }
 
+  const sidebarWidth = sidebarCollapsed ? "lg:pl-[72px]" : "lg:pl-[260px]";
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      {/* En-tête Back-office */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-6">
-        <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-500/10 border border-purple-500/30 px-3 py-1 text-xs font-semibold text-purple-400">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Espace d&apos;Administration
-          </span>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-white">
-            Gestion du Catalogue & Droits
-          </h1>
-        </div>
+    <div className="min-h-screen bg-[#0b1120]">
+      {/* Sidebar */}
+      <AdminSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        collapsed={sidebarCollapsed}
+        setCollapsed={setSidebarCollapsed}
+        mobileOpen={mobileMenuOpen}
+        setMobileOpen={setMobileMenuOpen}
+        isSuperAdmin={isSuperAdmin}
+      />
 
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setShowImportModal(true)}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-800 px-4 py-2.5 text-xs font-semibold text-white hover:bg-zinc-700 transition-colors"
-          >
-            <Download className="h-4 w-4" />
-            Importer depuis TMDB
-          </button>
-          <button
-            onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Ajouter une œuvre
-          </button>
-        </div>
-      </div>
-
-      {message && (
-        <div className="mt-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400">
-          {message}
-        </div>
-      )}
-
-      {/* Cartes Métriques */}
-      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
-          <span className="text-xs text-zinc-400">Total Catalogue</span>
-          <div className="mt-2 text-3xl font-black text-white">{stats.totalMedias}</div>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
-          <span className="text-xs text-zinc-400">Publications (catalogue local)</span>
-          <div className="mt-2 text-3xl font-black text-emerald-400">{stats.published}</div>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
-          <span className="text-xs text-zinc-400">Titres partenaires</span>
-          <div className="mt-2 text-3xl font-black text-purple-400">{stats.partnerTotal}</div>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
-          <span className="text-xs text-zinc-400">Contenus Premium</span>
-          <div className="mt-2 text-3xl font-black text-amber-400">{stats.premium}</div>
-        </div>
-        <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
-          <span className="text-xs text-zinc-400">Contenus Gratuits</span>
-          <div className="mt-2 text-3xl font-black text-blue-400">{stats.free}</div>
-        </div>
-      </div>
-
-      {/* Trafic du site — visiteurs mensuels, premium vs standard */}
-      <div className="mt-10">
-        <h2 className="mb-4 text-lg font-bold text-white">Trafic & audience</h2>
-        <TrafficCharts />
-      </div>
-
-      {/* Catalogue partenaire — synchro incrémentale */}
-      <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40" style={{ display: isSuperAdmin ? undefined : "none" }}>
-        <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Database className="h-4 w-4 text-purple-400" />
-              Catalogue partenaire
-            </h2>
-            <p className="mt-1 text-[11px] text-zinc-500">
-              {syncStatus
-                ? `${syncStatus.assets.total} asset(s) en base — ${syncStatus.assets.movies} films, ${syncStatus.assets.series} séries, ${syncStatus.assets.animes} animés.`
-                : "Chargement de l'état du catalogue partenaire..."}
-            </p>
+      {/* Main content area */}
+      <div className={`transition-all duration-300 ${sidebarWidth}`}>
+        {/* Top bar */}
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/[0.06] bg-[#0b1120]/80 backdrop-blur-xl px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <MobileHamburger onClick={() => setMobileMenuOpen(true)} />
+            <div>
+              <h1 className="text-base font-bold text-white">
+                {activeTab === "overview" && "Vue d'ensemble"}
+                {activeTab === "medias" && "Catalogue"}
+                {activeTab === "partners" && "Partenaires"}
+                {activeTab === "sync" && "Synchronisation"}
+                {activeTab === "users" && "Utilisateurs"}
+                {activeTab === "reviews" && "Avis"}
+                {activeTab === "notifications" && "Notifications"}
+                {activeTab === "settings" && "Paramètres"}
+              </h1>
+              <p className="text-[11px] text-zinc-500">
+                <span className="inline-flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3 text-violet-400" />
+                  Espace d'Administration
+                </span>
+              </p>
+            </div>
           </div>
-          <form onSubmit={handleSyncPartner} className="flex flex-wrap items-center gap-2 text-xs">
-            <label className="text-zinc-400">
-              Pages
-              <input
-                type="number"
-                min={1}
-                max={20}
-                value={syncPages}
-                onChange={(e) => setSyncPages(Math.min(Math.max(Number(e.target.value) || 1, 1), 20))}
-                className="ml-2 w-16 rounded-xl border border-white/10 bg-black/50 p-2 text-white"
-              />
-            </label>
-            <button
-              type="submit"
-              disabled={syncing}
-              className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 font-semibold text-white hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-              {syncing ? "Synchro en cours..." : "Lancer la synchro"}
-            </button>
-            <button
-              type="button"
-              onClick={handleSyncTmdb}
-              disabled={tmdbSyncing}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-800 px-4 py-2 font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <RefreshCw className={`h-4 w-4 ${tmdbSyncing ? "animate-spin" : ""}`} />
-              {tmdbSyncing ? "Synchro TMDB…" : "Synchro TMDB"}
-            </button>
-            <button
-              type="button"
-              onClick={handleCoverage}
-              disabled={coverageRunning}
-              className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-semibold text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Radio className={`h-4 w-4 ${coverageRunning ? "animate-spin" : ""}`} />
-              {coverageRunning ? "Vérification..." : "Couverture Vidzy"}
-            </button>
-          </form>
-        </div>
-
-        {syncMessage && (
-          <div className="mx-6 mt-4 rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-zinc-300">
-            {syncMessage}
+          <div className="flex items-center gap-2">
+            {(activeTab === "overview" || activeTab === "medias") && (
+              <>
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-700 transition-colors"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Import TMDB</span>
+                </button>
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-violet-600/20 hover:bg-violet-500 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline">Ajouter</span>
+                </button>
+              </>
+            )}
           </div>
-        )}
+        </header>
 
-        <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
-          <table className="w-full min-w-[640px] text-left text-xs text-zinc-300">
-            <thead className="bg-black/40 text-zinc-400 uppercase tracking-wider text-[11px]">
-              <tr>
-                <th className="px-4 py-3.5 sm:px-6">Démarré le</th>
-                <th className="px-4 py-3.5 sm:px-6">Statut</th>
-                <th className="px-4 py-3.5 sm:px-6">Pages</th>
-                <th className="px-4 py-3.5 sm:px-6">À jour</th>
-                <th className="px-4 py-3.5 sm:px-6">Purgés</th>
-                <th className="px-4 py-3.5 sm:px-6">Erreur</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {!syncStatus || syncStatus.runs.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-4 text-zinc-500 sm:px-6">
-                    Aucune synchronisation enregistrée pour le moment.
-                  </td>
-                </tr>
-              ) : (
-                syncStatus.runs.map((r) => (
-                  <tr key={r.id} className="hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 font-mono text-[11px] text-zinc-400 sm:px-6">
-                      {new Date(r.startedAt).toLocaleString("fr-FR")}
-                    </td>
-                    <td className="px-4 py-3 sm:px-6">
-                      {r.status === "SUCCESS" ? (
-                        <span className="inline-flex items-center gap-1 text-emerald-400">
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Succès
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-violet-400">
-                          <AlertTriangle className="h-3.5 w-3.5" />
-                          {r.status}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 sm:px-6">{r.pagesFetched}</td>
-                    <td className="px-4 py-3 sm:px-6">{r.assetsUpserted}</td>
-                    <td className="px-4 py-3 sm:px-6">{r.assetsPruned}</td>
-                    <td className="px-4 py-3 sm:px-6 max-w-xs truncate text-zinc-500" title={r.error || ""}>
-                      {r.error || "—"}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        {/* Page content */}
+        <main className="p-4 sm:p-6 lg:p-8">
+          {message && (
+            <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400">
+              {message}
+            </div>
+          )}
 
-      {/* Tableau du catalogue */}
-      <div className="mt-10 overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/40">
-        <div className="border-b border-white/10 px-4 py-4 sm:px-6">
-          <h2 className="text-base font-bold text-white">Œuvres sous gestion légale</h2>
-        </div>
+          {/* ===== OVERVIEW TAB ===== */}
+          {(activeTab === "overview") && (
+            <>
+              {/* Stat cards */}
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-violet-500/20 hover:shadow-lg hover:shadow-violet-500/5">
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <Film className="h-4 w-4 text-violet-400" />
+                    <span className="text-xs font-medium">Total Catalogue</span>
+                  </div>
+                  <div className="mt-3 flex items-end justify-between">
+                    <span className="text-3xl font-black text-white">{stats.totalMedias}</span>
+                    <TrendingUp className="h-4 w-4 text-emerald-400 opacity-0 transition-opacity group-hover:opacity-100" />
+                  </div>
+                </div>
+                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/5">
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs font-medium">Publications</span>
+                  </div>
+                  <div className="mt-3 flex items-end justify-between">
+                    <span className="text-3xl font-black text-emerald-400">{stats.published}</span>
+                  </div>
+                </div>
+                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-purple-500/20 hover:shadow-lg hover:shadow-purple-500/5">
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <Users className="h-4 w-4 text-purple-400" />
+                    <span className="text-xs font-medium">Partenaires</span>
+                  </div>
+                  <div className="mt-3 flex items-end justify-between">
+                    <span className="text-3xl font-black text-purple-400">{stats.partnerTotal}</span>
+                  </div>
+                </div>
+                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-amber-500/20 hover:shadow-lg hover:shadow-amber-500/5">
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <Crown className="h-4 w-4 text-amber-400" />
+                    <span className="text-xs font-medium">Premium</span>
+                  </div>
+                  <div className="mt-3 flex items-end justify-between">
+                    <span className="text-3xl font-black text-amber-400">{stats.premium}</span>
+                  </div>
+                </div>
+                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-blue-500/20 hover:shadow-lg hover:shadow-blue-500/5 col-span-2 lg:col-span-1">
+                  <div className="flex items-center gap-2 text-zinc-400">
+                    <EyeIcon className="h-4 w-4 text-blue-400" />
+                    <span className="text-xs font-medium">Gratuits</span>
+                  </div>
+                  <div className="mt-3 flex items-end justify-between">
+                    <span className="text-3xl font-black text-blue-400">{stats.free}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Traffic charts */}
+              <div className="mt-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-lg font-bold text-white">Trafic & audience</h2>
+                </div>
+                <TrafficCharts />
+              </div>
+            </>
+          )}
+
+          {/* ===== MEDIAS TAB ===== */}
+          {(activeTab === "medias") && (
+            <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#131b33]/60">
+              <div className="border-b border-white/[0.06] px-5 py-4">
+                <h2 className="text-base font-bold text-white">Œuvres sous gestion légale</h2>
+                <p className="mt-0.5 text-[11px] text-zinc-500">{medias.length} titre(s) dans le catalogue local</p>
+              </div>
 
         <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
           <table className="w-full min-w-[720px] text-left text-xs text-zinc-300">
-            <thead className="bg-black/40 text-zinc-400 uppercase tracking-wider text-[11px]">
+            <thead className="bg-black/30 text-zinc-400 uppercase tracking-wider text-[11px]">
               <tr>
-                <th className="px-4 py-3.5 sm:px-6">Titre & Slug</th>
-                <th className="px-4 py-3.5 sm:px-6">Type</th>
-                <th className="px-4 py-3.5 sm:px-6">Accès</th>
-                <th className="px-4 py-3.5 sm:px-6">Statut</th>
-                <th className="px-4 py-3.5 sm:px-6">Droits jusqu&apos;au</th>
-                <th className="px-4 py-3.5 text-right sm:px-6">Actions</th>
+                <th className="px-5 py-3.5">Titre & Slug</th>
+                <th className="px-5 py-3.5">Type</th>
+                <th className="px-5 py-3.5">Accès</th>
+                <th className="px-5 py-3.5">Statut</th>
+                <th className="px-5 py-3.5">Droits jusqu&apos;au</th>
+                <th className="px-5 py-3.5 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-white/[0.04]">
               {medias.map((m) => (
-                <tr key={m.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-4 py-4 font-medium text-white sm:px-6">
+                <tr key={m.id} className="hover:bg-white/[0.02] transition-colors">
+                  <td className="px-5 py-4 font-medium text-white">
                     <div>{m.title}</div>
                     <div className="text-[11px] text-zinc-500 font-mono break-all">/films/{m.slug}</div>
                   </td>
-                  <td className="px-4 py-4 sm:px-6">{m.type}</td>
-                  <td className="px-4 py-4 sm:px-6">
+                  <td className="px-5 py-4">{m.type}</td>
+                  <td className="px-5 py-4">
                     {m.accessLevel === "PREMIUM" ? (
-                      <span className="inline-flex items-center gap-1 rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-bold text-amber-400">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-[10px] font-bold text-amber-400">
                         PREMIUM
                       </span>
                     ) : (
-                      <span className="inline-flex items-center rounded bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
+                      <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
                         GRATUIT
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-4 sm:px-6">
+                  <td className="px-5 py-4">
                     {m.isPublished ? (
                       <span className="inline-flex items-center gap-1 text-emerald-400">
                         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -669,7 +651,7 @@ export default function AdminDashboardPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-4 font-mono text-[11px] text-zinc-400 sm:px-6">
+                  <td className="px-5 py-4 font-mono text-[11px] text-zinc-400">
                     {new Date(m.rightsValidUntil) < new Date() ? (
                       <span className="text-violet-400 font-semibold flex items-center gap-1">
                         <AlertTriangle className="h-3.5 w-3.5" />
@@ -679,18 +661,18 @@ export default function AdminDashboardPage() {
                       m.rightsValidUntil.split("T")[0]
                     )}
                   </td>
-                  <td className="px-4 py-4 text-right sm:px-6">
+                  <td className="px-5 py-4 text-right">
                     <div className="inline-flex items-center gap-1">
                       <Link
                         href={`/films/${m.slug}`}
-                        className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                        className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-white/5 hover:text-white"
                         title="Voir la fiche"
                       >
                         <Eye className="h-4 w-4" />
                       </Link>
                       <button
                         onClick={() => openEdit(m)}
-                        className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                        className="inline-flex p-1.5 rounded-lg text-zinc-400 hover:bg-white/5 hover:text-white"
                         title="Éditer / Publier"
                       >
                         <Pencil className="h-4 w-4" />
@@ -710,131 +692,277 @@ export default function AdminDashboardPage() {
           </table>
         </div>
       </div>
+          )}
 
-      {/* Titres partenaires (catalogues externes) — publication par l'admin */}
-      <div className="mt-10" style={{ display: isSuperAdmin ? undefined : "none" }}>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-white">
-              <Library className="h-5 w-5 text-violet-400" />
-              Titres partenaires (catalogues externes)
-            </h2>
-            <p className="mt-1 text-xs text-zinc-500">
-              {partnerTotal.toLocaleString("fr-FR")} titre(s) synchronisé(s). Un titre masqué
-              disparaît des grilles, de la recherche et de la une, mais reste en base.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="text"
-              value={partnerFilter}
-              onChange={(e) => {
-                setPartnerFilter(e.target.value);
-                setPartnerPage(1);
-              }}
-              placeholder="Rechercher un titre…"
-              className="w-44 rounded-xl border border-white/10 bg-black/50 p-2 text-xs text-white placeholder:text-zinc-500"
-            />
-            <select
-              value={partnerProvider}
-              onChange={(e) => {
-                setPartnerProvider(e.target.value);
-                setPartnerPage(1);
-              }}
-              className="rounded-xl border border-white/10 bg-black/50 p-2 text-xs text-white"
-            >
-              <option value="">Tous les fournisseurs</option>
-              <option value="FRENCHSTREAM">Partenaire</option>
-              <option value="FRENCHMANGA">French-Manga</option>
-              <option value="TMDB">TMDB</option>
-            </select>
-          </div>
-        </div>
-
-        {partnerAssets.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-xs text-zinc-500">
-            Aucun titre partenaire synchronisé. Lancez une synchro depuis le panneau précédent.
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {partnerAssets.map((a) => (
-              <div
-                key={a.id}
-                className={`flex items-center gap-3 rounded-2xl border p-3 ${
-                  a.isPublished ? "border-white/10 bg-zinc-900/60" : "border-amber-500/20 bg-amber-500/5"
-                }`}
-              >
-                <Image
-                  src={a.posterUrl || "/placeholder-poster.svg"}
-                  alt=""
-                  width={44}
-                  height={64}
-                  unoptimized={!shouldOptimizeImage(a.posterUrl || "/placeholder-poster.svg")}
-                  className="h-16 w-11 flex-shrink-0 rounded-lg object-cover bg-zinc-800"
-                  loading="lazy"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-white" title={a.title}>
-                    {a.title}
-                  </p>
-                  <p className="mt-0.5 text-[11px] text-zinc-500">
-                    {a.provider} · {a.contentType}
-                    {a.releaseYear ? ` · ${a.releaseYear}` : ""}
-                  </p>
-                  <span
-                    className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                      a.isPublished
-                        ? "bg-emerald-500/10 text-emerald-400"
-                        : "bg-amber-500/10 text-amber-400"
-                    }`}
-                  >
-                    {a.isPublished ? "Publié" : "Masqué"}
-                  </span>
+          {/* ===== SYNC TAB ===== */}
+          {(activeTab === "sync" && isSuperAdmin) && (
+            <div className="space-y-6">
+              {/* Sync controls */}
+              <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#131b33]/60">
+                <div className="flex flex-col gap-3 border-b border-white/[0.06] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h2 className="text-base font-bold text-white flex items-center gap-2">
+                      <Database className="h-4 w-4 text-purple-400" />
+                      Synchronisation catalogue
+                    </h2>
+                    <p className="mt-1 text-[11px] text-zinc-500">
+                      {syncStatus
+                        ? `${syncStatus.assets.total} asset(s) — ${syncStatus.assets.movies} films, ${syncStatus.assets.series} séries, ${syncStatus.assets.animes} animés`
+                        : "Chargement..."}
+                    </p>
+                  </div>
+                  <form onSubmit={handleSyncPartner} className="flex flex-wrap items-center gap-2 text-xs">
+                    <label className="text-zinc-400">
+                      Pages
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={syncPages}
+                        onChange={(e) => setSyncPages(Math.min(Math.max(Number(e.target.value) || 1, 1), 20))}
+                        className="ml-2 w-16 rounded-xl border border-white/10 bg-black/50 p-2 text-white"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      disabled={syncing}
+                      className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 font-semibold text-white hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+                      {syncing ? "En cours..." : "Synchro"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSyncTmdb}
+                      disabled={tmdbSyncing}
+                      className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-800 px-4 py-2 font-semibold text-white hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${tmdbSyncing ? "animate-spin" : ""}`} />
+                      {tmdbSyncing ? "En cours…" : "TMDB"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCoverage}
+                      disabled={coverageRunning}
+                      className="inline-flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 font-semibold text-amber-400 hover:bg-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Radio className={`h-4 w-4 ${coverageRunning ? "animate-spin" : ""}`} />
+                      {coverageRunning ? "Vérif..." : "Vidzy"}
+                    </button>
+                  </form>
                 </div>
-                <button
-                  onClick={() => togglePartnerPublished(a.id)}
-                  disabled={togglingId === a.id}
-                  title={a.isPublished ? "Masquer ce titre" : "Publier ce titre"}
-                  className={`flex-shrink-0 rounded-lg p-2 transition-colors disabled:opacity-50 ${
-                    a.isPublished
-                      ? "text-zinc-400 hover:bg-zinc-800 hover:text-amber-400"
-                      : "text-amber-400 hover:bg-emerald-500/10 hover:text-emerald-400"
-                  }`}
-                >
-                  {togglingId === a.id ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : a.isPublished ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
 
-        {partnerPages > 1 && (
-          <div className="mt-4 flex items-center justify-center gap-3">
-            <button
-              onClick={() => setPartnerPage((p) => Math.max(1, p - 1))}
-              disabled={partnerPage <= 1}
-              className="rounded-lg border border-white/10 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Précédent
-            </button>
-            <span className="text-xs text-zinc-500">
-              Page {partnerPage} / {partnerPages}
-            </span>
-            <button
-              onClick={() => setPartnerPage((p) => Math.min(partnerPages, p + 1))}
-              disabled={partnerPage >= partnerPages}
-              className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Suivant
-            </button>
-          </div>
-        )}
+                {syncMessage && (
+                  <div className="mx-5 mt-4 rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-zinc-300">
+                    {syncMessage}
+                  </div>
+                )}
+              </div>
+
+              {/* Sync history table */}
+              <div className="overflow-hidden rounded-2xl border border-white/[0.06] bg-[#131b33]/60">
+                <div className="border-b border-white/[0.06] px-5 py-4">
+                  <h2 className="text-base font-bold text-white">Historique des synchronisations</h2>
+                </div>
+                <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
+                  <table className="w-full min-w-[640px] text-left text-xs text-zinc-300">
+                    <thead className="bg-black/30 text-zinc-400 uppercase tracking-wider text-[11px]">
+                      <tr>
+                        <th className="px-5 py-3.5">Démarré le</th>
+                        <th className="px-5 py-3.5">Statut</th>
+                        <th className="px-5 py-3.5">Pages</th>
+                        <th className="px-5 py-3.5">À jour</th>
+                        <th className="px-5 py-3.5">Purgés</th>
+                        <th className="px-5 py-3.5">Erreur</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {!syncStatus || syncStatus.runs.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="px-5 py-4 text-zinc-500">
+                            Aucune synchronisation enregistrée.
+                          </td>
+                        </tr>
+                      ) : (
+                        syncStatus.runs.map((r) => (
+                          <tr key={r.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="px-5 py-3 font-mono text-[11px] text-zinc-400">
+                              {new Date(r.startedAt).toLocaleString("fr-FR")}
+                            </td>
+                            <td className="px-5 py-3">
+                              {r.status === "SUCCESS" ? (
+                                <span className="inline-flex items-center gap-1 text-emerald-400">
+                                  <CheckCircle2 className="h-3.5 w-3.5" />
+                                  Succès
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-violet-400">
+                                  <AlertTriangle className="h-3.5 w-3.5" />
+                                  {r.status}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-5 py-3">{r.pagesFetched}</td>
+                            <td className="px-5 py-3">{r.assetsUpserted}</td>
+                            <td className="px-5 py-3">{r.assetsPruned}</td>
+                            <td className="px-5 py-3 max-w-xs truncate text-zinc-500" title={r.error || ""}>
+                              {r.error || "—"}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ===== PARTNERS TAB ===== */}
+          {(activeTab === "partners" && isSuperAdmin) && (
+            <div>
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="flex items-center gap-2 text-lg font-bold text-white">
+                    <Library className="h-5 w-5 text-violet-400" />
+                    Titres partenaires
+                  </h2>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {partnerTotal.toLocaleString("fr-FR")} titre(s). Masquer un titre le retire des grilles publiques.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="text"
+                    value={partnerFilter}
+                    onChange={(e) => {
+                      setPartnerFilter(e.target.value);
+                      setPartnerPage(1);
+                    }}
+                    placeholder="Rechercher…"
+                    className="w-44 rounded-xl border border-white/10 bg-black/50 p-2 text-xs text-white placeholder:text-zinc-500"
+                  />
+                  <select
+                    value={partnerProvider}
+                    onChange={(e) => {
+                      setPartnerProvider(e.target.value);
+                      setPartnerPage(1);
+                    }}
+                    className="rounded-xl border border-white/10 bg-black/50 p-2 text-xs text-white"
+                  >
+                    <option value="">Tous</option>
+                    <option value="FRENCHSTREAM">Partenaire</option>
+                    <option value="FRENCHMANGA">French-Manga</option>
+                    <option value="TMDB">TMDB</option>
+                  </select>
+                </div>
+              </div>
+
+              {partnerAssets.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-xs text-zinc-500">
+                  Aucun titre partenaire. Lancez une synchro.
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {partnerAssets.map((a) => (
+                    <div
+                      key={a.id}
+                      className={`flex items-center gap-3 rounded-2xl border p-3 ${
+                        a.isPublished
+                          ? "border-white/[0.06] bg-[#131b33]/60"
+                          : "border-amber-500/20 bg-amber-500/5"
+                      }`}
+                    >
+                      <Image
+                        src={a.posterUrl || "/placeholder-poster.svg"}
+                        alt=""
+                        width={44}
+                        height={64}
+                        unoptimized={!shouldOptimizeImage(a.posterUrl || "/placeholder-poster.svg")}
+                        className="h-16 w-11 flex-shrink-0 rounded-lg object-cover bg-zinc-800"
+                        loading="lazy"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-semibold text-white" title={a.title}>
+                          {a.title}
+                        </p>
+                        <p className="mt-0.5 text-[11px] text-zinc-500">
+                          {a.provider} · {a.contentType}
+                          {a.releaseYear ? ` · ${a.releaseYear}` : ""}
+                        </p>
+                        <span
+                          className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                            a.isPublished
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-amber-500/10 text-amber-400"
+                          }`}
+                        >
+                          {a.isPublished ? "Publié" : "Masqué"}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => togglePartnerPublished(a.id)}
+                        disabled={togglingId === a.id}
+                        title={a.isPublished ? "Masquer" : "Publier"}
+                        className={`flex-shrink-0 rounded-lg p-2 transition-colors disabled:opacity-50 ${
+                          a.isPublished
+                            ? "text-zinc-400 hover:bg-white/5 hover:text-amber-400"
+                            : "text-amber-400 hover:bg-emerald-500/10 hover:text-emerald-400"
+                        }`}
+                      >
+                        {togglingId === a.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : a.isPublished ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {partnerPages > 1 && (
+                <div className="mt-4 flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setPartnerPage((p) => Math.max(1, p - 1))}
+                    disabled={partnerPage <= 1}
+                    className="rounded-lg border border-white/10 bg-zinc-800 px-4 py-2 text-xs font-semibold text-zinc-200 hover:bg-zinc-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Précédent
+                  </button>
+                  <span className="text-xs text-zinc-500">
+                    Page {partnerPage} / {partnerPages}
+                  </span>
+                  <button
+                    onClick={() => setPartnerPage((p) => Math.min(partnerPages, p + 1))}
+                    disabled={partnerPage >= partnerPages}
+                    className="rounded-lg bg-violet-600 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Suivant
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ===== PLACEHOLDER TABS ===== */}
+          {(activeTab === "users" || activeTab === "reviews" || activeTab === "notifications" || activeTab === "settings") && (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-[#131b33]/30 p-16 text-center">
+              <Settings className="mb-4 h-12 w-12 text-zinc-600" />
+              <h3 className="text-lg font-bold text-zinc-400">
+                {activeTab === "users" && "Gestion des utilisateurs"}
+                {activeTab === "reviews" && "Gestion des avis"}
+                {activeTab === "notifications" && "Notifications"}
+                {activeTab === "settings" && "Paramètres"}
+              </h3>
+              <p className="mt-2 max-w-sm text-xs text-zinc-600">
+                Cette section est accessible via le menu latéral ou directement à l'URL correspondante.
+              </p>
+            </div>
+          )}
+        </main>
       </div>
 
       {/* Modal d'édition / publication */}

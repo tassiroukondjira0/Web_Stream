@@ -20,7 +20,6 @@ export function AdminNotifications() {
     setTitle("Nouveaux titres disponibles");
     setMessage("De nouveaux films et series ont ete ajoutes au catalogue. Venez les decouvrir !");
     setLink("/nouveautes");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 

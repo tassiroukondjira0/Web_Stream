@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Shield, Server, Copyright, Eye, AlertTriangle, Scale, Gavel, RefreshCw, Users, Accessibility, Baby } from "lucide-react";
+import { Shield, Server, Copyright, Eye, AlertTriangle, Gavel, RefreshCw, Users, Accessibility, Baby } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Mentions Légales",

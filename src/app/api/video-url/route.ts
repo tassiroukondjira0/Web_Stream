@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    let tmdbId = rawId;
+    const tmdbId = rawId;
 
     // 1. Si l'identifiant n'est pas un nombre pur, chercher dans ProviderAsset
     if (!/^\d{1,10}$/.test(rawId)) {

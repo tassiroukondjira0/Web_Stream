@@ -56,7 +56,7 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
           </section>
         }
       >
-        <FeaturedSection filters={genreFilters} />
+        <FeaturedSection />
       </Suspense>
 
       {/* Genre chips — filtres par genre avec icônes */}
@@ -299,10 +299,10 @@ async function MangaSection({ filters, typeFilter }: { filters?: AssetFilters; t
  * automatiquement à intervalles réguliers : sélection
  * déterministe calculée côté données (getFeaturedPartner) — aucun cron requis.
  */
-async function FeaturedSection({ filters }: { filters?: AssetFilters }) {
+async function FeaturedSection() {
   await connection();
   const now = new Date();
-  const { items, renewalLabel } = await getFeaturedPartner(FEATURED_LIMIT, now);
+  const { items } = await getFeaturedPartner(FEATURED_LIMIT, now);
   if (items.length === 0) return null;
 
   return (

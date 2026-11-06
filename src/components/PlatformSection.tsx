@@ -5,7 +5,6 @@ import type { AssetFilters } from "@/lib/provider-catalog.types";
 import { ProviderPosterCard } from "@/components/ProviderPosterCard";
 import {
   Play,
-  Tv,
   MonitorPlay,
   Sparkles,
   Apple,

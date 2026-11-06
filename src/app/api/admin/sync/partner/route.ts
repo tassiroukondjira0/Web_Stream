@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser, hasAdminAccess, hasSuperAdminAccess } from "@/lib/auth";
+import { getCurrentUser, hasSuperAdminAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PARTNER_PROVIDER } from "@/modules/providers/partner/partner.client";
 import { syncPartnerCatalog } from "@/modules/providers/partner/partner.sync";

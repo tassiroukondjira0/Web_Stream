@@ -1,23 +1,5 @@
 import { NextResponse } from "next/server";
 
-const FAQ_KNOWLEDGE = `CinéMax - Plateforme de streaming légal de films, séries et animés.
-
-PAGES : / (accueil), /films, /series, /animes, /nouveautes, /recherche, /mon-compte, /favoris, /souhaits, /premium, /aide, /contact, /connexion, /inscription, /mentions-legales, /confidentialite, /conditions, /admin, /admin/notifications
-
-FONCTIONNALITÉS : Catalogue films/séries/animés (TMDB + partenaires). Lecteur multi-sources (Vidzy, uqload, voe, fsvid, netu, luluvido). Reprise automatique (sauvegarde 10s). Favoris et souhaits. Historique. Premium (1500 FCFA/mois ou 15000 FCFA/an). Paiement PayDunya (Wave, Orange Money, CB). Notifications in-app. Recherche et filtres. Partage de liens. Marquage épisodes vus. Filtres par genre sur la page d'accueil.
-
-COMPTE : Inscription /inscription (email + mdp min 8 car.). Connexion /connexion. Rôles USER/SUBSCRIBER/ADMIN. Changement mdp depuis Mon Compte. Profil : nom, email, pays.
-
-PREMIUM : 1500 FCFA/mois ou 15000 FCFA/an. Souscription /premium. Paiement PayDunya. Accès catalogue complet + exclusifs. Annulation /premium/cancel.
-
-LECTEUR : Vidzy (HD, VF/VOSTFR). Sources partenaires (uqload, voe, fsvid, netu, luluvido). Langue (VF, VOSTFR, VO). Épisode/saison. Reprise auto. Rechargement manuel. Certaines sources nécessitent Premium.
-
-SUPPORT : support@cinemax.local, contact@cinemax.local. Page /aide (FAQ + assistant IA). Page /contact (formulaire).
-
-ADMIN : /admin (gestion médias, import TMDB, sync). /admin/notifications (envoi notifs). Réservé ADMIN.
-
-LÉGAL : /mentions-legales, /confidentialite, /conditions. Données protégées, mdp hachés.`;
-
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null);

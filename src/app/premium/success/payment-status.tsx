@@ -112,7 +112,7 @@ export default function PaymentStatus({ sessionId, paypalOrderId }: { sessionId:
       clearTimeout(id);
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []);
+  }, [paypalOrderId]);
 
   return (
     <div className="mx-auto max-w-lg px-4 py-20 text-center sm:px-6">

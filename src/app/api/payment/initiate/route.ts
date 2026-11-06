@@ -4,13 +4,11 @@ import { getCurrentUser } from "@/lib/auth";
 import { getAppUrl } from "@/lib/env";
 import {
   createPremiumInvoice,
-  getChannelsForSelection,
   getPaymentCurrency,
   isPremiumPlan,
   PAYMENT_CHANNELS_BY_COUNTRY,
   PREMIUM_PLANS,
   type CountryCode,
-  type PaymentMethod,
 } from "@/lib/payments";
 import { prisma } from "@/lib/prisma";
 
