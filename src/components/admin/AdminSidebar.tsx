@@ -74,7 +74,7 @@ export function AdminSidebar({
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-white/[0.06] bg-[#0f1629] transition-all duration-300 lg:z-30 ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col border-r border-white/[0.08] bg-[#0d1220]/85 shadow-[0_0_60px_rgba(0,0,0,0.28)] backdrop-blur-2xl transition-all duration-300 lg:z-30 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         } ${collapsed ? "w-[72px]" : "w-[260px]"}`}
       >
@@ -127,8 +127,8 @@ export function AdminSidebar({
                 }}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                   isActive
-                    ? "bg-gradient-to-r from-violet-600/20 to-purple-600/10 text-violet-300 shadow-inner"
-                    : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                    ? "border border-violet-300/10 bg-gradient-to-r from-violet-500/25 via-violet-500/10 to-transparent text-violet-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                    : "border border-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
                 } ${collapsed ? "justify-center" : ""}`}
                 title={collapsed ? item.label : undefined}
               >

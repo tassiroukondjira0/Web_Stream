@@ -470,7 +470,11 @@ export default function AdminDashboardPage() {
   const sidebarWidth = sidebarCollapsed ? "lg:pl-[72px]" : "lg:pl-[260px]";
 
   return (
-    <div className="min-h-screen bg-[#0b1120]">
+    <div className="relative min-h-screen bg-[#080b14]">
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-48 top-0 h-[34rem] w-[34rem] rounded-full bg-violet-600/10 blur-[140px]" />
+        <div className="absolute -right-48 top-[28rem] h-[30rem] w-[30rem] rounded-full bg-sky-500/[0.07] blur-[140px]" />
+      </div>
       {/* Sidebar */}
       <AdminSidebar
         activeTab={activeTab}
@@ -483,9 +487,9 @@ export default function AdminDashboardPage() {
       />
 
       {/* Main content area */}
-      <div className={`transition-all duration-300 ${sidebarWidth}`}>
+      <div className={`relative z-10 transition-all duration-300 ${sidebarWidth}`}>
         {/* Top bar */}
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/[0.06] bg-[#0b1120]/80 backdrop-blur-xl px-4 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/[0.08] bg-[#090d18]/75 px-4 backdrop-blur-2xl sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <MobileHamburger onClick={() => setMobileMenuOpen(true)} />
             <div>
@@ -512,7 +516,7 @@ export default function AdminDashboardPage() {
               <>
                 <button
                   onClick={() => setShowImportModal(true)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-700 transition-colors"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2 text-xs font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl transition-colors hover:bg-white/[0.09]"
                 >
                   <Download className="h-4 w-4" />
                   <span className="hidden sm:inline">Import TMDB</span>
@@ -541,8 +545,26 @@ export default function AdminDashboardPage() {
           {(activeTab === "overview") && (
             <>
               {/* Stat cards */}
+              <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-violet-300/80">
+                    Votre espace de pilotage
+                  </p>
+                  <h2 className="mt-2 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                    Tout ce qui se passe sur CinéMax.
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+                    Suivez votre catalogue, votre audience et vos abonnements en un coup d&apos;œil.
+                  </p>
+                </div>
+                <span className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-400/15 bg-emerald-400/[0.06] px-3 py-1.5 text-[11px] font-medium text-emerald-300/90">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
+                  Vue d&apos;ensemble
+                </span>
+              </div>
+
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-violet-500/20 hover:shadow-lg hover:shadow-violet-500/5">
+                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.09] bg-gradient-to-br from-white/[0.075] via-white/[0.035] to-white/[0.015] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-violet-400/30 hover:shadow-lg hover:shadow-violet-500/10">
                   <div className="flex items-center gap-2 text-zinc-400">
                     <Film className="h-4 w-4 text-violet-400" />
                     <span className="text-xs font-medium">Total Catalogue</span>
@@ -552,7 +574,7 @@ export default function AdminDashboardPage() {
                     <TrendingUp className="h-4 w-4 text-emerald-400 opacity-0 transition-opacity group-hover:opacity-100" />
                   </div>
                 </div>
-                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-emerald-500/20 hover:shadow-lg hover:shadow-emerald-500/5">
+                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.09] bg-gradient-to-br from-white/[0.075] via-white/[0.035] to-white/[0.015] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-emerald-400/30 hover:shadow-lg hover:shadow-emerald-500/10">
                   <div className="flex items-center gap-2 text-zinc-400">
                     <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                     <span className="text-xs font-medium">Publications</span>
@@ -561,7 +583,7 @@ export default function AdminDashboardPage() {
                     <span className="text-3xl font-black text-emerald-400">{stats.published}</span>
                   </div>
                 </div>
-                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-purple-500/20 hover:shadow-lg hover:shadow-purple-500/5">
+                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.09] bg-gradient-to-br from-white/[0.075] via-white/[0.035] to-white/[0.015] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-purple-400/30 hover:shadow-lg hover:shadow-purple-500/10">
                   <div className="flex items-center gap-2 text-zinc-400">
                     <Users className="h-4 w-4 text-purple-400" />
                     <span className="text-xs font-medium">Partenaires</span>
@@ -570,7 +592,7 @@ export default function AdminDashboardPage() {
                     <span className="text-3xl font-black text-purple-400">{stats.partnerTotal}</span>
                   </div>
                 </div>
-                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-amber-500/20 hover:shadow-lg hover:shadow-amber-500/5">
+                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.09] bg-gradient-to-br from-white/[0.075] via-white/[0.035] to-white/[0.015] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-amber-400/30 hover:shadow-lg hover:shadow-amber-500/10">
                   <div className="flex items-center gap-2 text-zinc-400">
                     <Crown className="h-4 w-4 text-amber-400" />
                     <span className="text-xs font-medium">Premium</span>
@@ -579,7 +601,7 @@ export default function AdminDashboardPage() {
                     <span className="text-3xl font-black text-amber-400">{stats.premium}</span>
                   </div>
                 </div>
-                <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-gradient-to-br from-[#131b33] to-[#0f1629] p-5 transition-shadow hover:border-blue-500/20 hover:shadow-lg hover:shadow-blue-500/5 col-span-2 lg:col-span-1">
+                <div className="group relative col-span-2 overflow-hidden rounded-2xl border border-white/[0.09] bg-gradient-to-br from-white/[0.075] via-white/[0.035] to-white/[0.015] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-2xl transition-all hover:-translate-y-0.5 hover:border-blue-400/30 hover:shadow-lg hover:shadow-blue-500/10 lg:col-span-1">
                   <div className="flex items-center gap-2 text-zinc-400">
                     <EyeIcon className="h-4 w-4 text-blue-400" />
                     <span className="text-xs font-medium">Gratuits</span>

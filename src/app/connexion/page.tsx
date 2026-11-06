@@ -109,7 +109,7 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-      const loginData = await loginRes.json();
+      await loginRes.json();
       if (loginRes.ok) {
         router.push("/mon-compte");
         router.refresh();

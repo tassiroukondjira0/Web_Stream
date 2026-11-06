@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Smartphone, Mail, Headphones, Users, ArrowUpRight } from "lucide-react";
 
 interface SessionUser {
@@ -9,10 +10,13 @@ interface SessionUser {
 }
 
 export function Footer() {
+  const pathname = usePathname();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [apkUrl, setApkUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    if (pathname === "/admin") return;
+
     fetch("/api/auth/me", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => setUser(data?.user ?? null))
@@ -29,9 +33,11 @@ export function Footer() {
         else if (data?.buildUrl) setApkUrl(data.buildUrl);
       })
       .catch(() => {});
-  }, []);
+  }, [pathname]);
 
   const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+
+  if (pathname === "/admin") return null;
 
   return (
     <footer className="mt-auto border-t border-white/10 bg-background(#0b1120) ">
@@ -209,4 +215,3 @@ export function Footer() {
     </footer>
   );
 }
-
