@@ -25,7 +25,7 @@ export function checkEmailJSConfig(): string | null {
  * Le template OTP attend les variables :
  *   - passcode : le code à 6 chiffres
  *   - time : la durée d'expiration en minutes
- *   - toEmail : l'email du destinataire (via template)
+ *   - email : l'email du destinataire (via template)
  */
 export async function sendVerificationEmail(to: string, code: string) {
   // Vérifier la configuration
@@ -44,7 +44,7 @@ export async function sendVerificationEmail(to: string, code: string) {
       process.env.EMAILJS_SERVICE_ID!,
       process.env.EMAILJS_TEMPLATE_ID!,
       {
-        toEmail: to,
+        email: to,
         passcode: code,
         time: '10',
       },
@@ -83,7 +83,7 @@ export async function sendPasswordResetEmail(to: string, code: string) {
       process.env.EMAILJS_SERVICE_ID!,
       process.env.EMAILJS_TEMPLATE_ID!,
       {
-        toEmail: to,
+        email: to,
         passcode: code,
         time: '10',
       },
