@@ -18,13 +18,14 @@ export async function GET(request: Request) {
   try {
     const half = Math.ceil(limit / 2);
 
-    // 1. Titres les plus populaires (trendingRank)
+    // 1. Titres les plus populaires (trendingRank) avec poster
     const trending = await prisma.providerAsset.findMany({
       where: {
         isPublished: true,
         isDuplicate: false,
         hasSources: true,
         trendingRank: { not: null },
+        posterUrl: { not: null },
       },
       orderBy: [{ trendingRank: "asc" }, { releaseYear: "desc" }],
       take: half,
@@ -44,13 +45,14 @@ export async function GET(request: Request) {
       },
     });
 
-    // 2. Dernières sorties (releaseYear) — exclut ceux déjà dans trending
+    // 2. Dernières sorties (releaseYear) avec poster — exclut ceux déjà dans trending
     const excludeIds = trending.map((r) => r.id);
     const recent = await prisma.providerAsset.findMany({
       where: {
         isPublished: true,
         isDuplicate: false,
         hasSources: true,
+        posterUrl: { not: null },
         ...(excludeIds.length > 0 ? { id: { notIn: excludeIds } } : {}),
       },
       orderBy: [{ releaseYear: "desc" }, { title: "asc" }],

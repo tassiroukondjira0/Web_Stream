@@ -171,6 +171,7 @@ export async function getLatestPartnerAssets(limit = 60): Promise<ProviderCatalo
  * Films les plus tendance — dans l'ordre « popular » du fournisseur (rang
  * stocké lors de la synchro). Complète avec les dernières sorties (releaseYear)
  * si le classement popular est incomplet (avant première synchro).
+ * Ne retourne que les titres ayant un poster.
  */
 export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCatalogItem[]> {
   if (process.env.DATABASE_READY !== "true") return [];
@@ -184,6 +185,7 @@ export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCata
         isDuplicate: false,
         hasSources: true,
         trendingRank: { not: null },
+        posterUrl: { not: null },
       },
       orderBy: { trendingRank: "asc" },
       take,
@@ -204,6 +206,7 @@ export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCata
           isPublished: true,
           isDuplicate: false,
           hasSources: true,
+          posterUrl: { not: null },
           ...exclude,
         },
         orderBy: [{ releaseYear: "desc" }, { title: "asc" }],
