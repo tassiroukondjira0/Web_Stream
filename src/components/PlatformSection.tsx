@@ -8,6 +8,7 @@ import {
   MonitorPlay,
   Sparkles,
   Apple,
+  Mountain,
 } from "lucide-react";
 
 /** Nombre de titres affichés par plateforme. */
@@ -36,6 +37,13 @@ const PLATFORMS: PlatformDef[] = [
     badgeText: "text-red-400",
   },
   {
+    slug: "paramount",
+    label: "Paramount+",
+    icon: Mountain,
+    badgeBg: "bg-blue-500/10",
+    badgeText: "text-blue-300",
+  },
+  {
     slug: "prime-video",
     label: "Prime Video",
     icon: MonitorPlay,
@@ -59,7 +67,7 @@ const PLATFORMS: PlatformDef[] = [
 ];
 
 /**
- * Section dédiée à une plateforme de streaming (Netflix, Prime Video, Disney+, Apple TV+).
+ * Section dédiée à une plateforme de streaming (Netflix, Paramount+, Prime Video, Disney+, Apple TV+).
  * Affiche les films et séries disponibles sur cette plateforme.
  */
 export async function PlatformSection({
@@ -163,7 +171,7 @@ export async function PlatformSection({
 }
 
 /**
- * Groupe toutes les sections plateforme (Netflix, Prime Video, Disney+, Apple TV+).
+ * Groupe toutes les sections plateforme (Netflix, Paramount+, Prime Video, Disney+, Apple TV+).
  */
 export async function PlatformSections({ filters }: { filters?: AssetFilters }) {
   await connection();
