@@ -5,6 +5,7 @@ import { ShieldCheck, Flame, Clapperboard, Globe } from "lucide-react";
 import { NewsletterBanner } from "@/components/NewsletterBanner";
 import { HeroSection } from "@/components/HeroSection";
 import { GenreChips } from "@/components/GenreChips";
+import { PlatformSections } from "@/components/PlatformSection";
 import { getCurrentUser, hasPremiumAccess } from "@/lib/auth";
 import {
   getPartnerAnimes,
@@ -85,6 +86,19 @@ export default async function HomePage({ searchParams }: { searchParams: Promise
         }
       >
         <MangaSection filters={genreFilters} typeFilter={typeFilter} />
+      </Suspense>
+
+      {/* Sections par plateforme de streaming */}
+      <Suspense
+        fallback={
+          <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/40 p-8 text-center text-sm text-zinc-400">
+              Chargement des plateformes…
+            </div>
+          </section>
+        }
+      >
+        <PlatformSections />
       </Suspense>
 
       {/* Bannière Modèle Freemium */}

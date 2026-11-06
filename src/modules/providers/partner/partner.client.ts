@@ -72,6 +72,27 @@ async function getBaseUrl(): Promise<string> {
 }
 
 /**
+ * Absolutise une URL d'affiche : le site source stocke parfois des chemins
+ * relatifs qui n'existent pas chez nous. On les résout contre le domaine
+ * source opérationnel. Les valeurs invalides (pixels de tracking) sont écartées.
+ */
+async function absolutePoster(raw: string | null): Promise<string | null> {
+  const value = (raw ?? "").trim();
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("//")) {
+    if (/histats|statcounter|google-analytics/i.test(value)) return null;
+    return `https:${value}`;
+  }
+  if (value.startsWith("/")) {
+    const base = await getBaseUrl();
+    if (!base) return null;
+    return `${base}${value}`;
+  }
+  return null;
+}
+
+/**
  * GET texte avec tentatives : le site répond par intermittence (timeout,
  * 503). On réessaie jusqu'à 3 fois avant d'abandonner (retour null).
  */
@@ -130,7 +151,7 @@ async function postForm(
  * identifiant (`?newsid=ID`), titre (`div.short-title`), affiche TMDB,
  * version (`span.film-version`) et éventuel nombre d'épisodes.
  */
-export function parseCatalog(html: string): PartnerItem[] {
+export async function parseCatalog(html: string): Promise<PartnerItem[]> {
   const items: PartnerItem[] = [];
   const blocks = html.split('<div class="short">').slice(1);
   for (const block of blocks) {
@@ -143,14 +164,14 @@ export function parseCatalog(html: string): PartnerItem[] {
     const title = decodeHtml(titleMatch?.[1] ?? "").trim();
     if (!title) continue;
 
-    const posterMatch = block.match(/<img\s+src="(https:\/\/image\.tmdb\.org[^"]+)"/);
+    const posterMatch = block.match(/<img\s+src="([^"]+)"/);
     const versionMatch = block.match(/<span class="film-version">\s*<a[^>]*>([^<]+)<\/a>/);
     const epsMatch = block.match(/<span class="mli-eps">\s*\d+\s*\/\s*(\d+)\s*</);
 
     items.push({
       externalId: idMatch[1],
       title,
-      posterUrl: posterMatch ? posterMatch[1] : null,
+      posterUrl: posterMatch ? await absolutePoster(posterMatch[1]) : null,
       version: versionMatch ? versionMatch[1].trim() : null,
       totalEpisodes: epsMatch ? Number.parseInt(epsMatch[1], 10) : null,
     });
@@ -170,7 +191,7 @@ export async function fetchPartnerCatalogPage(
   if (!base) return [];
   const html = await fetchText(`${base}/${kind}/page/${page}/`);
   if (!html) return [];
-  return parseCatalog(html);
+  return await parseCatalog(html);
 }
 
 /**
@@ -187,7 +208,7 @@ export async function fetchAnimationSeriesPage(page: number): Promise<PartnerIte
   if (!base) return [];
   const html = await fetchText(`${base}${ANIMATION_SERIES_PATH}page/${page}/`);
   if (!html) return [];
-  return parseCatalog(html);
+  return await parseCatalog(html);
 }
 
 /**
