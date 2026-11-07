@@ -11,6 +11,7 @@ export function NavSearch() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Result[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dropdownTop, setDropdownTop] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -50,6 +51,23 @@ export function NavSearch() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  useEffect(() => {
+    if (!open || !query.trim()) return;
+    const updateTop = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setDropdownTop(rect.bottom + 8);
+      }
+    };
+    updateTop();
+    window.addEventListener("resize", updateTop);
+    window.addEventListener("scroll", updateTop, { passive: true });
+    return () => {
+      window.removeEventListener("resize", updateTop);
+      window.removeEventListener("scroll", updateTop);
+    };
+  }, [open, query]);
 
   if (!open) {
     return (
@@ -103,14 +121,14 @@ export function NavSearch() {
       </form>
 
       {query.trim() && (
-        <div className="absolute right-0 top-full mt-2 w-72 max-h-80 overflow-y-auto rounded-xl border border-white/10 bg-zinc-900 shadow-2xl z-50">
+        <div className="fixed left-0 right-0 max-h-80 overflow-y-auto rounded-xl border border-white/10 bg-zinc-900 shadow-2xl z-50" style={{ top: dropdownTop }}>
           {loading && (
             <div className="px-4 py-3 text-xs text-zinc-400">Recherche…</div>
           )}
           {!loading && results.length === 0 && (
             <div className="px-4 py-3 text-xs text-zinc-400">Aucun résultat</div>
           )}
-          <div className="grid grid-cols-3 gap-2 p-2">
+          <div className="grid grid-cols-4 gap-2 p-2 sm:grid-cols-6 sm:gap-3 md:grid-cols-8 lg:grid-cols-8">
             {results.map((r, i) => (
               <button
                 key={i}
@@ -132,9 +150,9 @@ export function NavSearch() {
                     />
                   ) : null}
                 </div>
-                <div className="p-1.5">
-                  <p className="line-clamp-2 text-[11px] font-medium text-white">{r.title}</p>
-                  <p className="text-[9px] text-zinc-500">{r.type}</p>
+                <div className="px-1 py-0.5">
+                  <p className="line-clamp-2 text-[10px] leading-tight font-medium text-white">{r.title}</p>
+                  <p className="text-[8px] text-zinc-500">{r.type}</p>
                 </div>
               </button>
             ))}
