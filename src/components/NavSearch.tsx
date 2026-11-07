@@ -121,7 +121,7 @@ export function NavSearch() {
       </form>
 
       {query.trim() && (
-        <div className="fixed left-0 right-0 max-h-80 overflow-y-auto rounded-xl border border-white/10 bg-zinc-900 shadow-2xl z-50" style={{ top: dropdownTop }}>
+        <div className="fixed left-0 right-0 max-h-[520px] overflow-y-auto rounded-xl border border-white/10 bg-zinc-900 shadow-2xl z-50" style={{ top: dropdownTop }}>
           {loading && (
             <div className="px-4 py-3 text-xs text-zinc-400">Recherche…</div>
           )}
@@ -150,9 +150,9 @@ export function NavSearch() {
                     />
                   ) : null}
                 </div>
-                <div className="px-1 py-0.5">
-                  <p className="line-clamp-2 text-[10px] leading-tight font-medium text-white">{r.title}</p>
-                  <p className="text-[8px] text-zinc-500">{r.type}</p>
+                <div className="px-1.5 py-1">
+                  <p className="line-clamp-2 text-[11px] leading-snug font-medium text-white">{r.title}</p>
+                  <p className="text-[9px] text-zinc-500">{r.type}</p>
                 </div>
               </button>
             ))}
