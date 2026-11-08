@@ -53,3 +53,6 @@ next-env.d.ts
 
 # APK builds — le dossier apk/ est versionné pour le téléchargement en production
 # Seul le fichier .gitkeep est ignoré si aucun APK n'est présent
+
+# EAS build metadata (written by webhook on server)
+build-metadata.json

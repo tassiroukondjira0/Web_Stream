@@ -22,15 +22,21 @@ export function Footer() {
       .then((data) => setUser(data?.user ?? null))
       .catch(() => setUser(null));
 
-    // Récupérer dynamiquement le dernier lien APK depuis l'API
-    fetch("/api/build-info", { cache: "no-store" })
+    // Récupérer dynamiquement le dernier lien APK (local ou EAS, le plus récent en premier)
+    fetch("/api/app-apk", { cache: "no-store" })
       .then((res) => {
         if (res.ok) return res.json();
         return null;
       })
       .then((data) => {
-        if (data?.artifactUrl) setApkUrl(data.artifactUrl);
-        else if (data?.buildUrl) setApkUrl(data.buildUrl);
+        if (data?.builds && data.builds.length > 0) {
+          const latest = data.builds[0];
+          if (latest.type === "local") {
+            setApkUrl("/api/app-apk/download");
+          } else {
+            setApkUrl(latest.downloadUrl);
+          }
+        }
       })
       .catch(() => {});
   }, [pathname]);

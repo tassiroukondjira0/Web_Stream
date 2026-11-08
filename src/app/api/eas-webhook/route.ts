@@ -3,13 +3,8 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Le chemin vers build-metadata.json dans le projet mobile
-const BUILD_META_PATH = path.join(
-  process.cwd(),
-  '..',
-  'Web_Stream_Mobile',
-  'build-metadata.json',
-);
+// Le chemin vers build-metadata.json — stocké dans le dépôt Web_Stream pour être accessible sur Render
+const BUILD_META_PATH = path.join(process.cwd(), 'build-metadata.json');
 
 interface EasBuildPayload {
   id: string;

@@ -6,12 +6,8 @@ import * as path from 'path';
 const APK_BUILD_DIR = path.join(process.cwd(), 'apk');
 
 // Fichier de métadonnées des builds EAS (mis à jour par le webhook)
-const BUILD_META_PATH = path.join(
-  process.cwd(),
-  '..',
-  'Web_Stream_Mobile',
-  'build-metadata.json',
-);
+// Stocké dans le dépôt Web_Stream pour être accessible sur Render
+const BUILD_META_PATH = path.join(process.cwd(), 'build-metadata.json');
 
 interface BuildInfo {
   type: 'local' | 'eas';
