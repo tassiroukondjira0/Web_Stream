@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import { Download, X, Smartphone } from "lucide-react";
 
 /**
- * URL de l'API qui retourne les informations du dernier build EAS.
- * Le webhook `/api/eas-webhook` met à jour la base de données après chaque build réussi.
- * L'endpoint `/api/build-info` sert ces données au composant.
+ * URL de l'API qui retourne les builds triés par date (le plus récent en premier).
+ * L'endpoint compare le build local (dossier apk/) et le build EAS cloud (build-metadata.json).
  */
-const BUILD_INFO_URL = "/api/build-info";
+const BUILD_INFO_URL = "/api/app-apk";
 
-/** URL de fallback si le fetch échoue (dernier build connu). */
+/** URL de fallback si le fetch échoue (dernier build EAS connu). */
 const FALLBACK_ANDROID_URL = "https://expo.dev/artifacts/eas/GnIzVS4hKyr7s2sI8DZYjrWuo6E5tWq_T6j5E6sdGJs.apk";
 
 /**
@@ -26,8 +25,9 @@ const DISMISS_KEY = "cinemax-app-banner-dismissed";
 const DISMISS_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Récupère dynamiquement le lien de téléchargement Android depuis le fichier
- * build-info.json mis à jour automatiquement par le webhook EAS.
+ * Récupère dynamiquement le lien de téléchargement Android depuis l'endpoint
+ * /api/app-apk qui compare le build local et le build EAS cloud,
+ * et retourne le plus récent en premier.
  */
 async function fetchAndroidDownloadUrl(): Promise<string> {
   try {
@@ -36,9 +36,15 @@ async function fetchAndroidDownloadUrl(): Promise<string> {
     });
     if (res.ok) {
       const data = await res.json();
-      // Prioriser l'URL directe de l'APK (artifactUrl) pour le téléchargement direct
-      // Si artifactUrl n'est pas disponible, utiliser buildUrl (page EAS) comme fallback
-      return data.artifactUrl || data.buildUrl || FALLBACK_ANDROID_URL;
+      if (data.builds && data.builds.length > 0) {
+        const latest = data.builds[0];
+        // Build local : utiliser l'endpoint de téléchargement local
+        if (latest.type === "local") {
+          return "/api/app-apk/download";
+        }
+        // Build EAS cloud : utiliser l'URL directe
+        return latest.downloadUrl || FALLBACK_ANDROID_URL;
+      }
     }
   } catch {
     // Ignore — on utilise le fallback
