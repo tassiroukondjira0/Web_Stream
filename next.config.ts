@@ -73,8 +73,8 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https: blob:",
-              "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' https: blob:",
+              "script-src 'self' 'unsafe-inline' https: blob:",
+              "script-src-elem 'self' 'unsafe-inline' https: blob:",
               "worker-src 'self' blob:",
               "child-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https:",

@@ -1,3 +1,4 @@
+import { randomInt } from 'crypto';
 import emailjs from '@emailjs/nodejs';
 
 /**
@@ -103,8 +104,8 @@ export async function sendPasswordResetEmail(to: string, code: string) {
 }
 
 /**
- * Génère un code aléatoire à 6 chiffres.
+ * Génère un code aléatoire à 6 chiffres de manière cryptographiquement sûre.
  */
 export function generateVerificationCode(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return String(randomInt(100000, 999999));
 }

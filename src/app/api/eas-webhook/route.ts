@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import { prisma } from '@/lib/prisma';
 
 // Le chemin vers build-metadata.json — stocké dans le dépôt Web_Stream pour être accessible sur Render
 const BUILD_META_PATH = path.join(process.cwd(), 'build-metadata.json');
@@ -100,6 +101,27 @@ export async function POST(request: NextRequest) {
   try {
     writeBuildMetadata(buildUrl, buildDate);
     console.log('[EAS Webhook] Build finished:', payload.id, 'Profile:', payload.buildProfile);
+
+    // Créer une notification "Nouveau build disponible" pour tous les utilisateurs connectés
+    try {
+      const users = await prisma.user.findMany({ select: { id: true } });
+      if (users.length > 0) {
+        await prisma.notification.createMany({
+          data: users.map((user) => ({
+            userId: user.id,
+            title: 'Mise à jour disponible',
+            message: 'Une nouvelle mise à jour est disponible.',
+            link: '/download',
+            type: 'BUILD_UPDATE',
+          })),
+        });
+        console.log(`[EAS Webhook] Notifications créées pour ${users.length} utilisateur(s)`);
+      }
+    } catch (notifError: unknown) {
+      console.error('[EAS Webhook] Failed to create notifications:', notifError);
+      // Ne pas échouer le webhook si les notifications échouent
+    }
+
     return NextResponse.json({
       success: true,
       buildId: payload.id,

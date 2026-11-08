@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, ArrowRight, KeyRound, RefreshCw, CheckCircle2 } from "lucide-react";
@@ -20,6 +20,45 @@ export default function LoginPage() {
   const [verifySuccess, setVerifySuccess] = useState(false);
   const [verifyError, setVerifyError] = useState("");
 
+  // État pour le rate limiting (erreur 429)
+  const [rateLimitRemaining, setRateLimitRemaining] = useState(0);
+  const rateLimitTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Nettoyer le timer au démontage
+  useEffect(() => {
+    return () => {
+      if (rateLimitTimerRef.current) {
+        clearInterval(rateLimitTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Mettre à jour le compte à rebours du rate limiting
+  const updateRateLimitTimer = useCallback(() => {
+    if (rateLimitRemaining <= 0) return;
+    if (rateLimitTimerRef.current) {
+      clearInterval(rateLimitTimerRef.current);
+    }
+    rateLimitTimerRef.current = setInterval(() => {
+      setRateLimitRemaining((prev) => {
+        if (prev <= 1) {
+          if (rateLimitTimerRef.current) {
+            clearInterval(rateLimitTimerRef.current);
+            rateLimitTimerRef.current = null;
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [rateLimitRemaining]);
+
+  useEffect(() => {
+    if (rateLimitRemaining > 0) {
+      updateRateLimitTimer();
+    }
+  }, [rateLimitRemaining, updateRateLimitTimer]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -27,6 +66,7 @@ export default function LoginPage() {
     setVerifyError("");
     setVerifyCode("");
     setVerifySuccess(false);
+    setRateLimitRemaining(0);
     setLoading(true);
 
     try {
@@ -36,24 +76,42 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
+      // Rate limiting côté serveur — afficher le compte à rebours
+      if (res.status === 429) {
+        const retryAfter = res.headers.get('Retry-After');
+        const seconds = retryAfter ? parseInt(retryAfter, 10) : 60;
+        setRateLimitRemaining(seconds);
+        setError(`Trop de tentatives. Veuillez réessayer dans ${seconds} seconde${seconds > 1 ? 's' : ''}.`);
+        setLoading(false);
+        setPassword("");
+        return;
+      }
+
       const data = await res.json();
       if (!res.ok) {
         // Email non vérifié — afficher le formulaire de vérification
         if (res.status === 403 && data.emailVerified === false) {
           setEmailUnverified(true);
           setLoading(false);
+          // Effacer le mot de passe de la mémoire
+          setPassword("");
           return;
         }
         setError(data.error || "Identifiants invalides.");
         setLoading(false);
+        // Effacer le mot de passe de la mémoire après un échec
+        setPassword("");
         return;
       }
 
+      // Connexion réussie — effacer le mot de passe de la mémoire
+      setPassword("");
       router.push("/mon-compte");
       router.refresh();
     } catch {
       setError("Une erreur réseau est survenue.");
       setLoading(false);
+      setPassword("");
     }
   };
 
@@ -109,6 +167,8 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+      // Effacer le mot de passe de la mémoire après utilisation
+      setPassword("");
       await loginRes.json();
       if (loginRes.ok) {
         router.push("/mon-compte");
@@ -226,6 +286,12 @@ export default function LoginPage() {
               </div>
             )}
 
+            {rateLimitRemaining > 0 && (
+              <div className="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-center text-xs text-amber-300">
+                Formulaire verrouillé — réessayez dans {rateLimitRemaining}s
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-zinc-300">Adresse e-mail</label>
@@ -259,10 +325,10 @@ export default function LoginPage() {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || rateLimitRemaining > 0}
                 className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-600/30 hover:bg-violet-500 disabled:opacity-50 transition-colors"
               >
-                {loading ? "Connexion..." : "Se connecter"}
+                {loading ? "Connexion..." : rateLimitRemaining > 0 ? `Verrouillé (${rateLimitRemaining}s)` : "Se connecter"}
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>
