@@ -2,20 +2,10 @@ import { NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Chemin vers le dossier de build APK local
-const APK_BUILD_DIR = path.join(
-  process.cwd(),
-  '..',
-  'Web_Stream_Mobile',
-  'android',
-  'app',
-  'build',
-  'outputs',
-  'apk',
-  'release',
-);
+// Chemin vers le dossier APK versionné dans le dépôt
+const APK_BUILD_DIR = path.join(process.cwd(), 'apk');
 
-// Fichier de métadonnées des builds (mis à jour par EAS webhook et builds locaux)
+// Fichier de métadonnées des builds EAS (mis à jour par le webhook)
 const BUILD_META_PATH = path.join(
   process.cwd(),
   '..',

@@ -2,17 +2,8 @@ import { NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const APK_BUILD_DIR = path.join(
-  process.cwd(),
-  '..',
-  'Web_Stream_Mobile',
-  'android',
-  'app',
-  'build',
-  'outputs',
-  'apk',
-  'release',
-);
+// Chemin vers le dossier APK versionné dans le dépôt
+const APK_BUILD_DIR = path.join(process.cwd(), 'apk');
 
 function findLatestApk(): { path: string; name: string } | null {
   if (!fs.existsSync(APK_BUILD_DIR)) {
@@ -54,7 +45,7 @@ export async function GET() {
   const stat = fs.statSync(apk.path);
   const fileStream = fs.createReadStream(apk.path);
 
-  return new NextResponse(fileStream as any, {
+  return new NextResponse(fileStream as unknown as BodyInit, {
     headers: {
       'Content-Type': 'application/vnd.android.package-archive',
       'Content-Disposition': `attachment; filename="${apk.name}"`,
