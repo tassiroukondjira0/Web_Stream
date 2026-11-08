@@ -1,107 +1,127 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextRequest, NextResponse } from 'next/server';
+import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 
-/**
- * Webhook EAS Build — reçoit les notifications après chaque build.
- *
- * Quand un build Android est terminé avec succès, EAS envoie un POST vers cette URL.
- * Le payload contient le `buildId` et les `artifacts`. On stocke les informations
- * dans la base de données (table `build_info`) que l'endpoint `/api/build-info`
- * sert au composant Footer pour le téléchargement.
- *
- * Configuration EAS :
- *   npx eas-cli webhook create --event BUILD --url https://web-stream-mncx.onrender.com/api/eas-webhook --secret <SECRET>
- *
- * Le secret doit être stocké dans la variable d'environnement `EAS_WEBHOOK_SECRET`.
- */
+// Le chemin vers build-metadata.json dans le projet mobile
+const BUILD_META_PATH = path.join(
+  process.cwd(),
+  '..',
+  'Web_Stream_Mobile',
+  'build-metadata.json',
+);
 
-export async function POST(request: Request) {
-  try {
-    // Lire le body une seule fois
-    const bodyText = await request.text();
-    const payload = JSON.parse(bodyText);
+interface EasBuildPayload {
+  id: string;
+  accountName: string;
+  projectName: string;
+  platform: 'android' | 'ios';
+  status: 'new' | 'inQueue' | 'running' | 'finished' | 'errored' | 'canceled';
+  buildProfile?: string;
+  message?: string;
+  applicationIdentifier?: string;
+  gitCommitHash?: string;
+  gitMessage?: string;
+  sdkVersion?: string;
+  buildUrl?: string;
+  // Les champs ci-dessous peuvent varier selon la version EAS
+  [key: string]: unknown;
+}
 
-    // Vérifier la signature du webhook
-    const signature = request.headers.get("expo-signature");
-    const secret = process.env.EAS_WEBHOOK_SECRET;
-
-    if (secret && signature) {
-      const crypto = await import("crypto");
-      const expected = crypto
-        .createHmac("sha1", secret)
-        .update(bodyText)
-        .digest("hex");
-
-      if (expected !== signature.replace("sha1=", "")) {
-        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-      }
-    }
-
-    // Extraire les informations du build
-    const {
-      id: buildId,
-      status,
-      platform,
-      artifacts,
-    } = payload;
-
-    // Ne traiter que les builds Android terminés avec succès
-    const isFinished = status.toLowerCase() === "finished";
-    const isAndroid = platform.toLowerCase() === "android";
-    
-    if (!isFinished || !isAndroid) {
-      return NextResponse.json(
-        {
-          message: `Ignored: status=${status}, platform=${platform}`,
-        },
-        { status: 200 }
-      );
-    }
-
-    // Extraire l'URL de l'APK depuis artifacts
-    const artifactUrl = artifacts?.applicationUrl || artifacts?.buildUrl;
-    if (!artifactUrl) {
-      console.error("[EAS Webhook] No artifact URL found in payload");
-      return NextResponse.json(
-        { error: "No artifact URL in payload" },
-        { status: 500 }
-      );
-    }
-
-    // Construire l'URL du build EAS
-    const buildUrl = `https://expo.dev/accounts/tassirou/projects/cinemax-mobile/builds/${buildId}`;
-
-    // Stocker les informations dans la base de données
-    await prisma.buildInfo.upsert({
-      where: { buildId },
-      update: {
-        buildUrl,
-        artifactUrl,
-        platform,
-      },
-      create: {
-        buildId,
-        buildUrl,
-        artifactUrl,
-        platform,
-      },
-    });
-
-    console.log("[EAS Webhook] Build info saved to database:", { buildId, artifactUrl });
-
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Build info updated successfully",
-        buildUrl,
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("[EAS Webhook] Error processing webhook:", error);
-    return NextResponse.json(
-      { error: "Failed to process webhook" },
-      { status: 500 }
-    );
+function verifySignature(payload: string, signature: string | null, secret: string): boolean {
+  if (!signature) {
+    console.warn('[EAS Webhook] Missing Expo-Signature header');
+    return false;
   }
+
+  const expected = crypto
+    .createHmac('sha1', secret)
+    .update(payload)
+    .digest('hex');
+
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+}
+
+function writeBuildMetadata(buildUrl: string, buildDate: string): void {
+  const meta = {
+    eas: {
+      buildDate,
+      downloadUrl: buildUrl,
+      size: 0,
+    },
+  };
+
+  // Créer le dossier s'il n'existe pas
+  const dir = path.dirname(BUILD_META_PATH);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  fs.writeFileSync(BUILD_META_PATH, JSON.stringify(meta, null, 2), 'utf-8');
+  console.log('[EAS Webhook] build-metadata.json updated:', buildUrl);
+}
+
+export async function POST(request: NextRequest) {
+  const secret = process.env.EAS_WEBHOOK_SECRET;
+
+  if (!secret) {
+    console.error('[EAS Webhook] EAS_WEBHOOK_SECRET not configured');
+    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+  }
+
+  // Lire le raw body pour la vérification de signature
+  const rawBody = await request.text();
+  const signature = request.headers.get('expo-signature');
+
+  if (!verifySignature(rawBody, signature, secret)) {
+    console.warn('[EAS Webhook] Invalid signature');
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+  }
+
+  let payload: EasBuildPayload;
+  try {
+    payload = JSON.parse(rawBody) as EasBuildPayload;
+  } catch {
+    console.error('[EAS Webhook] Failed to parse payload');
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
+  // On s'intéresse uniquement aux builds Android terminés
+  if (payload.platform !== 'android') {
+    return NextResponse.json({ ignored: true, reason: 'non-android platform' }, { status: 200 });
+  }
+
+  if (payload.status !== 'finished') {
+    return NextResponse.json({ ignored: true, reason: `status is ${payload.status}` }, { status: 200 });
+  }
+
+  // Construire l'URL de téléchargement depuis les données du payload
+  // EAS fournit l'URL du build dans buildUrl ou on la reconstruit
+  const buildUrl = payload.buildUrl ??
+    `https://expo.dev/accounts/${payload.accountName}/projects/${payload.projectName}/builds/${payload.id}`;
+
+  const buildDate = new Date().toISOString();
+
+  try {
+    writeBuildMetadata(buildUrl, buildDate);
+    console.log('[EAS Webhook] Build finished:', payload.id, 'Profile:', payload.buildProfile);
+    return NextResponse.json({
+      success: true,
+      buildId: payload.id,
+      buildUrl,
+      buildDate,
+    }, { status: 200 });
+  } catch (error: unknown) {
+    console.error('[EAS Webhook] Failed to write metadata:', error);
+    return NextResponse.json({ error: 'Failed to update metadata' }, { status: 500 });
+  }
+}
+
+// GET — pour tester que le webhook est accessible
+export async function GET() {
+  return NextResponse.json({
+    status: 'ok',
+    message: 'EAS Webhook endpoint is active',
+    configured: !!process.env.EAS_WEBHOOK_SECRET,
+  }, { status: 200 });
 }
