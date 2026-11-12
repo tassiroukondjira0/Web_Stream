@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
+import { prisma } from '@/lib/prisma';
 
 // Chemin vers le dossier APK versionné dans le dépôt
 const APK_BUILD_DIR = path.join(process.cwd(), 'apk');
-
-// Fichier de métadonnées des builds EAS (mis à jour par le webhook)
-// Stocké dans le dépôt Web_Stream pour être accessible sur Render
-const BUILD_META_PATH = path.join(process.cwd(), 'build-metadata.json');
 
 interface BuildInfo {
   type: 'local' | 'eas';
@@ -50,23 +47,28 @@ function findLatestLocalApk(): BuildInfo | null {
   };
 }
 
-function findLatestEasBuild(): BuildInfo | null {
-  if (!fs.existsSync(BUILD_META_PATH)) {
-    return null;
-  }
-
+async function findLatestEasBuild(): Promise<BuildInfo | null> {
   try {
-    const meta = JSON.parse(fs.readFileSync(BUILD_META_PATH, 'utf-8'));
-    if (meta?.eas?.buildDate && meta?.eas?.downloadUrl) {
+    const buildInfo = await prisma.buildInfo.findFirst({
+      orderBy: { updatedAt: 'desc' },
+      where: { platform: 'android' },
+      select: {
+        buildUrl: true,
+        artifactUrl: true,
+        updatedAt: true,
+      },
+    });
+
+    if (buildInfo?.buildUrl) {
       return {
         type: 'eas',
-        buildDate: meta.eas.buildDate,
-        size: meta.eas.size ?? 0,
-        downloadUrl: meta.eas.downloadUrl,
+        buildDate: buildInfo.updatedAt.toISOString(),
+        size: 0,
+        downloadUrl: buildInfo.artifactUrl || buildInfo.buildUrl,
       };
     }
-  } catch {
-    // Fichier corrompu, ignoré
+  } catch (error) {
+    console.error('Error fetching EAS build from database:', error);
   }
   return null;
 }
@@ -75,7 +77,7 @@ function findLatestEasBuild(): BuildInfo | null {
 export async function GET() {
   try {
     const local = findLatestLocalApk();
-    const eas = findLatestEasBuild();
+    const eas = await findLatestEasBuild();
 
     const builds: BuildInfo[] = [];
     if (local) builds.push(local);

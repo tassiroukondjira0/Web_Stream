@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as crypto from 'crypto';
-import * as fs from 'fs';
-import * as path from 'path';
 import { prisma } from '@/lib/prisma';
-
-// Le chemin vers build-metadata.json — stocké dans le dépôt Web_Stream pour être accessible sur Render
-const BUILD_META_PATH = path.join(process.cwd(), 'build-metadata.json');
 
 interface EasBuildPayload {
   id: string;
@@ -38,23 +33,16 @@ function verifySignature(payload: string, signature: string | null, secret: stri
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
 
-function writeBuildMetadata(buildUrl: string, buildDate: string): void {
-  const meta = {
-    eas: {
-      buildDate,
-      downloadUrl: buildUrl,
-      size: 0,
+async function storeBuildInDatabase(buildId: string, buildUrl: string, artifactUrl: string): Promise<void> {
+  await prisma.buildInfo.create({
+    data: {
+      buildId,
+      buildUrl,
+      artifactUrl,
+      platform: 'android',
     },
-  };
-
-  // Créer le dossier s'il n'existe pas
-  const dir = path.dirname(BUILD_META_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  fs.writeFileSync(BUILD_META_PATH, JSON.stringify(meta, null, 2), 'utf-8');
-  console.log('[EAS Webhook] build-metadata.json updated:', buildUrl);
+  });
+  console.log('[EAS Webhook] Build stored in database:', buildId);
 }
 
 export async function POST(request: NextRequest) {
@@ -91,15 +79,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ignored: true, reason: `status is ${payload.status}` }, { status: 200 });
   }
 
-  // Construire l'URL de téléchargement depuis les données du payload
-  // EAS fournit l'URL du build dans buildUrl ou on la reconstruit
+  // Construire les URLs depuis les données du payload
   const buildUrl = payload.buildUrl ??
     `https://expo.dev/accounts/${payload.accountName}/projects/${payload.projectName}/builds/${payload.id}`;
 
-  const buildDate = new Date().toISOString();
+  // L'artifactUrl peut être dans le payload ou on le construit
+  const artifactUrl = (payload.artifactUrl ?? payload.downloadUrl ??
+    `https://expo.dev/artifacts/eas/${payload.id}.apk`) as string;
 
   try {
-    writeBuildMetadata(buildUrl, buildDate);
+    await storeBuildInDatabase(payload.id, buildUrl, artifactUrl);
     console.log('[EAS Webhook] Build finished:', payload.id, 'Profile:', payload.buildProfile);
 
     // Créer une notification "Nouveau build disponible" pour tous les utilisateurs connectés
@@ -126,11 +115,10 @@ export async function POST(request: NextRequest) {
       success: true,
       buildId: payload.id,
       buildUrl,
-      buildDate,
     }, { status: 200 });
   } catch (error: unknown) {
-    console.error('[EAS Webhook] Failed to write metadata:', error);
-    return NextResponse.json({ error: 'Failed to update metadata' }, { status: 500 });
+    console.error('[EAS Webhook] Failed to store build:', error);
+    return NextResponse.json({ error: 'Failed to store build' }, { status: 500 });
   }
 }
 
