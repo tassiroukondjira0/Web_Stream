@@ -15,6 +15,10 @@ import {
   resolvePartnerPlaybackSources,
 } from "@/lib/partner-playback";
 import { publicOrigin } from "@/lib/public-origin";
+import {
+  isEpisodicContentType,
+  normalizeMediaContentType,
+} from "@/lib/media-content-type";
 
 /** Résout une URL potentiellement relative en URL absolue basée sur la requête entrante. */
 function toAbsoluteUrl(url: string, origin: string): string {
@@ -25,8 +29,7 @@ function toAbsoluteUrl(url: string, origin: string): string {
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const id = searchParams.get("id");
-  const rawType = (searchParams.get("type") || "movie").toUpperCase();
-  const contentType = rawType === "SERIES" || rawType === "TV" ? "SERIES" : "MOVIE";
+  const contentType = normalizeMediaContentType(searchParams.get("type"));
   const provider = (searchParams.get("provider") || "FSTREAMTV").toUpperCase();
 
   if (!id) {
@@ -56,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     // 2. Catalogue TMDB pur
     if (provider === "TMDB" || /^\d{1,10}$/.test(id)) {
-      const isSeries = contentType === "SERIES";
+      const isSeries = isEpisodicContentType(contentType);
       const playback = await resolvePlaybackByTmdbId(
         id,
         isSeries ? "tv" : "movie"

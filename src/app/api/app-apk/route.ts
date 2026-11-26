@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { connection, NextResponse } from 'next/server';
 import * as fs from 'fs';
 import * as path from 'path';
 import { prisma } from '@/lib/prisma';
@@ -75,6 +75,7 @@ async function findLatestEasBuild(): Promise<BuildInfo | null> {
 
 // GET — retourne les deux builds triés par date (le plus récent en premier)
 export async function GET() {
+  await connection();
   try {
     const local = findLatestLocalApk();
     const eas = await findLatestEasBuild();

@@ -170,7 +170,7 @@ git push origin main
 1. Sur [app.netlify.com/start](https://app.netlify.com/start) → **Add new site** → **Import site**
 2. Sélectionner le dépôt `Weeb_Stream`
 3. Dans *Build configuration* :
-   - **Build command** : `npx prisma generate && npx prisma db push && next build`
+   - **Build command** : `npm run build`
    - **Install command** : `npm ci`
    - **Publish directory** : `.next/standalone`
 4. Cliquer sur **Deploy site**
@@ -194,15 +194,19 @@ Renseigner les variables pour **Production** et **Preview** (cocher les deux col
 
 ### 4. Vérifier la base de données
 
-Contrairement à Vercel, **le build applique les tables** grâce à `prisma db push`
-dans la commande de build. En local :
+Comme Vercel, le build Netlify ne modifie pas le schéma de la base. Vérification
+rapide en local :
 
 ```bash
 npm run db:studio    # ou : npm run db:push si les tables manquent
 ```
 
-> Si vous optez pour des migrations versionnées plus tard, remplacez `prisma db push`
-> par `prisma migrate deploy` dans la commande de build de Netlify.
+Appliquez explicitement les changements avant le déploiement, avec le même
+mécanisme que celui qui a servi à créer la base : `npm run db:push` ou
+`npm run db:migrate`. Le build n'exécute aucune de ces commandes.
+
+Le seed initial des informations de build EAS est également manuel : exécutez
+`npm run db:seed-build` uniquement si l'entrée correspondante est absente.
 
 ### 5. Redéployer
 
@@ -226,7 +230,7 @@ Ou sur l'interface Netlify : **Deploys** → **Trigger deploy**.
 
 - Fonctionne mais nécessite `netlify.toml` (créé dans ce dépôt)
 - La base de données PostgreSQL doit être externe (Neon, Supabase, Railway)
-- Le build inclut `prisma db push` pour créer les tables automatiquement
+- Le schéma de la base doit être mis à jour explicitement, en dehors du build
 - Les fonctions serverless ont un timeout de 10 s (suffisant pour ce projet)
 
 > **Recommandation** : pour ce projet, qui utilise Next.js 16, Prisma

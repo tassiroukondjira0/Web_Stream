@@ -28,6 +28,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ items });
   } catch (error) {
     console.error("Catalog search error:", error);
-    return NextResponse.json({ items: [] }, { status: 500 });
+    return NextResponse.json(
+      { error: "Impossible de rechercher dans le catalogue." },
+      { status: 500 },
+    );
   }
 }

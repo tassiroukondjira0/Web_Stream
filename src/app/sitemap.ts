@@ -1,8 +1,10 @@
 import type { MetadataRoute } from "next";
+import { connection } from "next/server";
 import { getAllMedias } from "@/lib/catalog";
 import { getAppUrl } from "@/lib/env";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  await connection();
   const baseUrl = getAppUrl();
   const medias = await getAllMedias();
 

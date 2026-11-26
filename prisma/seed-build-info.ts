@@ -8,7 +8,7 @@ const prisma = new PrismaClient({
 
 async function main() {
   // Insère le dernier build EAS connu si la table est vide
-  // Ce script est exécuté après `prisma db push` ou `prisma migrate dev`
+  // À exécuter manuellement après la création des tables si cette entrée manque.
   // Le webhook `/api/eas-webhook` mettra à jour cet enregistrement après chaque nouveau build
 
   const existing = await prisma.buildInfo.findFirst({

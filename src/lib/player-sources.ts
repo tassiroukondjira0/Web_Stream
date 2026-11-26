@@ -90,10 +90,10 @@ export function vidzySources(playback: CatalogPlayback): PlayerSource[] {
     }));
   }
 
-  const seasons = playback.seasons.length > 0 ? playback.seasons : [{ season: 1, episodes: [1] }];
   const sources: PlayerSource[] = [];
-  for (const s of seasons) {
-    const episodes = s.episodes.length > 0 ? s.episodes : [1];
+  for (const s of playback.seasons) {
+    if (!Number.isSafeInteger(s.season) || s.season < 0) continue;
+    const episodes = s.episodes.filter((episode) => Number.isSafeInteger(episode) && episode > 0);
     for (const lang of langs) {
       for (const episode of episodes) {
         sources.push({
@@ -132,24 +132,26 @@ export function providerSources(
   season = 1,
   provider?: "frenchstream" | "frenchmanga" | "fstreamtv",
 ): PlayerSource[] {
-  return streams.map((s) => ({
-    host: `ext:${provider ? `${provider}:` : ""}${s.host}`,
-    label: hostLabel(s.host, s.url),
-    lang: s.lang,
-    season,
-    episode: s.episode > 0 ? s.episode : 1,
-    // Vidara redirige ses embeds vers un domaine de lecture (ex. gaqghe.com).
-    // Son API /api/stream doit être appelée sur ce domaine final : le proxy
-    // reconstruit actuellement ce chemin sur vidara.to et reçoit un 400.
-    // Laisser l'iframe suivre la redirection conserve l'origine attendue.
-    url: isVidaraUrl(s.url)
-      ? s.url
-      : isVidzyUrl(s.url)
-      ? proxiedVidzyUrl(s.url)
-      : canSignExternalEmbeds() || isExternalEmbedHost(s.url)
-        ? externalEmbedUrl(s.url)
-        : s.url,
-  }));
+  return streams
+    .filter((s) => Number.isSafeInteger(s.episode) && s.episode > 0)
+    .map((s) => ({
+      host: `ext:${provider ? `${provider}:` : ""}${s.host}`,
+      label: hostLabel(s.host, s.url),
+      lang: s.lang,
+      season,
+      episode: s.episode,
+      // Vidara redirige ses embeds vers un domaine de lecture (ex. gaqghe.com).
+      // Son API /api/stream doit être appelée sur ce domaine final : le proxy
+      // reconstruit actuellement ce chemin sur vidara.to et reçoit un 400.
+      // Laisser l'iframe suivre la redirection conserve l'origine attendue.
+      url: isVidaraUrl(s.url)
+        ? s.url
+        : isVidzyUrl(s.url)
+          ? proxiedVidzyUrl(s.url)
+          : canSignExternalEmbeds() || isExternalEmbedHost(s.url)
+            ? externalEmbedUrl(s.url)
+            : s.url,
+    }));
 }
 
 /** Vrai si l'URL pointe vers un domaine Vidzy (vidzy.org, vidzy.cc…). */

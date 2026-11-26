@@ -1,6 +1,6 @@
 # Deployment Netlify - Stream_Web (CinemaMax)
 # ==========================================
-# Build command : npx prisma generate && npx prisma db push && next build
+# Build command : npm run build
 # Install command : npm ci
 # Publish       : .next/standalone
 #
@@ -11,10 +11,10 @@
 #   TMDB_API_TOKEN     -> TMDB (v4) token
 #   NEXT_PUBLIC_APP_NAME / NEXT_PUBLIC_APP_URL -> public
 #
-# Add prisma db push to the build to create tables on each deploy.
+# Apply schema changes explicitly with `npm run db:migrate` or `npm run db:push`.
 # ============================================================================
 [build]
-  command = "npx prisma generate && npx prisma db push && next build"
+  command = "npm run build"
   environment = { NODE_ENV = "production" }
   publish = ".next/standalone"
 

@@ -6,6 +6,36 @@ export interface EpisodeMeta {
   synopsis?: string | null;
 }
 
+export interface SeasonGrid {
+  season: number;
+  episodes: number[];
+}
+
+/** Grille Vidzy si disponible, sinon les numéros de saisons connus via TMDB. */
+export function resolveSeasonGrid(
+  playbackSeasons?: SeasonGrid[] | null,
+  metadataSeasonNumbers: number[] = [],
+): SeasonGrid[] {
+  const grid = (playbackSeasons ?? [])
+    .filter((season) => Number.isSafeInteger(season.season) && season.season >= 0)
+    .map((season) => ({
+      season: season.season,
+      episodes: [
+        ...new Set(
+          season.episodes.filter((episode) => Number.isSafeInteger(episode) && episode > 0),
+        ),
+      ].sort((a, b) => a - b),
+    }))
+    .sort((a, b) => a.season - b.season);
+
+  if (grid.length > 0) return grid;
+
+  return [...new Set(metadataSeasonNumbers)]
+    .filter((season) => Number.isSafeInteger(season) && season >= 0)
+    .sort((a, b) => a - b)
+    .map((season) => ({ season, episodes: [] }));
+}
+
 /**
  * Numéros d'épisodes réellement présents dans les sources de lecture d'une saison.
  * Sert de repli quand ni TMDB ni la grille Vidzy ne décrivent la saison.
@@ -90,6 +120,7 @@ export function resolveDisplayedEpisodes(input: {
   gridEpisodes?: number[] | null;
   sourceEpisodes?: number[] | null;
   meta?: Record<number, EpisodeMeta> | null;
+  seasonNumber?: number;
 }): TmdbEpisode[] {
   const tmdb = (input.tmdbEpisodes ?? [])
     .filter((episode) => Number.isFinite(episode.episode_number) && episode.episode_number > 0)
@@ -98,6 +129,7 @@ export function resolveDisplayedEpisodes(input: {
   if (tmdb.length > 0) {
     return tmdb.map((episode) => ({
       episode_number: episode.episode_number,
+      season_number: input.seasonNumber ?? episode.season_number,
       name: episode.name?.trim() || `Épisode ${episode.episode_number}`,
       overview: episode.overview ?? null,
       still_path: episode.still_path ?? null,
@@ -113,6 +145,7 @@ export function resolveDisplayedEpisodes(input: {
     .sort((a, b) => a - b)
     .map((episodeNumber) => ({
       episode_number: episodeNumber,
+      season_number: input.seasonNumber,
       name: input.meta?.[episodeNumber]?.title?.trim() || `Épisode ${episodeNumber}`,
       overview: input.meta?.[episodeNumber]?.synopsis ?? null,
       still_path: null,

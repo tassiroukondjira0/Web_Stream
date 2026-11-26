@@ -107,8 +107,9 @@ async function listAssets(
       totalItems,
       totalPages,
     };
-  } catch {
-    return { items: [], page: safePage, pageSize: safeSize, totalItems: 0, totalPages: 0 };
+  } catch (error) {
+    console.error("Erreur de lecture de la page du catalogue fournisseur :", error);
+    throw error;
   }
 }
 
@@ -162,8 +163,9 @@ export async function getLatestPartnerAssets(limit = 60): Promise<ProviderCatalo
     return rows.map((r: any) =>
       toItem({ ...r, contentType: r.contentType as "MOVIE" | "SERIES" | "ANIME" }),
     );
-  } catch {
-    return [];
+  } catch (error) {
+    console.error("Erreur de lecture des derniers contenus fournisseur :", error);
+    throw error;
   }
 }
 
@@ -218,8 +220,9 @@ export async function getTrendingPartnerMovies(limit = 18): Promise<ProviderCata
       );
     }
     return items;
-  } catch {
-    return [];
+  } catch (error) {
+    console.error("Erreur de lecture des contenus tendance fournisseur :", error);
+    throw error;
   }
 }
 
@@ -265,8 +268,9 @@ export async function getFeaturedPartner(
       renewalLabel,
       period,
     };
-  } catch {
-    return { ...empty, period };
+  } catch (error) {
+    console.error("Erreur de calcul de la sélection mise en avant :", error);
+    throw error;
   }
 }
 
@@ -296,8 +300,9 @@ export async function searchPartnerAssets(
     return rows.map((r: any) =>
       toItem({ ...r, contentType: r.contentType as "MOVIE" | "SERIES" | "ANIME" }),
     );
-  } catch {
-    return [];
+  } catch (error) {
+    console.error("Erreur de recherche dans le catalogue fournisseur :", error);
+    throw error;
   }
 }
 
@@ -331,8 +336,9 @@ export async function getPartnerAssetById(
       ...asset,
       contentType: asset.contentType as "MOVIE" | "SERIES" | "ANIME",
     });
-  } catch {
-    return null;
+  } catch (error) {
+    console.error("Erreur de lecture de la fiche du catalogue fournisseur :", error);
+    throw error;
   }
 }
 

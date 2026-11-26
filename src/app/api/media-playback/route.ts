@@ -33,6 +33,7 @@ import {
   episodeNumbersForSeason,
   pickActiveSeason,
   resolveDisplayedEpisodes,
+  resolveSeasonGrid,
 } from "@/lib/episode-list";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
 
@@ -47,7 +48,9 @@ interface PlaybackResponse {
   sources: PlayerSource[];
   /** Langues disponibles. */
   languages: string[];
-  /** Saisons disponibles (grille Vidzy). */
+  /** Saison active, ou null si aucune saison n'est connue. */
+  activeSeason: number | null;
+  /** Saisons disponibles (grille Vidzy ou métadonnées TMDB). */
   seasons: { season: number; episodes: number[] }[];
   /** Détails des épisodes de la saison active depuis TMDB. */
   episodes: TmdbEpisode[];
@@ -59,7 +62,12 @@ export async function GET(request: NextRequest) {
   const type = (searchParams.get("type") as "movie" | "tv") ?? "movie";
   const title = searchParams.get("title") ?? "";
   const year = searchParams.get("year") ? Number(searchParams.get("year")) : null;
-  const season = searchParams.get("season") ? Number(searchParams.get("season")) : null;
+  const requestedSeasonValue = searchParams.get("season");
+  const parsedSeason = requestedSeasonValue?.trim() ? Number(requestedSeasonValue) : null;
+  const requestedSeason =
+    parsedSeason !== null && Number.isSafeInteger(parsedSeason) && parsedSeason >= 0
+      ? parsedSeason
+      : null;
 
   if (!tmdbId || !/^\d{1,10}$/.test(tmdbId)) {
     return NextResponse.json(
@@ -98,32 +106,49 @@ export async function GET(request: NextRequest) {
   }
 
   // 5. Saison active
-  const allSeasons = playback?.seasons ?? [];
-  const availableSeasons =
-    allSeasons.length > 0
-      ? allSeasons.map((s) => s.season)
+  const tmdbSeasonNumbers = (tvDetails?.seasons ?? [])
+    .map((season) => season.season_number)
+    .filter((season) => Number.isSafeInteger(season) && season >= 0);
+  const metadataSeasonNumbers =
+    tmdbSeasonNumbers.length > 0
+      ? tmdbSeasonNumbers
       : tvDetails
         ? Array.from({ length: tvDetails.number_of_seasons }, (_, i) => i + 1)
         : [];
-
-  const activeSeason = pickActiveSeason(season ?? null, availableSeasons);
+  const allSeasons =
+    type === "tv"
+      ? resolveSeasonGrid(playback?.seasons, metadataSeasonNumbers)
+      : playback?.seasons ?? [];
+  const availableSeasons = allSeasons.map((season) => season.season);
+  const validRequestedSeason =
+    requestedSeason !== null &&
+    (availableSeasons.length === 0 || availableSeasons.includes(requestedSeason))
+      ? requestedSeason
+      : null;
+  const activeSeason =
+    type === "tv" && (availableSeasons.length > 0 || validRequestedSeason !== null)
+      ? pickActiveSeason(validRequestedSeason, availableSeasons)
+      : null;
 
   // 6. Sources partenaires
-  const partnerSources = await resolvePartnerPlaybackSources(
-    mediaTitle,
-    type === "tv" ? "SERIES" : "MOVIE",
-    mediaYear,
-    type === "tv" ? activeSeason : undefined,
-  ).catch(() => []);
+  const canResolvePartnerSources = type !== "tv" || activeSeason !== null;
+  const partnerSources = canResolvePartnerSources
+    ? await resolvePartnerPlaybackSources(
+        mediaTitle,
+        type === "tv" ? "SERIES" : "MOVIE",
+        mediaYear,
+        type === "tv" ? activeSeason ?? undefined : undefined,
+      ).catch(() => [])
+    : [];
 
   const fallbackSources =
-    partnerSources.length > 0
+    partnerSources.length > 0 || !canResolvePartnerSources
       ? []
       : await resolveFStreamTvPlaybackSources(
           mediaTitle,
           type === "tv" ? "SERIES" : "MOVIE",
           mediaYear,
-          type === "tv" ? activeSeason : undefined,
+          type === "tv" ? activeSeason ?? undefined : undefined,
         ).catch(() => []);
 
   const sources: PlayerSource[] = [
@@ -137,7 +162,7 @@ export async function GET(request: NextRequest) {
 
   // 8. Détails des épisodes de la saison active depuis TMDB
   let episodes: TmdbEpisode[] = [];
-  if (type === "tv" && allSeasons.length > 0) {
+  if (type === "tv" && activeSeason !== null) {
     const tmdbIdNum = playback?.tmdbId ?? Number(tmdbId);
     const seasonDetail: TmdbSeason | null = await fetchTvSeason(
       tmdbIdNum,
@@ -149,8 +174,15 @@ export async function GET(request: NextRequest) {
       tmdbEpisodes: seasonDetail?.episodes,
       gridEpisodes: seasonToShow?.episodes ?? [],
       sourceEpisodes: episodeNumbersForSeason(sources, activeSeason),
+      seasonNumber: activeSeason,
     });
   }
+
+  const seasons = allSeasons.map((season) =>
+    season.season === activeSeason && season.episodes.length === 0
+      ? { ...season, episodes: episodes.map((episode) => episode.episode_number) }
+      : season,
+  );
 
   // 9. Nombre total d'épisodes
   const totalEpisodes = Math.max(
@@ -171,7 +203,8 @@ export async function GET(request: NextRequest) {
     mediaType: playback?.kind ?? type,
     sources,
     languages,
-    seasons: allSeasons,
+    activeSeason,
+    seasons,
     episodes,
   });
 }

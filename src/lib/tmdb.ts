@@ -279,6 +279,7 @@ export interface TmdbTvDetails {
   first_air_date: string;
   number_of_seasons: number;
   number_of_episodes: number;
+  seasons?: { season_number: number; episode_count?: number }[];
   genre_ids: number[];
 }
 

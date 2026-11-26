@@ -6,7 +6,13 @@
 import { hashPassword, verifyPassword, signSessionToken, verifySessionToken } from "../src/lib/auth";
 import { getAllMedias } from "../src/lib/catalog";
 import { EXT_DOC_PREFIX, isExternalEmbedHost, originalEmbedUrl } from "../src/lib/embed-ext";
+import { resolveDisplayedEpisodes, resolveSeasonGrid } from "../src/lib/episode-list";
+import { providerSources, vidzySources } from "../src/lib/player-sources";
 import { providerSlugHref } from "../src/lib/provider-catalog";
+import {
+  isEpisodicContentType,
+  normalizeMediaContentType,
+} from "../src/lib/media-content-type";
 import { parseMovieEmbeds } from "../src/modules/providers/partner/partner.client";
 
 /** Slugs des anciens contenus de démonstration (désormais supprimés). */
@@ -29,6 +35,65 @@ async function runValidationTests() {
       failed++;
     }
   }
+
+  assert(
+    normalizeMediaContentType("ANIME") === "ANIME" &&
+    normalizeMediaContentType("anime") === "ANIME" &&
+    normalizeMediaContentType(" anime ") === "ANIME" &&
+    normalizeMediaContentType("SERIES") === "SERIES" &&
+    normalizeMediaContentType("TV") === "SERIES" &&
+    normalizeMediaContentType("MOVIE") === "MOVIE" &&
+    normalizeMediaContentType(null) === "MOVIE" &&
+    isEpisodicContentType(normalizeMediaContentType("ANIME")) &&
+    isEpisodicContentType(normalizeMediaContentType("SERIES")) &&
+    !isEpisodicContentType(normalizeMediaContentType("MOVIE")),
+    "Sources : Les types ANIME, SERIES, TV et MOVIE sont normalisés correctement",
+  );
+
+  const tmdbEpisodes = resolveDisplayedEpisodes({
+    tmdbEpisodes: [{ episode_number: 4, season_number: 3, name: "Épisode quatre" }],
+  });
+  assert(
+    tmdbEpisodes[0]?.season_number === 3,
+    "Playback : les épisodes TMDB conservent leur numéro de saison",
+  );
+
+  const fallbackEpisodes = resolveDisplayedEpisodes({ gridEpisodes: [7], seasonNumber: 2 });
+  assert(
+    fallbackEpisodes[0]?.season_number === 2 && fallbackEpisodes[0]?.episode_number === 7,
+    "Playback : les épisodes de repli héritent de la saison sélectionnée",
+  );
+
+  const tmdbSeasonGrid = resolveSeasonGrid([], [3, 1, 3, 0, -1]);
+  assert(
+    tmdbSeasonGrid.map((season) => season.season).join(",") === "0,1,3" &&
+      tmdbSeasonGrid.every((season) => season.episodes.length === 0),
+    "Playback : les saisons TMDB sont utilisées sans inventer de numéros d'épisodes",
+  );
+
+  const emptySeasonalPlayback = vidzySources({
+    kind: "tv",
+    tmdbId: 123,
+    available: true,
+    title: "Série",
+    year: 2024,
+    poster: null,
+    languages: ["vf"],
+    seasons: [],
+    embedUrl: null,
+  });
+  assert(
+    emptySeasonalPlayback.length === 0,
+    "Playback : aucune source Vidzy n'est créée avec une saison ou un épisode inventé",
+  );
+
+  const unknownEpisodeSources = providerSources(
+    [{ lang: "vf", episode: 0, host: "host", url: "https://example.com/embed" }],
+  );
+  assert(
+    unknownEpisodeSources.length === 0,
+    "Playback : les flux sans numéro d'épisode ne sont pas renommés épisode 1",
+  );
 
   // TEST 0 : Tous les embeds déclarés par un partenaire sont exposés, sans URL fabriquée.
   const movieEmbeds = parseMovieEmbeds(

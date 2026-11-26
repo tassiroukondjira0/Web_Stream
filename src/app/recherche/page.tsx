@@ -40,11 +40,7 @@ async function SearchContent({ searchParams }: SearchPageProps) {
   // `sourceType` (film ou série).
   let partnerResults: ProviderCatalogItem[] = [];
   if (query) {
-    try {
-      partnerResults = await searchPartnerAssets(q!.trim(), 12);
-    } catch {
-      partnerResults = [];
-    }
+    partnerResults = await searchPartnerAssets(q!.trim(), 12);
   }
 
   const totalCount = results.length + partnerResults.length;

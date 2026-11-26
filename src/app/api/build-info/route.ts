@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { connection, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
  * Les données sont mises à jour automatiquement par le webhook `/api/eas-webhook`.
  */
 export async function GET() {
+  await connection();
   try {
     const buildInfo = await prisma.buildInfo.findFirst({
       orderBy: { updatedAt: "desc" },
