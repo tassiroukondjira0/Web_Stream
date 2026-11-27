@@ -1,4 +1,5 @@
 export type MediaContentType = "MOVIE" | "SERIES" | "ANIME";
+export type PlaybackMediaType = "movie" | "tv";
 
 export function normalizeMediaContentType(rawType: string | null): MediaContentType {
   const type = (rawType || "movie").trim().toUpperCase();
@@ -8,4 +9,8 @@ export function normalizeMediaContentType(rawType: string | null): MediaContentT
 
 export function isEpisodicContentType(type: MediaContentType): boolean {
   return type !== "MOVIE";
+}
+
+export function toPlaybackMediaType(type: MediaContentType): PlaybackMediaType {
+  return isEpisodicContentType(type) ? "tv" : "movie";
 }

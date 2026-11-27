@@ -35,6 +35,7 @@ import {
   resolveDisplayedEpisodes,
   resolveSeasonGrid,
 } from "@/lib/episode-list";
+import { normalizeMediaContentType, toPlaybackMediaType } from "@/lib/media-content-type";
 import { TMDB_PROVIDER } from "@/modules/providers/tmdb/tmdb.client";
 
 interface PlaybackResponse {
@@ -59,7 +60,7 @@ interface PlaybackResponse {
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const tmdbId = searchParams.get("tmdbId");
-  const type = (searchParams.get("type") as "movie" | "tv") ?? "movie";
+  const requestedContentType = searchParams.get("type");
   const title = searchParams.get("title") ?? "";
   const year = searchParams.get("year") ? Number(searchParams.get("year")) : null;
   const requestedSeasonValue = searchParams.get("season");
@@ -92,6 +93,10 @@ export async function GET(request: NextRequest) {
 
   const mediaTitle = asset?.title ?? title ?? "Titre inconnu";
   const mediaYear = asset?.releaseYear ?? year ?? null;
+  const contentType = normalizeMediaContentType(
+    requestedContentType ?? asset?.contentType ?? null,
+  );
+  const type = toPlaybackMediaType(contentType);
 
   // 2. Vidzy : disponibilité + grille saisons/épisodes
   const playback = await resolvePlaybackByTmdbId(tmdbId, type).catch(() => null);
@@ -135,7 +140,7 @@ export async function GET(request: NextRequest) {
   const partnerSources = canResolvePartnerSources
     ? await resolvePartnerPlaybackSources(
         mediaTitle,
-        type === "tv" ? "SERIES" : "MOVIE",
+        contentType,
         mediaYear,
         type === "tv" ? activeSeason ?? undefined : undefined,
       ).catch(() => [])
@@ -146,7 +151,7 @@ export async function GET(request: NextRequest) {
       ? []
       : await resolveFStreamTvPlaybackSources(
           mediaTitle,
-          type === "tv" ? "SERIES" : "MOVIE",
+          contentType,
           mediaYear,
           type === "tv" ? activeSeason ?? undefined : undefined,
         ).catch(() => []);

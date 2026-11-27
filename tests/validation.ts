@@ -12,6 +12,7 @@ import { providerSlugHref } from "../src/lib/provider-catalog";
 import {
   isEpisodicContentType,
   normalizeMediaContentType,
+  toPlaybackMediaType,
 } from "../src/lib/media-content-type";
 import { parseMovieEmbeds } from "../src/modules/providers/partner/partner.client";
 
@@ -44,6 +45,9 @@ async function runValidationTests() {
     normalizeMediaContentType("TV") === "SERIES" &&
     normalizeMediaContentType("MOVIE") === "MOVIE" &&
     normalizeMediaContentType(null) === "MOVIE" &&
+    toPlaybackMediaType(normalizeMediaContentType("MOVIE")) === "movie" &&
+    toPlaybackMediaType(normalizeMediaContentType("SERIES")) === "tv" &&
+    toPlaybackMediaType(normalizeMediaContentType("ANIME")) === "tv" &&
     isEpisodicContentType(normalizeMediaContentType("ANIME")) &&
     isEpisodicContentType(normalizeMediaContentType("SERIES")) &&
     !isEpisodicContentType(normalizeMediaContentType("MOVIE")),
