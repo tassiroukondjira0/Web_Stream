@@ -19,6 +19,7 @@ import {
   isEpisodicContentType,
   normalizeMediaContentType,
 } from "@/lib/media-content-type";
+import { shouldResolveTmdbSources } from "@/lib/media-sources-routing";
 
 /** Résout une URL potentiellement relative en URL absolue basée sur la requête entrante. */
 function toAbsoluteUrl(url: string, origin: string): string {
@@ -58,7 +59,7 @@ export async function GET(request: NextRequest) {
     const sources: PlayerSource[] = [];
 
     // 2. Catalogue TMDB pur
-    if (provider === "TMDB" || /^\d{1,10}$/.test(id)) {
+    if (shouldResolveTmdbSources(id, provider)) {
       const isSeries = isEpisodicContentType(contentType);
       const playback = await resolvePlaybackByTmdbId(
         id,

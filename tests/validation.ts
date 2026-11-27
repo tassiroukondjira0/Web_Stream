@@ -14,6 +14,7 @@ import {
   normalizeMediaContentType,
   toPlaybackMediaType,
 } from "../src/lib/media-content-type";
+import { shouldResolveTmdbSources } from "../src/lib/media-sources-routing";
 import { parseMovieEmbeds } from "../src/modules/providers/partner/partner.client";
 
 /** Slugs des anciens contenus de démonstration (désormais supprimés). */
@@ -52,6 +53,13 @@ async function runValidationTests() {
     isEpisodicContentType(normalizeMediaContentType("SERIES")) &&
     !isEpisodicContentType(normalizeMediaContentType("MOVIE")),
     "Sources : Les types ANIME, SERIES, TV et MOVIE sont normalisés correctement",
+  );
+
+  assert(
+    shouldResolveTmdbSources("12345", "TMDB") &&
+      !shouldResolveTmdbSources("12345", "FSTREAMTV") &&
+      !shouldResolveTmdbSources("12345", "FRENCHSTREAM"),
+    "Sources : les IDs numériques de fournisseurs restent routés vers leur fournisseur",
   );
 
   const tmdbEpisodes = resolveDisplayedEpisodes({
